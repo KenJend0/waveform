@@ -26,6 +26,10 @@ export default function FeedCardReview({
   is_liked = false,
   timeDisplay,
 }: Props) {
+  // Convertir rating en entier (arrondir)
+  const ratingInt = rating ? Math.round(rating) : null;
+  const emptyStars = ratingInt ? Math.max(0, 5 - ratingInt) : 5;
+
   return (
     <motion.article
       layout
@@ -48,9 +52,9 @@ export default function FeedCardReview({
             <p className="text-xs text-gray-400">{timeDisplay}</p>
           </div>
         </Link>
-        {rating && (
-          <div className="text-emerald-400 text-lg">
-            {"★".repeat(rating)}{"☆".repeat(5 - rating)}
+        {ratingInt && (
+          <div className="text-emerald-400 text-lg" title={`Note: ${rating}/10`}>
+            {"★".repeat(ratingInt)}{"☆".repeat(emptyStars)}
           </div>
         )}
       </div>

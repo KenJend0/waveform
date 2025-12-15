@@ -3,7 +3,7 @@ import BackButton from "@/components/BackButton";
 import AddToDiaryForm from "@/components/AddToDiaryForm";
 import { msToMMSS } from "@/lib/time";
 import { api } from "@/lib/api";
-import Reviews from "@/components/Reviews"; // 👈 on importe le composant client
+import Reviews from "@/components/Reviews"; 
 
 type AlbumResponse = {
     album: {

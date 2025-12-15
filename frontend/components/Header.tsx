@@ -11,7 +11,7 @@ export default async function Header() {
     const navItems = [
         { href: "/feed", label: "Feed" },
         { href: "/explore", label: "Explore" },
-        { href: "/notifications", label: "Notifications" },
+        { href: "/notifications", label: "Notifications", prefetch: false},
         { href: "/me", label: "Profile" },
         { href: "/settings", label: "Settings" },
     ];

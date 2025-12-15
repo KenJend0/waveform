@@ -1,4 +1,5 @@
 // src/server.ts
+console.log("🔥 SERVER.TS VERSION = AVEC NOTIFICATIONS");
 import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
@@ -19,6 +20,7 @@ import tracksRouter from "./routes/tracks";
 import socialRouter from "./routes/social";
 import profilesRouter from "./routes/profiles";
 import settingsRouter from "./routes/settings";
+import notificationsRouter from "./routes/notifications";
 import adminRouter from "./routes/admin";
 
 const app = express();
@@ -69,6 +71,8 @@ app.use("/tracks", tracksRouter);
 app.use("/social", socialRouter);
 app.use("/profiles", profilesRouter);
 app.use("/settings", settingsRouter);
+console.log("🔥 mounting /notifications router");
+app.use("/notifications", notificationsRouter); 
 app.use("/api", adminRouter);
 
 // 404

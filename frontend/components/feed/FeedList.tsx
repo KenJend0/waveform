@@ -52,9 +52,20 @@ export default function FeedList({ initialItems }: { initialItems: FeedItem[] })
         const timeDisplay = timeAgo(item.created_at);
         const key = item.event_id;
 
+        // Récupère les données de l'entrée diary si elle existe
+        const diaryEntry = item.entry_id
+          ? {
+              review_body: item.review_body,
+              rating: item.rating,
+              listened_at: item.listened_at,
+              likes_count: item.likes_count || 0,
+              is_liked: item.is_liked || false,
+            }
+          : null;
+
         switch (item.type) {
           case "diary":
-            if (item.review_body || item.rating) {
+            if (diaryEntry && (diaryEntry.review_body || diaryEntry.rating)) {
               return (
                 <FeedCardReview
                   key={key}
@@ -72,10 +83,10 @@ export default function FeedList({ initialItems }: { initialItems: FeedItem[] })
                     artist: item.artist_name,
                     cover_url: item.cover_url,
                   }}
-                  rating={item.rating}
-                  review_body={item.review_body}
-                  likes_count={item.likes_count}
-                  is_liked={item.is_liked}
+                  rating={diaryEntry.rating}
+                  review_body={diaryEntry.review_body}
+                  likes_count={diaryEntry.likes_count}
+                  is_liked={diaryEntry.is_liked}
                   timeDisplay={timeDisplay}
                 />
               );
@@ -145,6 +156,8 @@ export default function FeedList({ initialItems }: { initialItems: FeedItem[] })
             );
 
           case "discover":
+            const discoverPayload =
+              typeof item.payload === "string" ? JSON.parse(item.payload) : item.payload || {};
             return (
               <FeedCardDiscover
                 key={key}
@@ -154,7 +167,7 @@ export default function FeedList({ initialItems }: { initialItems: FeedItem[] })
                   artist: item.artist_name,
                   cover_url: item.cover_url,
                 }}
-                discover_kind={item.payload?.discover_kind}
+                discover_kind={discoverPayload.discover_kind || "discover"}
               />
             );
 

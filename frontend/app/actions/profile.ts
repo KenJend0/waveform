@@ -237,7 +237,7 @@ export async function changeUsername(newUsername: string) {
     return { ok: false, error: 'username_change_already_used' };
   }
 
-  if (current?.username && current.username === trimmed) {
+  if ((current as any)?.username && (current as any).username === trimmed) {
     return { ok: false, error: 'username_same' };
   }
 

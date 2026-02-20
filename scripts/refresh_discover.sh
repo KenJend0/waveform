@@ -10,7 +10,6 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 API_URL="${API_URL:-http://localhost:4000}"
-ADMIN_USER="teyssir"
 
 echo -e "${BLUE}🎵 Rafraîchissement des découvertes MusicBoxd${NC}"
 echo "=================================="
@@ -29,17 +28,13 @@ echo -e "${GREEN}✅ API disponible${NC}"
 # Vérifier qu'on peut récupérer un token
 echo -e "${BLUE}Récupération d'un token d'admin...${NC}"
 
-# Note: Ce script suppose qu'il existe un login admin ou un token stocké
-# Pour tester, vous pouvez:
-# 1. Utiliser un JWT token valide stocké en env var
-# 2. Ou faire un login via /auth/login et capturer le token
-
+# Note: Ce script doit recevoir un JWT admin/service token via la variable
+# d'environnement `ADMIN_TOKEN`. Il ne crée pas d'utilisateur admin.
 if [ -z "$ADMIN_TOKEN" ]; then
     echo -e "${RED}❌ ADMIN_TOKEN non défini${NC}"
     echo "Options:"
     echo "  1. Exporter un JWT token: export ADMIN_TOKEN='eyJ...'"
     echo "  2. Utiliser Postman pour appeler l'endpoint"
-    echo "  3. Créer un login admin direct"
     exit 1
 fi
 

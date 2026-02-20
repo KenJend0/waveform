@@ -112,15 +112,26 @@ export function ArtistPageContent({
 
         try {
             const result = await importAllArtistAlbums(artist.id, mbid);
+
             if (result.success) {
-                setImportProgress(`${result.imported} album(s) importé(s)`);
+                // Friendly message coming from action (includes quota)
+                const msg = result.message || `${result.imported} album(s) importé(s)`;
+                setImportProgress(msg);
+                // Reload to reflect DB changes after short delay
                 setTimeout(() => window.location.reload(), 2000);
             } else {
-                setImportProgress(result.error || 'Erreur');
-                setTimeout(() => { setImportProgress(''); setImporting(false); }, 3000);
+                // Show clear reason to user
+                const userMsg = result.message || (
+                    result.error === 'rate_limited'
+                        ? `Limite atteinte (${result.limit} imports / 24h).` 
+                        : (result.error || 'Erreur lors de l\'import')
+                );
+                setImportProgress(userMsg);
+                // Clear status after a few seconds and re-enable button
+                setTimeout(() => { setImportProgress(''); setImporting(false); }, 5000);
             }
-        } catch {
-            setImportProgress('Erreur');
+        } catch (err) {
+            setImportProgress('Erreur lors de l\'import');
             setTimeout(() => { setImportProgress(''); setImporting(false); }, 3000);
         }
     };

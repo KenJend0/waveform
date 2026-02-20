@@ -16,7 +16,7 @@ export async function createRecommendation({
 
   const supabase = await createSupabaseServer();
 
-  const { error } = await supabase.from('recommendations').insert({
+  const { error } = await supabase.from('recommendations' as any).insert({
     recommended_by_id: user.id,
     recommended_to_id: recommendedToId || null,
     album_id: albumId,
@@ -27,7 +27,7 @@ export async function createRecommendation({
 
   // Create a notification for private recommendations
   if (recommendedToId) {
-    await supabase.from('notifications').insert({
+    await supabase.from('notifications' as any).insert({
       user_id: recommendedToId,
       actor_id: user.id,
       type: 'recommendation',

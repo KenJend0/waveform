@@ -355,6 +355,24 @@ CREATE INDEX IF NOT EXISTS idx_discover_items_user_id   ON discover_items(user_i
 CREATE INDEX IF NOT EXISTS idx_discover_items_score     ON discover_items(score DESC);
 
 -- ============================================================
+-- import_requests
+-- Tracks user-initiated bulk import requests to enforce per-user rate limits
+-- ============================================================
+CREATE TABLE IF NOT EXISTS import_requests (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  artist_id  UUID,
+  artist_mbid UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_import_requests_user_created_at ON import_requests(user_id, created_at DESC);
+
+ALTER TABLE import_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "import_requests_insert_own" ON import_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "import_requests_select_own" ON import_requests FOR SELECT USING (auth.uid() = user_id);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- À activer sur chaque table dans le dashboard Supabase.
 -- Exemples de policies minimales :

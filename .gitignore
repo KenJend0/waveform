@@ -1,60 +1,55 @@
-# === Node / Backend ===
-node_modules/
-dist/
-build/
+# ============================================================
+# WAVEFORM — .gitignore
+# ============================================================
+
+# ── Secrets — NE JAMAIS COMMITTER ────────────────────────────
 .env
 .env.local
 .env.*.local
-.env.example
-.npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# === Frontend (Next.js / React) ===
-frontend/.next/
-frontend/node_modules/
-frontend/out/
 frontend/.env.local
 frontend/.env.*.local
-frontend/npm-debug.log*
-frontend/yarn-error.log*
 
-# === TypeScript ===
+# ── Node ─────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# ── Next.js ──────────────────────────────────────────────────
+frontend/.next/
+frontend/out/
+frontend/.vercel
+frontend/next-env.d.ts
+
+# ── Build ────────────────────────────────────────────────────
+dist/
+build/
 *.tsbuildinfo
 
-# === IDE / Éditeurs ===
+# ── IDE ──────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.iml
+*.suo
+*.sw?
 
-# === OS Files ===
+# ── OS ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# === Logs ===
+# ── Logs ─────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
 pnpm-debug.log*
 
-# === Docker ===
-/data/
-*.pid
-*.seed
+# ── Misc ─────────────────────────────────────────────────────
 *.bak
-docker-data/
-tmp/
-
-# === GitHub / CI ===
-/coverage/
+*.orig
+*.seed
+tmp*
+nul
 .cache/
 .eslintcache
-
-# === Python (si tu as des scripts d’analyse) ===
-__pycache__/
-*.pyc
-
-# === Misc ===
-*.swp
-*.swo
+/coverage/

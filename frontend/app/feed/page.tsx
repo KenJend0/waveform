@@ -1,36 +1,52 @@
-// frontend/app/feed/page.tsx
-import FeedList from "@/components/feed/FeedList";
-import { getCurrentUser } from "@/lib/auth";
-import { cookies } from "next/headers";
+﻿import Link from 'next/link';
+import { getMyFeed } from '@/app/actions/feed';
+import { redirect } from 'next/navigation';
+import { getAuthUser } from '@/lib/supabase/server';
+import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 
 export default async function FeedPage() {
-    const user = await getCurrentUser();
-    if (!user) {
-        return (
-            <main className="p-6 text-white">
-                <p className="text-yellow-500">⚠️ Vous devez être connecté pour voir le feed.</p>
-            </main>
-        );
-    }
+  const user = await getAuthUser();
+  if (!user) {
+    redirect('/auth?mode=login');
+  }
 
-    const cookieStore = await cookies();
-    const sid = cookieStore.get("mbx.sid")?.value;
+  const feedResult = await getMyFeed({ limit: 20, offset: 0 });
 
-    const res = await fetch("http://localhost:4000/social/feed?limit=20", {
-        headers: sid ? { Cookie: `mbx.sid=${sid}` } : {},
-        cache: "no-store",
-    });
+  if (!feedResult.success) {
+    console.error('Feed error:', feedResult.error);
+  }
 
-    if (!res.ok) {
-        return <main className="p-6 text-red-500">Impossible de charger le feed.</main>;
-    }
+  const events = feedResult.events;
 
-    const data = await res.json();
+  return (
+    <div className="mx-auto max-w-page px-4 md:px-6">
+      <div className="pt-8 pb-6">
+        <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
+        <p className="text-[14px] text-text-tertiary">
+          Ce qui se passe autour de toi.
+        </p>
+      </div>
 
-    return (
-        <main className="p-6 pb-20 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">Votre Feed</h1>
-            <FeedList initialItems={data.items} />
-        </main>
-    );
+      {events.length === 0 ? (
+        <div className="py-24 text-center">
+          <p className="text-[16px] text-text-secondary mb-3">
+            Le fil est calme pour l&apos;instant.
+          </p>
+          <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed">
+            Quand tu suivras quelqu&apos;un, ses Ã©coutes<br />
+            et ses notes apparaÃ®tront ici.
+          </p>
+          <Link
+            href="/explore"
+            className="text-[14px] text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150"
+          >
+            DÃ©couvrir des albums
+          </Link>
+        </div>
+      ) : (
+        <FeedInfiniteList initialEvents={events} currentUserId={user.id} />
+      )}
+    </div>
+  );
 }
+

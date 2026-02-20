@@ -1,0 +1,321 @@
+🎧 WAVEFORM — CHARTE GRAPHIQUE OFFICIELLE
+1️⃣ Positionnement visuel
+
+Waveform est :
+
+Intime
+
+Silencieux
+
+Éditorial
+
+Non démonstratif
+
+Non social-first
+
+Ce n’est pas :
+
+Un réseau social
+
+Une app dynamique
+
+Une interface “gaming”
+
+Une app colorée ou contrastée
+
+Tout doit respirer.
+
+2️⃣ Système Couleurs
+🎨 Palette Principale (Light Mode)
+Fond principal
+Background app:        #F5F3EF   (stone-100 custom)
+Surface secondaire:    #ECE8E1   (stone-200 soft)
+Surface tertiaire:     #E4DFD6
+
+
+Aucun blanc pur (#FFFFFF) sur fond principal.
+
+Texte
+Texte principal:       #1C1C1C   (presque noir)
+Texte secondaire:      #6B6B6B
+Texte tertiaire:       #9A9A9A
+Texte désactivé:       #BDBDBD
+
+
+Jamais de noir pur.
+Jamais de gris froid bleuté.
+
+Accent unique (très limité)
+
+Accent principal Waveform :
+
+Accent subtil:         #8E6F5E  (brun chaud)
+Accent hover:          #A17F6D
+Accent très léger:     rgba(142,111,94,0.08)
+
+
+Cet accent ne doit apparaître que :
+
+sur hover texte
+
+en underline fine
+
+en état actif discret
+
+Jamais en fond massif.
+Jamais en bouton plein dominant.
+
+États fonctionnels
+Like actif:            #C86C6C (désaturé, pas rouge vif)
+Note mise en avant:    #8E6F5E
+Focus border:          #8E6F5E
+Border neutre:         #D8D3CB
+Divider léger:         #DDD7CF
+
+
+3️⃣ Typographie
+
+Waveform est éditorial.
+
+Police recommandée
+
+Primary:
+
+Inter
+ou
+IBM Plex Sans
+ou
+Satoshi
+
+
+Pas de police techno.
+Pas de serif décorative.
+
+Hiérarchie Typographique
+H1 (titre page)
+Size: 32px
+Weight: 500
+Letter spacing: -0.02em
+Line height: 1.2
+
+
+Jamais bold 700.
+
+H2 (sections)
+Size: 22px
+Weight: 500
+Letter spacing: -0.01em
+
+Titre album
+Size: 24px
+Weight: 500
+
+Body principal (review)
+Size: 16px
+Line-height: 1.75
+Weight: 400
+Color: texte principal
+
+
+Important :
+La review doit ressembler à un paragraphe d’article.
+
+Meta (date, auteur)
+Size: 14px
+Color: secondaire
+Weight: 400
+
+Labels uppercase (Réponses, etc.)
+Size: 12px
+Letter spacing: 0.08em
+Weight: 500
+Color: tertiaire
+
+
+Jamais trop contrasté.
+
+4️⃣ Système d’Espacement
+
+Waveform respire.
+
+Base unit = 4px
+
+Espacements standards
+Section spacing large:     48px
+Section spacing medium:    32px
+Section spacing small:     16px
+Micro gap:                 8px
+
+Règle d’or
+
+Si un bloc semble vide →
+On augmente le padding vertical, pas la décoration.
+
+5️⃣ Cartes & Surfaces
+
+Règle :
+
+Moins il y a de cartes, mieux c’est.
+
+Quand utiliser une carte ?
+
+Uniquement pour :
+
+input
+
+zone commentaire
+
+éléments interactifs
+
+Jamais pour :
+
+review principale
+
+contenu éditorial
+
+Style carte
+Background: surface secondaire
+Border: 1px solid border neutre
+Radius: 12px
+Shadow: none ou shadow très légère
+
+
+Pas de gradient.
+Pas de glow.
+Pas de fond coloré accent.
+
+6️⃣ Boutons
+
+Waveform évite les boutons agressifs.
+
+Bouton primaire
+Background: #1C1C1C
+Text: #F5F3EF
+Padding: 10px 16px
+Radius: 8px
+
+
+Hover :
+
+Opacity 0.85
+
+Bouton secondaire
+Background: transparent
+Border: 1px solid border neutre
+Text: secondaire
+
+
+Hover :
+
+Border: accent
+Text: accent
+
+Bouton ghost
+
+Juste texte + hover accent.
+
+7️⃣ Icônes
+
+Taille standard : 18–20px
+
+Stroke 1.5
+
+Couleur secondaire par défaut
+
+Hover accent
+
+Jamais d’icône dominante en couleur.
+
+8️⃣ Images (covers)
+Taille standard
+
+Page album :
+
+100px × 100px
+Radius: 10px
+
+
+Explore grid :
+
+Ratio 1:1
+Radius: 8px
+
+
+Pas d’ombre dramatique.
+
+9️⃣ Inputs
+Background: surface secondaire
+Border: border neutre
+Text: principal
+Placeholder: tertiaire
+Radius: 10px
+Padding: 12px
+
+
+Focus :
+
+Border: accent
+Outline: none
+
+🔟 Interactions
+
+Les animations doivent être :
+
+Courtes (150–200ms)
+
+Ease-out
+
+Jamais bounce
+
+Jamais scale violent
+
+1️⃣1️⃣ Ton visuel global
+
+À chaque page :
+
+Demander :
+
+Est-ce que l’interface attire l’attention ?
+
+Ou est-ce qu’elle laisse la place au contenu ?
+
+Si l’UI attire → c’est trop.
+
+1️⃣2️⃣ Uniformisation globale
+
+Toutes les pages doivent respecter :
+
+Même largeur max (max-w-2xl)
+
+Même padding horizontal (px-6 desktop, px-4 mobile)
+
+Même rythme vertical
+
+Même gris
+
+Même accent
+
+Même hiérarchie typo
+
+1️⃣3️⃣ Ce qui est interdit
+
+❌ Vert flashy
+❌ Bleu vibrant
+❌ Fond sombre bleu
+❌ Gradient décoratif
+❌ Bouton énorme
+❌ Shadow lourde
+❌ Border radius incohérent
+❌ Police mixée
+
+1️⃣4️⃣ Test final produit
+
+Waveform est cohérent si :
+
+Une capture d’écran en noir et blanc reste lisible
+
+Une page imprimée fonctionne
+
+Une review tient seule sans UI
+
+L’interface disparaît mentalement après 3 secondes

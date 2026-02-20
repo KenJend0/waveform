@@ -2,53 +2,74 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        // Design System MusicBoxd
+        // Design System Waveform — Charte Graphique Officielle
         background: {
-          DEFAULT: '#0a0a0a',      // bg-neutral-950
-          elevated: '#171717',      // bg-neutral-900
-          hover: '#262626',         // bg-neutral-800
+          DEFAULT: '#F5F3EF',      // Fond principal
+          secondary: '#ECE8E1',    // Surface secondaire
+          tertiary: '#E4DFD6',     // Surface tertiaire
         },
         border: {
-          DEFAULT: '#262626',       // border-neutral-800
-          subtle: '#404040',        // border-neutral-700
+          DEFAULT: '#D8D3CB',      // Border neutre
+          divider: '#DDD7CF',      // Divider léger
         },
         accent: {
-          DEFAULT: '#34d399',       // emerald-400
-          hover: '#10b981',         // emerald-500
-          muted: '#064e3b',         // emerald-900/20
+          DEFAULT: '#8E6F5E',      // Brun chaud — usage très limité
+          hover: '#A17F6D',        // Brun chaud hover
+          muted: 'rgba(142,111,94,0.08)', // Accent très léger
         },
+        like: '#C86C6C',           // Like actif (désaturé)
         text: {
-          primary: '#fafafa',       // text-neutral-50
-          secondary: '#a3a3a3',     // text-neutral-400
-          tertiary: '#737373',      // text-neutral-500
+          primary: '#1C1C1C',      // Texte principal (presque noir)
+          secondary: '#6B6B6B',    // Texte secondaire
+          tertiary: '#9A9A9A',     // Texte tertiaire
+          disabled: '#BDBDBD',     // Texte désactivé
         }
       },
       fontFamily: {
-        sans: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
       fontWeight: {
         normal: '400',
         medium: '500',
-        semibold: '600',
-        bold: '700',
+      },
+      fontSize: {
+        'h1': ['32px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '500' }],
+        'h2': ['22px', { lineHeight: '1.3', letterSpacing: '-0.01em', fontWeight: '500' }],
+        'h3': ['24px', { lineHeight: '1.3', fontWeight: '500' }],
+        'body': ['16px', { lineHeight: '1.75', fontWeight: '400' }],
+        'meta': ['14px', { lineHeight: '1.5', fontWeight: '400' }],
+        'label': ['12px', { lineHeight: '1.5', letterSpacing: '0.08em', fontWeight: '500' }],
       },
       lineHeight: {
         tight: '1.2',
         snug: '1.4',
-        relaxed: '1.6',
+        relaxed: '1.75',
+      },
+      borderRadius: {
+        'card': '12px',
+        'button': '8px',
+        'input': '10px',
+        'cover': '10px',
+        'cover-sm': '8px',
+      },
+      spacing: {
+        'section-lg': '48px',
+        'section-md': '32px',
+        'section-sm': '16px',
+        'micro': '8px',
       },
       boxShadow: {
-        'card': '0 2px 8px rgba(0, 0, 0, 0.4)',
-        'card-hover': '0 4px 16px rgba(0, 0, 0, 0.6)',
-        'accent': '0 0 20px rgba(52, 211, 153, 0.15)',
+        'subtle': '0 1px 2px rgba(0, 0, 0, 0.04)',
+      },
+      maxWidth: {
+        'page': '672px',
       },
     },
   },

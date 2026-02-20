@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
+import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon";
 
 type Props = { fallbackHref?: string; className?: string; children?: React.ReactNode; };
 
@@ -14,10 +15,12 @@ export default function BackButton({ fallbackHref = "/", className = "", childre
         <button
             type="button"
             onClick={onClick}
-            className={className || "text-sm opacity-70 hover:opacity-100"}
+            className={className || "flex items-center gap-2 text-meta text-text-secondary hover:text-text-primary transition-colors duration-150"}
             aria-label="Go back"
         >
-            {children ?? "← Back"}
+            <ArrowLeftIcon />
+            {children ?? "Back"}
         </button>
     );
 }
+

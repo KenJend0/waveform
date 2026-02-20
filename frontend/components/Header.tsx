@@ -1,80 +1,106 @@
-import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
-import LogoutButton from "@/components/LogoutButton";
-import { cookies } from "next/headers";
-import Image from "next/image";
+﻿'use client';
 
-export default async function Header() {
-    const user = await getCurrentUser();
-    const cookieStore = await cookies();
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { useEffect, useState } from "react";
+import AddMenuClient from "@/components/AddMenuClient";
+import ProfileMenuClient from "@/components/ProfileMenuClient";
+import { UserAvatar } from "@/components/avatars/DefaultAvatar";
+
+export default function Header() {
+    const { user, loading } = useAuth();
+    const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const navItems = [
         { href: "/feed", label: "Feed" },
         { href: "/explore", label: "Explore" },
-        { href: "/notifications", label: "Notifications", prefetch: false},
         { href: "/me", label: "Profile" },
-        { href: "/settings", label: "Settings" },
     ];
 
+    const isActive = (href: string) => {
+        if (!mounted) return false;
+        return pathname === href || pathname.startsWith(href + "/");
+    };
+
     return (
-        <header className="hidden md:flex items-center justify-between px-8 py-3 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-50 shadow-lg">
-            {/* LOGO */}
-            <Link href="/feed" className="flex items-center space-x-2 group">
-        <span className="text-2xl font-extrabold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
-          Music
-        </span>
-                <span className="text-2xl font-extrabold tracking-tight text-emerald-400 group-hover:text-white transition-colors">
-          Boxd
-        </span>
-            </Link>
+        user && (
+            <header
+                className="hidden md:flex items-center justify-between px-8 py-3 border-b border-border sticky top-0 z-50 bg-background"
+            >
+                <Link href="/" className="flex items-center space-x-2">
+                    <span className="text-h2 font-medium tracking-tight text-text-primary">
+                        Waveform
+                    </span>
+                </Link>
 
-            {/* NAVIGATION */}
-            <nav className="flex space-x-8 items-center">
-                {navItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className="text-gray-400 hover:text-emerald-400 transition-colors text-sm font-medium"
-                    >
-                        {item.label}
-                    </Link>
-                ))}
-            </nav>
+                {/* NAVIGATION */}
+                <nav className="flex space-x-6 items-center">
+                    {navItems.slice(0, 2).map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`text-meta font-medium px-6 py-2 transition-colors duration-150 ${
+                                isActive(item.href)
+                                    ? "text-text-primary"
+                                    : "text-text-secondary hover:text-text-primary"
+                            }`}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
 
-            {/* UTILISATEUR */}
-            <div className="flex items-center space-x-4">
-                {!user && (
-                    <Link
-                        href="/login"
-                        className="text-gray-300 hover:text-emerald-400 text-sm transition"
-                    >
-                        Se connecter
-                    </Link>
-                )}
+                    {user && !loading && (
+                        <AddMenuClient />
+                    )}
 
-                {user && (
-                    <div className="flex items-center space-x-3">
-                        {/* Avatar */}
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-neutral-700">
-                            <Image
-                                src={user.picture_url || "/default-avatar.png"}
-                                alt={user.display_name || "user"}
-                                width={32}
-                                height={32}
-                                className="object-cover"
-                            />
+                    {navItems.slice(2).map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`text-meta font-medium px-3 py-2 transition-colors duration-150 ${
+                                isActive(item.href)
+                                    ? "text-text-primary"
+                                    : "text-text-secondary hover:text-text-primary"
+                            }`}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
+                </nav>
+
+                {/* UTILISATEUR */}
+                <div className="flex items-center space-x-4">
+                    {loading ? (
+                        <div className="w-8 h-8 animate-pulse bg-background-secondary rounded-full" />
+                    ) : !user ? (
+                        <Link
+                            href="/auth"
+                            className="btn-secondary text-meta"
+                        >
+                            Se connecter
+                        </Link>
+                    ) : (
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-border bg-background-secondary">
+                                <UserAvatar userId={user.id} size={32} />
+                            </div>
+
+                            <span className="text-meta font-medium text-text-primary">
+                                {user.user_metadata?.display_name || user.email?.split('@')[0] || "User"}
+                            </span>
+
+                            <ProfileMenuClient />
                         </div>
-
-                        {/* Nom utilisateur */}
-                        <span className="text-sm font-semibold text-emerald-400">
-              {user.display_name || user.username}
-            </span>
-
-                        {/* Bouton logout */}
-                        <LogoutButton />
-                    </div>
-                )}
-            </div>
-        </header>
+                    )}
+                </div>
+            </header>
+        )
     );
 }
+

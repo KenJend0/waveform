@@ -1,20 +1,58 @@
-export default function Loading() {
+﻿export default function Loading() {
     return (
-        <main className="mx-auto max-w-3xl p-6 animate-pulse">
-            <div className="h-4 w-16 bg-gray-200 rounded" />
-            <div className="mt-4 flex gap-6">
-                <div className="w-40 h-40 rounded-xl bg-gray-200" />
-                <div className="flex-1 space-y-3">
-                    <div className="h-6 w-2/3 bg-gray-200 rounded" />
-                    <div className="h-4 w-1/3 bg-gray-200 rounded" />
-                    <div className="h-4 w-24 bg-gray-200 rounded" />
+        <main className="max-w-page mx-auto px-4 py-8 pb-24">
+            {/* Back button skeleton */}
+            <div className="h-6 w-16 bg-background-secondary rounded-[8px] animate-pulse" />
+
+            {/* ========== 1. THE ALBUM ========== */}
+            <div className="mt-8 mb-20">
+                {/* Header skeleton */}
+                <div className="flex flex-col md:flex-row md:gap-section-md md:items-start">
+                    {/* Cover skeleton */}
+                    <div className="w-full md:w-48 aspect-square bg-background-secondary rounded-[10px] shrink-0 animate-pulse max-w-48 mx-auto md:mx-0 mb-2 md:mb-0" />
+
+                    <div className="min-w-0 flex-1 space-y-3">
+                        {/* Title skeleton */}
+                        <div className="h-8 bg-background-secondary rounded-[8px] animate-pulse" />
+
+                        {/* Artist + year skeleton */}
+                        <div className="h-5 bg-background-secondary rounded-[8px] animate-pulse w-48" />
+
+                        {/* Stats skeleton */}
+                        <div className="flex gap-5 pt-2">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="space-y-1">
+                                    <div className="h-5 bg-background-secondary rounded-[8px] animate-pulse w-12" />
+                                    <div className="h-3 bg-background-secondary rounded-[8px] animate-pulse w-16" />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Button skeleton */}
+                        <div className="h-8 bg-background-secondary rounded-[8px] animate-pulse w-32" />
+                    </div>
                 </div>
             </div>
-            <div className="mt-6 space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-6 bg-gray-200 rounded" />
+
+            {/* ========== 2. THE MUSIC ========== */}
+            <section className="border-t border-border-divider pt-10 mb-20 space-y-2">
+                <div className="h-4 bg-background-secondary rounded-[8px] animate-pulse w-24 mb-8" />
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-6 bg-background-secondary rounded-[8px] animate-pulse" />
                 ))}
-            </div>
+            </section>
+
+            {/* ========== 3. OTHERS' NOTES ========== */}
+            <section className="border-t border-border-divider pt-10 mb-20 space-y-3">
+                <div className="h-4 bg-background-secondary rounded-[8px] animate-pulse w-40 mb-4" />
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-2">
+                        <div className="h-5 bg-background-secondary rounded-[8px] animate-pulse w-32" />
+                        <div className="h-4 bg-background-secondary rounded-[8px] animate-pulse" />
+                        <div className="h-4 bg-background-secondary rounded-[8px] animate-pulse w-2/3" />
+                    </div>
+                ))}
+            </section>
         </main>
     );
 }

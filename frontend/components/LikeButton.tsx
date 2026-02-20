@@ -1,6 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { Heart } from "lucide-react";
+import { toggleDiaryLike } from "@/app/actions/diary";
 
 export default function LikeButton({
                                        entryId, initialLiked, initialCount,
@@ -13,13 +15,9 @@ export default function LikeButton({
         if (loading) return;
         setLoading(true);
         try {
-            const method = liked ? "DELETE" : "POST";
-            const res = await fetch(`/api/social/diary/${entryId}/like`, { method, credentials: "include" });
-            if (res.ok) {
-                const data = await res.json();
-                setLiked(data.liked);
-                setCount(data.likes_count);
-            }
+            await toggleDiaryLike(entryId);
+            setLiked((prev) => !prev);
+            setCount((prev) => (liked ? prev - 1 : prev + 1));
         } finally {
             setLoading(false);
         }
@@ -27,10 +25,19 @@ export default function LikeButton({
 
     return (
         <div className="flex items-center gap-2">
-            <button onClick={toggleLike} disabled={loading} className="text-xl focus:outline-none">
-                {liked ? "❤️" : "🤍"}
+            <button 
+                onClick={toggleLike} 
+                disabled={loading} 
+                className="text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150 focus:outline-none"
+            >
+                <Heart 
+                    size={20} 
+                    fill={liked ? "currentColor" : "none"}
+                    className={liked ? "text-[#8E6F5E]" : ""}
+                />
             </button>
-            <span className="text-sm text-gray-700">{count}</span>
+            <span className="text-meta text-text-secondary">{count}</span>
         </div>
     );
 }
+

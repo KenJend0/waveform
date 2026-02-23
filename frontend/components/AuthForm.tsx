@@ -23,7 +23,12 @@ export default function AuthForm() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const urlError = searchParams.get("error");
+  const [error, setError] = useState<string | null>(
+    urlError === "confirmation_failed"
+      ? "Le lien de confirmation est invalide ou expiré. Crée un nouveau compte ou demande un renvoi."
+      : null
+  );
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +74,7 @@ export default function AuthForm() {
           email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: {
               display_name: displayName || email.split("@")[0],
             },

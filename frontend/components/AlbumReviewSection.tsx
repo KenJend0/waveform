@@ -17,14 +17,14 @@ export default function AlbumReviewSection({ albumId, reviewsCount = 0 }: AlbumR
         <>
             <div className="flex items-baseline justify-between mb-8">
                 <h2 className="text-h2 text-text-primary">
-                    Lectures
+                    Critiques
                 </h2>
                 {reviewsCount > 0 && (
                     <button
                         onClick={() => setIsReviewsModalOpen(true)}
                         className="text-[12px] text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150"
                     >
-                        voir toutes les critiques
+                        voir toutes
                     </button>
                 )}
             </div>

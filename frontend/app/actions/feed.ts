@@ -344,7 +344,7 @@ export async function getSupplementalFeedActivity(userId: string, limit = 5): Pr
   try {
     const supabase = await createSupabaseServer();
 
-    // Get followees
+    // Step 1 — get followees
     const { data: follows, error: followsError } = await supabase
       .from('follows')
       .select('followee_id')
@@ -354,7 +354,8 @@ export async function getSupplementalFeedActivity(userId: string, limit = 5): Pr
 
     const followeeIds = follows.map((f) => f.followee_id);
 
-    // Fetch their recent diary entries
+    // Step 2 — fetch their recent diary entries + albums
+    // Note: diary_entries has no FK to profiles in the schema, so profiles must be fetched separately
     const { data: entries, error: entriesError } = await supabase
       .from('diary_entries')
       .select(`
@@ -363,26 +364,35 @@ export async function getSupplementalFeedActivity(userId: string, limit = 5): Pr
         rating,
         review_body,
         created_at,
-        album:albums ( id, title, cover_url ),
-        actor:profiles!user_id ( id, username, display_name, avatar_url )
+        album:albums ( id, title, cover_url )
       `)
       .in('user_id', followeeIds)
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (entriesError || !entries) return [];
+    if (entriesError || !entries || entries.length === 0) return [];
+
+    // Step 3 — fetch profiles for the authors
+    const authorIds = [...new Set(entries.map((e: any) => e.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', authorIds);
+
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
     return entries
       .map((e: any): FeedEvent | null => {
-        if (!e.actor?.id || !e.album) return null;
+        const actor = profileMap.get(e.user_id);
+        if (!actor || !e.album) return null;
         return {
           id: `supplemental-${e.id}`,
           type: e.rating !== null ? 'REVIEW_CREATED' : 'UNRATED_LISTEN',
           actor: {
-            id: e.actor.id,
-            username: e.actor.username,
-            display_name: e.actor.display_name,
-            avatar_url: e.actor.avatar_url,
+            id: actor.id,
+            username: actor.username,
+            display_name: actor.display_name,
+            avatar_url: actor.avatar_url,
           },
           album: { id: e.album.id, title: e.album.title, cover_url: e.album.cover_url },
           rating: e.rating ?? undefined,

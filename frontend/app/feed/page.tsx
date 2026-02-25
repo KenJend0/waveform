@@ -43,12 +43,12 @@ export default async function FeedPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile) {
-    const defaultUsername = user.id.substring(0, 8);
-    if (!profile.username || profile.username === defaultUsername) {
-      redirect('/onboarding');
-    }
-  }
+  const defaultUsername = user.id.substring(0, 8);
+  const needsOnboarding =
+    !profile ||
+    !profile.username ||
+    profile.username === defaultUsername;
+  if (needsOnboarding) redirect('/onboarding');
 
   // Count followings
   const { count: followingCount } = await supabase
@@ -66,7 +66,8 @@ export default async function FeedPage() {
 
   // Fetch only what this state needs
   const needsSupplemental = state === 'empty_with_network' || state === 'sparse_with_network';
-  const needsSuggestions = state === 'empty_no_network' || state === 'sparse_no_network';
+  // Show suggestions until user has a solid network (< 5 followings), regardless of state
+  const needsSuggestions = following < 5;
 
   const [supplementalEvents, suggestedUsers] = await Promise.all([
     needsSupplemental ? getSupplementalFeedActivity(user.id, 5) : Promise.resolve([]),
@@ -163,6 +164,14 @@ export default async function FeedPage() {
               />
             </div>
           )}
+          {suggestedUsers.length > 0 && (
+            <div className="mt-12">
+              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
+                Personnes à suivre
+              </p>
+              <SuggestedUsersSection />
+            </div>
+          )}
         </div>
       )}
 
@@ -206,6 +215,14 @@ export default async function FeedPage() {
                 initialCursor={null}
                 currentUserId={user.id}
               />
+            </div>
+          )}
+          {suggestedUsers.length > 0 && (
+            <div className="mt-12">
+              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
+                Personnes à suivre
+              </p>
+              <SuggestedUsersSection />
             </div>
           )}
         </>

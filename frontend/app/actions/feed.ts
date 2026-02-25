@@ -47,24 +47,26 @@ export interface FeedEvent {
 
 /**
  * Read-only: Get user's feed
- * 
+ *
  * Returns events from:
  * - User's own actions
  * - Actions from followed users
- * 
+ *
  * Enriches with necessary joins (profiles, albums, diary_entries)
+ * Uses cursor-based pagination to avoid skips/duplicates on offset shift.
  */
 export async function getMyFeed({
   limit = 20,
-  offset = 0,
+  cursor = null,
 }: {
   limit?: number;
-  offset?: number;
+  /** ISO timestamp of the last event seen — pass to fetch the next page */
+  cursor?: string | null;
 } = {}) {
   try {
     const user = await getAuthUser();
     if (!user) {
-      return { success: false, error: 'Not authenticated', events: [] };
+      return { success: false, error: 'Not authenticated', events: [], nextCursor: null };
     }
 
     const supabase = await createSupabaseServer();
@@ -73,7 +75,7 @@ export async function getMyFeed({
     // No need to fetch followers or use .in() — all relevant events are already here
 
     // Fetch feed_events for current user, with joins
-    const { data: rawEvents, error } = await supabase
+    let query = supabase
       .from('feed_events')
       .select(
         `
@@ -119,14 +121,21 @@ export async function getMyFeed({
       .eq('user_id', user.id)
       .neq('actor_id', user.id) // Don't show own actions — user already knows what they did
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(limit);
+
+    // Cursor: only fetch events older than the last seen timestamp
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+    }
+
+    const { data: rawEvents, error } = await query;
 
     if (error) {
-      return { success: false, error: 'An error occurred', events: [] };
+      return { success: false, error: 'An error occurred', events: [], nextCursor: null };
     }
 
     if (!rawEvents || rawEvents.length === 0) {
-      return { success: true, events: [] };
+      return { success: true, events: [], nextCursor: null };
     }
 
     // Get like stats for all entries
@@ -189,10 +198,13 @@ export async function getMyFeed({
       })
       .filter(Boolean) as FeedEvent[];
 
-    return { success: true, events };
+    // Cursor for the next page: created_at of the oldest event in this batch
+    const nextCursor = events.length > 0 ? events[events.length - 1].created_at : null;
+
+    return { success: true, events, nextCursor };
   } catch (err) {
     console.error('getFeedEvents error:', err);
-    return { success: false, error: 'An error occurred', events: [] };
+    return { success: false, error: 'An error occurred', events: [], nextCursor: null };
   }
 }
 

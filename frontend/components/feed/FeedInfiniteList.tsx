@@ -8,9 +8,11 @@ import FeedCardUserFollowed from './cards/FeedCardUserFollowed';
 import FeedCardReviewLiked from './cards/FeedCardReviewLiked';
 import FeedCardCommentCreated from './cards/FeedCardCommentCreated';
 import FeedCardUnratedListen from './cards/FeedCardUnratedListen';
+import { showToast } from '@/components/Toast';
 
 interface FeedInfiniteListProps {
   initialEvents: FeedEvent[];
+  initialCursor: string | null;
   currentUserId?: string;
 }
 
@@ -108,18 +110,24 @@ function renderEvent(event: FeedEvent, currentUserId?: string) {
   return null;
 }
 
-export default function FeedInfiniteList({ initialEvents, currentUserId }: FeedInfiniteListProps) {
+export default function FeedInfiniteList({ initialEvents, initialCursor, currentUserId }: FeedInfiniteListProps) {
   const [events, setEvents] = useState<FeedEvent[]>(initialEvents);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialEvents.length >= 20);
   const observerTarget = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
   const eventsRef = useRef<FeedEvent[]>(initialEvents);
+  const cursorRef = useRef<string | null>(initialCursor);
 
-  // Use a ref for events to avoid stale closures in the callback
+  // Keep refs in sync to avoid stale closures in the callback
   useEffect(() => {
     eventsRef.current = events;
   }, [events]);
+
+  useEffect(() => {
+    cursorRef.current = cursor;
+  }, [cursor]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -128,7 +136,7 @@ export default function FeedInfiniteList({ initialEvents, currentUserId }: FeedI
     try {
       const result = await getMyFeed({
         limit: 20,
-        offset: eventsRef.current.length,
+        cursor: cursorRef.current,
       });
 
       if (result.success && result.events.length > 0) {
@@ -141,12 +149,14 @@ export default function FeedInfiniteList({ initialEvents, currentUserId }: FeedI
           eventsRef.current = merged;
           return merged;
         });
+        setCursor(result.nextCursor ?? null);
         setHasMore(result.events.length >= 20);
       } else {
         setHasMore(false);
       }
     } catch (error) {
       console.error("Error loading more events:", error);
+      showToast("Erreur lors du chargement du fil", "error");
       setHasMore(false);
     } finally {
       setLoading(false);

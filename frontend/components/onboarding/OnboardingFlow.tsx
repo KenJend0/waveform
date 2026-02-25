@@ -257,32 +257,19 @@ export default function OnboardingFlow({ currentDisplayName, suggestedUsers }: P
 
                 <h1 className="text-h1 text-text-primary mb-2">C'est parti !</h1>
                 <p className="text-[14px] text-text-secondary mb-10">
-                    Commence par noter un album ou explore ce que les autres écoutent.
+                    Commence par ajouter un album à ton profil.
                 </p>
 
-                <div className="space-y-3">
-                    <Link
-                        href="/diary"
-                        className="flex items-center justify-between w-full px-4 py-4 bg-[#1C1C1C] text-[#F5F3EF] rounded-[12px] hover:opacity-85 transition-opacity"
-                    >
-                        <div>
-                            <p className="text-[14px] font-medium">Mon premier album</p>
-                            <p className="text-[12px] text-[#F5F3EF]/60 mt-0.5">Commence à construire ton profil</p>
-                        </div>
-                        <span className="text-[20px] leading-none ml-4">→</span>
-                    </Link>
-
-                    <Link
-                        href="/feed"
-                        className="flex items-center justify-between w-full px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
-                    >
-                        <div>
-                            <p className="text-[14px] font-medium text-text-primary">Explorer d'abord</p>
-                            <p className="text-[12px] text-text-tertiary mt-0.5">Voir ce qui se passe</p>
-                        </div>
-                        <span className="text-[20px] leading-none ml-4 text-text-tertiary">→</span>
-                    </Link>
-                </div>
+                <Link
+                    href="/add"
+                    className="flex items-center justify-between w-full px-4 py-4 bg-[#1C1C1C] text-[#F5F3EF] rounded-[12px] hover:opacity-85 transition-opacity"
+                >
+                    <div>
+                        <p className="text-[14px] font-medium">Ajouter un album</p>
+                        <p className="text-[12px] text-[#F5F3EF]/60 mt-0.5">Commence à construire ton profil</p>
+                    </div>
+                    <span className="text-[20px] leading-none ml-4">→</span>
+                </Link>
             </div>
         </div>
     );

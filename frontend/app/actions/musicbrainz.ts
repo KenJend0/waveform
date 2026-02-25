@@ -919,23 +919,25 @@ function extractStreamingLinks(relations: any[]): StreamingLinks {
 
 /**
  * Fetch streaming platform links for an album via MusicBrainz url-rels.
- * Streaming links (Spotify, Apple Music…) are attached to specific releases in MB,
- * not necessarily the one we have stored (which may be a physical edition).
+ * Streaming links (Spotify, Apple Music…) are on specific releases in MB,
+ * not necessarily the one stored (which may be a physical edition).
+ *
  * Strategy:
- *   1. Fetch the stored release → check its url-rels + get the release-group id
- *   2. If no links found, browse all releases in the release-group with url-rels
- *      and collect links from whichever release has them (typically the digital edition)
- * Both calls are cached 24h by Next.js.
+ *   1. Lookup the stored release → check its url-rels, get the release-group id
+ *   2. Browse sibling releases with inc=media to identify digital editions
+ *   3. Lookup the best candidate (digital first, otherwise first sibling) for url-rels
+ *
+ * All fetches are cached 24h by Next.js Data Cache.
  */
 export async function getAlbumStreamingLinks(mbid: string): Promise<StreamingLinks> {
+  const headers = { 'User-Agent': USER_AGENT };
+  const cache: RequestInit = { headers, next: { revalidate: 86400 } };
+
   try {
-    // Step 1 — fetch the stored release
+    // Step 1 — lookup the stored release
     const releaseRes = await fetch(
       `${MUSICBRAINZ_API}/release/${encodeURIComponent(mbid)}?inc=url-rels+release-groups&fmt=json`,
-      {
-        headers: { 'User-Agent': USER_AGENT },
-        next: { revalidate: 86400 },
-      }
+      cache
     );
     if (!releaseRes.ok) return {};
 
@@ -943,32 +945,36 @@ export async function getAlbumStreamingLinks(mbid: string): Promise<StreamingLin
     const releaseLinks = extractStreamingLinks(releaseData.relations || []);
     if (Object.keys(releaseLinks).length > 0) return releaseLinks;
 
-    // Step 2 — browse all releases in the same release-group
+    // Step 2 — browse sibling releases with their media formats (not url-rels,
+    // which are not returned inline by the browse endpoint)
     const rgId: string | undefined = releaseData['release-group']?.id;
     if (!rgId) return {};
 
     const browseRes = await fetch(
-      `${MUSICBRAINZ_API}/release?release-group=${encodeURIComponent(rgId)}&inc=url-rels&fmt=json&limit=50`,
-      {
-        headers: { 'User-Agent': USER_AGENT },
-        next: { revalidate: 86400 },
-      }
+      `${MUSICBRAINZ_API}/release?release-group=${encodeURIComponent(rgId)}&inc=media&fmt=json&limit=50`,
+      cache
     );
     if (!browseRes.ok) return {};
 
     const browseData = await browseRes.json();
-    const releases: any[] = browseData.releases || [];
+    const siblings: any[] = (browseData.releases || []).filter((r: any) => r.id !== mbid);
+    if (siblings.length === 0) return {};
 
-    const links: StreamingLinks = {};
-    for (const release of releases) {
-      const found = extractStreamingLinks(release.relations || []);
-      if (found.spotify && !links.spotify) links.spotify = found.spotify;
-      if (found.appleMusic && !links.appleMusic) links.appleMusic = found.appleMusic;
-      if (found.deezer && !links.deezer) links.deezer = found.deezer;
-      if (found.tidal && !links.tidal) links.tidal = found.tidal;
-      if (links.spotify && links.appleMusic && links.deezer && links.tidal) break;
-    }
-    return links;
+    // Prefer "Digital Media" releases; fall back to first sibling
+    const digital = siblings.filter((r: any) =>
+      r.media?.some((m: any) => m.format === 'Digital Media')
+    );
+    const candidate = (digital[0] || siblings[0]) as { id: string };
+
+    // Step 3 — lookup the candidate release for its url-rels
+    const candidateRes = await fetch(
+      `${MUSICBRAINZ_API}/release/${encodeURIComponent(candidate.id)}?inc=url-rels&fmt=json`,
+      cache
+    );
+    if (!candidateRes.ok) return {};
+
+    const candidateData = await candidateRes.json();
+    return extractStreamingLinks(candidateData.relations || []);
   } catch {
     return {};
   }

@@ -336,6 +336,68 @@ function mapFeedEvent(raw: any): FeedEvent | null {
 }
 
 /**
+ * Supplemental feed: fetch recent diary entries from followed users directly.
+ * Used when the user has ≥2 followings but fewer than 3 feed events
+ * (followees may not have been active since the follow happened).
+ */
+export async function getSupplementalFeedActivity(userId: string, limit = 5): Promise<FeedEvent[]> {
+  try {
+    const supabase = await createSupabaseServer();
+
+    // Get followees
+    const { data: follows, error: followsError } = await supabase
+      .from('follows')
+      .select('followee_id')
+      .eq('follower_id', userId);
+
+    if (followsError || !follows || follows.length === 0) return [];
+
+    const followeeIds = follows.map((f) => f.followee_id);
+
+    // Fetch their recent diary entries
+    const { data: entries, error: entriesError } = await supabase
+      .from('diary_entries')
+      .select(`
+        id,
+        user_id,
+        rating,
+        review_body,
+        created_at,
+        album:albums ( id, title, cover_url ),
+        actor:profiles!user_id ( id, username, display_name, avatar_url )
+      `)
+      .in('user_id', followeeIds)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (entriesError || !entries) return [];
+
+    return entries
+      .map((e: any): FeedEvent | null => {
+        if (!e.actor?.id || !e.album) return null;
+        return {
+          id: `supplemental-${e.id}`,
+          type: e.rating !== null ? 'REVIEW_CREATED' : 'UNRATED_LISTEN',
+          actor: {
+            id: e.actor.id,
+            username: e.actor.username,
+            display_name: e.actor.display_name,
+            avatar_url: e.actor.avatar_url,
+          },
+          album: { id: e.album.id, title: e.album.title, cover_url: e.album.cover_url },
+          rating: e.rating ?? undefined,
+          review_excerpt: e.review_body ? e.review_body.substring(0, 150) : undefined,
+          entry_id: e.id,
+          created_at: e.created_at,
+        };
+      })
+      .filter(Boolean) as FeedEvent[];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Private: Fanout event to feed_events
  * Append-only: INSERT only, never UPDATE/DELETE
  * 

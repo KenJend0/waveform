@@ -463,6 +463,7 @@ export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
       rating,
       review_body,
       listened_at,
+      created_at,
       albums (
         id,
         title,

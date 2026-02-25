@@ -42,6 +42,7 @@ export default function RecommendationModal({
         setUsers(results);
       } catch (e) {
         console.error("Error searching users:", e);
+        showToast("Erreur lors de la recherche d'utilisateurs", "error");
       } finally {
         setLoadingUsers(false);
       }

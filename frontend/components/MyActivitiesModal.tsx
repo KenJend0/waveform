@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import EditDiaryEntryButton from "@/components/EditDiaryEntryButton";
 import { getMyAlbumEntries } from "@/app/actions/album";
+import { showToast } from "@/components/Toast";
 
 type Entry = {
     id: string;
@@ -34,6 +35,7 @@ export default function MyActivitiesModal({
 
             if (result.error) {
                 console.error("Error fetching entries:", result.error);
+                showToast("Impossible de charger vos entrées", "error");
                 setEntries([]);
                 setUserProfile(null);
                 return;
@@ -43,6 +45,7 @@ export default function MyActivitiesModal({
             setUserProfile(result.profile || null);
         } catch (err) {
             console.error("Error loading my activities:", err);
+            showToast("Impossible de charger vos activités", "error");
             setEntries([]);
             setUserProfile(null);
         } finally {

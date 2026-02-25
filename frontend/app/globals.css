@@ -109,6 +109,11 @@ h6 { font-size: 14px; }
   color: var(--wf-accent);
 }
 
+/* Prevent iOS auto-zoom on focus (triggers when font-size < 16px) */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
 /* Inputs — Charte §9 */
 .input {
   background: var(--wf-bg-secondary);

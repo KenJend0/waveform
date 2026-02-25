@@ -441,6 +441,7 @@ export type DiaryEntryUI = {
   rating: number | null;
   review_body: string | null;
   listened_at: string;
+  created_at: string;
   release_date: string | null;
   likes_count: number;
   comments_count: number;
@@ -476,6 +477,7 @@ export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
     `)
     .eq('user_id', userId)
     .order('listened_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(100);
 
   // Get likes count from the stats view
@@ -516,6 +518,7 @@ export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
       rating: e.rating,
       review_body: e.review_body,
       listened_at: e.listened_at,
+      created_at: e.created_at,
       release_date: album?.release_date || null,
       likes_count: likesMap.get(e.id) || 0,
       comments_count: commentsMap.get(e.id) || 0,
@@ -539,6 +542,7 @@ export async function getUserReviews(userId: string): Promise<DiaryEntryUI[]> {
       rating,
       review_body,
       listened_at,
+      created_at,
       albums (
         id,
         title,
@@ -554,6 +558,7 @@ export async function getUserReviews(userId: string): Promise<DiaryEntryUI[]> {
     .eq('user_id', userId)
     .not('review_body', 'is', null)
     .order('listened_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(100);
 
   if (error || !entries) {
@@ -594,6 +599,7 @@ export async function getUserReviews(userId: string): Promise<DiaryEntryUI[]> {
       rating: e.rating,
       review_body: e.review_body,
       listened_at: e.listened_at,
+      created_at: e.created_at,
       release_date: album?.release_date || null,
       likes_count: likesMap.get(e.id) || 0,
       comments_count: commentsMap.get(e.id) || 0,

@@ -31,8 +31,10 @@ export default function DiaryList({ entries, isMe }: Props) {
   // Sort entries based on selected option
   displayedEntries = [...displayedEntries].sort((a, b) => {
     switch (sortBy) {
-      case "date_listened":
-        return new Date(b.listened_at).getTime() - new Date(a.listened_at).getTime();
+      case "date_listened": {
+        const diff = new Date(b.listened_at).getTime() - new Date(a.listened_at).getTime();
+        return diff !== 0 ? diff : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
       case "release_date":
         const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
         const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;

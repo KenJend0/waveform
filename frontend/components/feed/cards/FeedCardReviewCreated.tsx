@@ -8,6 +8,7 @@ import { FeedEvent } from '@/app/actions/feed';
 import { toggleDiaryLike } from '@/app/actions/diary';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
+import { showToast } from '@/components/Toast';
 
 interface FeedCardReviewCreatedProps {
   event: FeedEvent & { type: 'REVIEW_CREATED' };
@@ -36,6 +37,7 @@ export default function FeedCardReviewCreated({
       setLikesCount(newCount);
     } catch (err) {
       console.error('Like error:', err);
+      showToast("Impossible d'aimer cette revue", "error");
     } finally {
       setLiking(false);
     }

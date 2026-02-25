@@ -5,7 +5,7 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/server';
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{2,32}$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,32}$/;
 
 /**
  * Ensures a user profile exists in the database
@@ -181,6 +181,53 @@ export async function updateProfileSettings(input: {
   revalidatePath('/settings');
 
   return { ok: true };
+}
+
+/**
+ * Sets the username during onboarding without consuming the one-time username change right.
+ * Only works if the user still has the auto-generated UUID-based username.
+ */
+export async function setOnboardingUsername(newUsername: string) {
+  const user = await getAuthUser();
+  if (!user) return { ok: false, error: 'not_authenticated' };
+
+  const trimmed = newUsername.trim();
+  if (!USERNAME_REGEX.test(trimmed)) return { ok: false, error: 'invalid_username' };
+
+  const supabase = await createSupabaseServer();
+
+  // Only allowed if still on the auto-generated username
+  const { data: current } = await supabase
+    .from('profiles')
+    .select('username, username_changed')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if ((current as any)?.username_changed) {
+    return { ok: false, error: 'already_onboarded' };
+  }
+
+  // Check availability
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', trimmed)
+    .neq('id', user.id)
+    .maybeSingle();
+
+  if (existing) return { ok: false, error: 'username_taken' };
+
+  // Set username but do NOT set username_changed — preserves the user's one-time change right
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ username: trimmed })
+    .eq('id', user.id);
+
+  if (updateError) return { ok: false, error: 'An error occurred' };
+
+  // No revalidatePath here — would trigger a server component re-render during the onboarding
+  // flow, causing the page to redirect to /feed before the user finishes.
+  return { ok: true, username: trimmed };
 }
 
 export async function checkUsernameAvailability(username: string) {

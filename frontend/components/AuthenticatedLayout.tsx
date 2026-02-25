@@ -6,8 +6,11 @@ import { useAuth } from '@/lib/AuthContext';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 
-// Pages publiques qui ne nÃ©cessitent pas d'authentification
+// Pages publiques qui ne nécessitent pas d'authentification
 const PUBLIC_PATHS = ['/auth', '/search', '/albums', '/artists', '/explore', '/legal', '/faq'];
+
+// Pages où la navbar est masquée même pour les utilisateurs connectés
+const NO_NAV_PATHS = ['/onboarding'];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === '/') return true;
@@ -52,11 +55,13 @@ export default function AuthenticatedLayout({ children }: Props) {
     return null;
   }
 
+  const hideNav = NO_NAV_PATHS.some(path => pathname.startsWith(path));
+
   return (
     <>
-      {user && <Header />}
+      {user && !hideNav && <Header />}
       <main>{children}</main>
-      {user && <BottomNav />}
+      {user && !hideNav && <BottomNav />}
     </>
   );
 }

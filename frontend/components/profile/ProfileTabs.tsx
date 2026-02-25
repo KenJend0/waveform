@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import ReviewsList from "./ReviewsList";
 import DiaryList from "./DiaryList";
 import SavedTracks from "./SavedTracks";
@@ -14,7 +15,16 @@ type Props = {
 };
 
 export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) {
-  const [activeTab, setActiveTab] = useState<"diary" | "reviews" | "saved">("diary");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "saved" && isMe ? "saved" : "diary";
+  const [activeTab, setActiveTab] = useState<"diary" | "reviews" | "saved">(initialTab);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialTab !== "diary") {
+      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   type TabId = "diary" | "reviews" | "saved";
 
@@ -30,7 +40,7 @@ export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) 
   return (
     <div className="max-w-page mx-auto px-4 sm:px-6 pb-28">
       {/* Tabs Navigation */}
-      <div className="flex gap-4 mb-6">
+      <div ref={tabsRef} className="flex gap-4 mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}

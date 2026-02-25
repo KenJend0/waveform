@@ -46,6 +46,8 @@ export default function ProfileSettings() {
     const [showCropModal, setShowCropModal] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [confirmDeleteAvatar, setConfirmDeleteAvatar] = useState(false);
+    // Max avatar upload size (bytes) — 3MB
+    const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -87,6 +89,13 @@ export default function ProfileSettings() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (file.size > MAX_AVATAR_BYTES) {
+            showToast("Image trop lourde — taille max 3MB", "error");
+            // clear the input value to allow re-selecting same file if needed
+            e.currentTarget.value = "";
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (event) => {
             setSelectedImage(event.target?.result as string);
@@ -98,6 +107,11 @@ export default function ProfileSettings() {
     const handleCropComplete = async (croppedBlob: Blob) => {
         setShowCropModal(false);
         setSelectedImage(null);
+
+        if (croppedBlob.size > MAX_AVATAR_BYTES) {
+            showToast("Image recadrée trop lourde — taille max 3MB", "error");
+            return;
+        }
 
         const previewUrl = URL.createObjectURL(croppedBlob);
         setAvatarPreview(previewUrl);

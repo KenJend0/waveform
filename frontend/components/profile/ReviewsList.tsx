@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Heart, MessageCircle } from "lucide-react";
 import type { DiaryEntryUI } from "@/app/actions/diary";
 import { toggleDiaryLike } from "@/app/actions/diary";
+import { showToast } from "@/components/Toast";
 
 type SortOption = "date_listened" | "release_date" | "personal_rating";
 
@@ -51,6 +52,7 @@ export default function ReviewsList({ reviews }: Props) {
       setLikesState((prev) => ({ ...prev, [entryId]: { ...prev[entryId], isLiked: newLiked, likesCount: newCount, liking: false } }));
     } catch (err) {
       console.error('Like error:', err);
+      showToast("Impossible d'aimer la revue", "error");
       setLikesState((prev) => ({ ...prev, [entryId]: { ...prev[entryId], liking: false } }));
     }
   };
@@ -61,8 +63,10 @@ export default function ReviewsList({ reviews }: Props) {
   // Sort reviews based on selected option
   const sortedReviews = [...reviews].sort((a, b) => {
     switch (sortBy) {
-      case "date_listened":
-        return new Date(b.listened_at).getTime() - new Date(a.listened_at).getTime();
+      case "date_listened": {
+        const diff = new Date(b.listened_at).getTime() - new Date(a.listened_at).getTime();
+        return diff !== 0 ? diff : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
       case "release_date":
         const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
         const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;

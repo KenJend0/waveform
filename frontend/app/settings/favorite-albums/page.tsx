@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import SearchAlbumModal from "@/components/profile/SearchAlbumModal";
 import { useAuth } from "@/lib/AuthContext";
 import BackButton from "@/components/BackButton";
+import { showToast } from "@/components/Toast";
 
 type Album = {
   id: string;
@@ -97,6 +98,7 @@ export default function EditFavoriteAlbumsPage() {
       }
     } catch (e) {
       console.error("Error saving favorite albums:", e);
+      showToast("Impossible d'enregistrer la sélection", "error");
     } finally {
       setSaving(false);
     }

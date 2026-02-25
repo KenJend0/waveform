@@ -3,6 +3,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'coverartarchive.org' },
       { protocol: 'https', hostname: 'archive.org' },
+      { protocol: 'https', hostname: '**.archive.org' },
       { protocol: 'https', hostname: 'is1-ssl.mzstatic.com' },
       { protocol: 'https', hostname: 'lastfm.freetls.fastly.net' },
       { protocol: 'https', hostname: 'i.scdn.co' },
@@ -30,7 +31,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://coverartarchive.org https://archive.org https://is1-ssl.mzstatic.com https://lastfm.freetls.fastly.net https://i.scdn.co https://lh3.googleusercontent.com https://res.cloudinary.com https://aypyrwqghxkgehibkfob.supabase.co https://api.dicebear.com https://commons.wikimedia.org https://upload.wikimedia.org",
+              "img-src 'self' data: blob: https://coverartarchive.org https://archive.org https://*.archive.org https://*.us.archive.org https://is1-ssl.mzstatic.com https://lastfm.freetls.fastly.net https://i.scdn.co https://lh3.googleusercontent.com https://res.cloudinary.com https://aypyrwqghxkgehibkfob.supabase.co https://api.dicebear.com https://commons.wikimedia.org https://upload.wikimedia.org",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://musicbrainz.org https://coverartarchive.org https://en.wikipedia.org https://fr.wikipedia.org https://de.wikipedia.org https://es.wikipedia.org https://it.wikipedia.org https://ja.wikipedia.org https://pt.wikipedia.org https://www.wikidata.org https://query.wikidata.org https://commons.wikimedia.org",
               "frame-ancestors 'none'",
               "base-uri 'self'",

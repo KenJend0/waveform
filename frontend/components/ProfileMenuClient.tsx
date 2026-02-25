@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
+import { showToast } from "@/components/Toast";
 
 export default function ProfileMenuClient() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +36,7 @@ export default function ProfileMenuClient() {
       router.refresh();
     } catch (e) {
       console.error("Logout error:", e);
+      showToast("Erreur lors de la déconnexion", "error");
     } finally {
       setIsLoggingOut(false);
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAlbumReviewsPreview } from "@/app/actions/diary";
+import { showToast } from "@/components/Toast";
 
 type Review = {
     id: string;
@@ -26,6 +27,7 @@ export default function Reviews({ albumId }: { albumId: string }) {
                 setItems(entries);
             } catch (err) {
                 console.error("Error loading reviews:", err);
+                showToast("Impossible de charger les critiques", "error");
                 setItems([]);
             } finally {
                 setLoading(false);

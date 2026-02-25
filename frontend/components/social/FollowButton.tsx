@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollow } from "@/app/actions/social";
+import { showToast } from "@/components/Toast";
 
 interface FollowButtonProps {
   userId: string;
   initialIsFollowing: boolean;
+  skipRefresh?: boolean;
 }
 
 export default function FollowButton({
   userId,
   initialIsFollowing,
+  skipRefresh = false,
 }: FollowButtonProps) {
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
@@ -24,10 +27,11 @@ export default function FollowButton({
 
       if (result.success && typeof result.following === "boolean") {
         setIsFollowing(result.following);
-        router.refresh();
+        if (!skipRefresh) router.refresh();
       }
     } catch (error) {
       console.error("Error toggling follow:", error);
+      showToast("Impossible de mettre à jour l'abonnement", "error");
     } finally {
       setIsLoading(false);
     }

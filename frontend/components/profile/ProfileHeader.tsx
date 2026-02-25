@@ -6,6 +6,7 @@ import { Menu, LogOut, Settings, Heart, FileText } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
+import { showToast } from "@/components/Toast";
 
 type Props = {
   user: {
@@ -39,6 +40,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
       router.refresh();
     } catch (e) {
       console.error("Logout error:", e);
+      showToast("Erreur lors de la déconnexion", "error");
     }
   };
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { getAlbumReviewsPage } from "@/app/actions/diary";
+import { showToast } from "@/components/Toast";
 
 type Review = {
     id: string;
@@ -60,8 +61,9 @@ export default function ReviewsModal({
             setOffset(startOffset + result.items.length);
             setItems((prev) => (replace ? result.items : [...prev, ...result.items]));
         } catch (err) {
-            console.error("Error loading reviews:", err);
-            if (startOffset === 0) setItems([]);
+                console.error("Error loading reviews:", err);
+                showToast("Impossible de charger les critiques", "error");
+                if (startOffset === 0) setItems([]);
         } finally {
             setLoading(false);
         }

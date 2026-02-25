@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { upsertDiaryEntry } from "@/app/actions/diary";
 import { toggleSaveAlbum } from "@/app/actions/saved-albums";
 import StarRating from "@/components/StarRating";
+import { showToast } from "@/components/Toast";
 
 type AddToDiaryButtonProps = {
   albumId: string;
@@ -78,7 +79,8 @@ export default function AddToDiaryButton({
           try {
             await toggleSaveAlbum(albumId);
           } catch (err) {
-            console.error("Error removing from saved albums:", err);
+                console.error("Error removing from saved albums:", err);
+                showToast("Impossible de retirer l'album des sauvegardes", "error");
           }
         }
 
@@ -100,6 +102,7 @@ export default function AddToDiaryButton({
       }
     } catch (err) {
       setStatus(`Erreur : ${String(err)}`);
+      showToast("Erreur lors de l'enregistrement", "error");
     } finally {
       setLoading(false);
       setIsSubmitting(false);

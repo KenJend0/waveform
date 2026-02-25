@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { showToast } from "@/components/Toast";
 
 export type FavoriteAlbum = {
   id: string;
@@ -35,6 +36,7 @@ export default function Top3Albums({ userId, isMe, initialAlbums }: Props) {
         }
       } catch (e) {
         console.error("Error loading favorite albums:", e);
+        showToast("Impossible de charger les albums favoris", "error");
       } finally {
         setLoading(false);
       }

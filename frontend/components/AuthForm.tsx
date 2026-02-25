@@ -70,7 +70,7 @@ export default function AuthForm() {
 
         if (data.user && data.session) {
           showToast("Connexion réussie !", "success");
-          router.push("/feed");
+          router.push("/onboarding");
         }
       } else if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -94,7 +94,11 @@ export default function AuthForm() {
           throw new Error(errorMessage);
         }
 
-        if (data.user) {
+        if (data.user && data.session) {
+          // Email confirmation disabled — user is immediately logged in
+          router.push("/onboarding");
+        } else if (data.user) {
+          // Email confirmation enabled — user needs to confirm
           showToast(
             "Compte créé ! Vérifie ta boîte mail et clique sur le lien pour activer ton compte.",
             "success"

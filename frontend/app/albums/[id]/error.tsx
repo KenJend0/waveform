@@ -1,17 +1,25 @@
-﻿'use client';
+"use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
-export default function Error({ error }: { error: Error }) {
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+    useEffect(() => { console.error(error); }, [error]);
+
     return (
-        <main className="max-w-page mx-auto px-4 py-8 pb-24">
-            <p className="text-[14px] font-medium text-[#C86C6C]">Impossible de charger l'album.</p>
-            <pre className="mt-2 p-3 bg-background-secondary border border-border-divider rounded-[8px] text-[12px] text-text-secondary overflow-auto">
-                {error.message}
-            </pre>
-            <Link href="/" className="inline-block mt-4 text-[14px] text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150">
-                Retour à l'accueil
-            </Link>
+        <main className="min-h-[60dvh] flex flex-col items-center justify-center p-6 text-center">
+            <h1 className="text-h2 text-text-primary mb-2">Impossible de charger cet album</h1>
+            <p className="text-[14px] text-text-secondary max-w-xs mb-8">
+                Une erreur est survenue. Réessaie ou reviens plus tard.
+            </p>
+            <div className="flex items-center gap-3">
+                <button onClick={reset} className="px-6 py-2.5 bg-[#1C1C1C] text-[#F5F3EF] text-[14px] font-medium rounded-[8px] hover:opacity-85 transition-opacity">
+                    Réessayer
+                </button>
+                <Link href="/feed" className="px-6 py-2.5 border border-border text-text-secondary text-[14px] font-medium rounded-[8px] hover:border-[#8E6F5E] hover:text-[#8E6F5E] transition-colors duration-150">
+                    Retour au fil
+                </Link>
+            </div>
         </main>
     );
 }

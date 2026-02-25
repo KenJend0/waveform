@@ -14,13 +14,14 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash, type });
     if (!error) {
-      const redirectTo = type === 'recovery' ? '/auth/reset' : next;
+      const redirectTo = type === 'recovery' ? '/auth/reset' : type === 'signup' ? '/onboarding' : next;
       return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const redirectTo = type === 'recovery' ? '/auth/reset' : type === 'signup' ? '/onboarding' : next;
+      return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   }
 

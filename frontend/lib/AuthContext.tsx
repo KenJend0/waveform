@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from './supabase/client';
 import { AuthApiError, type User as SupabaseUser } from '@supabase/supabase-js';
 import { ensureProfile } from '@/app/actions/profile';
+import { showToast } from '@/components/Toast';
 
 type AuthContextType = {
   user: SupabaseUser | null;
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
         } else {
           console.error('Erreur lors de la vérification de la session:', error);
+          try { showToast("Erreur de session — vous avez été déconnecté", "error"); } catch {}
           setUser(null);
           setProfile(null);
         }
@@ -93,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
         } else {
           console.error('Erreur lors du changement d\'état de session:', error);
+          try { showToast("Erreur de session", "error"); } catch {}
         }
       } finally {
         setLoading(false);

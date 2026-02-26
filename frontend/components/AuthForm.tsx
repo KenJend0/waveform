@@ -118,7 +118,7 @@ export default function AuthForm() {
           return "";
         };
 
-        const base = getFrontendBase();
+        const base = getFrontendBase().replace(/\/$/, '');
         if (!base) {
           console.error('Missing NEXT_PUBLIC_FRONTEND_BASE and window.location.origin not available');
           showToast("Impossible d'envoyer l'email de réinitialisation pour l'instant.", "error");

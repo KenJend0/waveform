@@ -67,21 +67,21 @@ export default function ProfileMenuClient() {
             className="block px-4 py-3 text-meta text-text-primary hover:bg-background-tertiary transition-colors duration-150"
             onClick={() => setIsOpen(false)}
           >
-            ðŸ‘¤ Mon profil
+            🧑‍💼 Mon profil
           </Link>
           <Link
             href="/settings"
             className="block px-4 py-3 text-meta text-text-primary hover:bg-background-tertiary transition-colors duration-150"
             onClick={() => setIsOpen(false)}
           >
-            âš™ï¸ ParamÃ¨tres
+            ⚙️ Paramètres
           </Link>
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
             className="w-full text-left px-4 py-3 text-meta text-text-tertiary hover:text-[#C86C6C] hover:bg-background-tertiary transition-colors duration-150 disabled:opacity-50"
           >
-            {isLoggingOut ? "DÃ©connexion..." : "ðŸšª Se dÃ©connecter"}
+            {isLoggingOut ? "Déconnexion..." : "🔒 Se déconnecter"}
           </button>
         </div>
       )}

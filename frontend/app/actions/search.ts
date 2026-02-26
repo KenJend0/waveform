@@ -55,11 +55,11 @@ export async function searchInternal(
     );
   }
 
-  // Artists
+  // Artists — only those with at least one album (!inner join filters out empty artists)
   if (kind === "all" || kind === "artists") {
     const { data: artists } = await (supabase
       .from("artists")
-      .select("id, name, image_url") as any)
+      .select("id, name, image_url, albums!inner(id)") as any)
       .ilike("name", `%${escapedQuery}%`)
       .limit(5);
 

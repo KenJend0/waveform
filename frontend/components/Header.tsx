@@ -74,31 +74,7 @@ export default function Header() {
                     ))}
                 </nav>
 
-                {/* UTILISATEUR */}
-                <div className="flex items-center space-x-4">
-                    {loading ? (
-                        <div className="w-8 h-8 animate-pulse bg-background-secondary rounded-full" />
-                    ) : !user ? (
-                        <Link
-                            href="/auth"
-                            className="btn-secondary text-meta"
-                        >
-                            Se connecter
-                        </Link>
-                    ) : (
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full overflow-hidden border border-border bg-background-secondary">
-                                <UserAvatar userId={user.id} size={32} />
-                            </div>
-
-                            <span className="text-meta font-medium text-text-primary">
-                                {user.user_metadata?.display_name || user.email?.split('@')[0] || "User"}
-                            </span>
-
-                            <ProfileMenuClient />
-                        </div>
-                    )}
-                </div>
+            
             </header>
         )
     );

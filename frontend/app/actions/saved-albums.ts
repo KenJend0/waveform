@@ -1,6 +1,6 @@
 'use server';
 
-import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
+import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 
 export type SavedAlbumUI = {
   id: string;
@@ -20,7 +20,7 @@ export async function getUserSavedAlbums(
   userId: string,
   limit?: number
 ): Promise<SavedAlbumUI[]> {
-  const supabase = await createSupabaseServer();
+  const supabase = createSupabaseAdmin();
 
   let query = supabase
     .from('saved_albums')

@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "generate-favicon": "node scripts/generate-favicon.js",
     "backfill-durations": "node --env-file=.env.local scripts/backfill-track-durations.mjs",
+    "backfill-release-upgrade": "node --env-file=.env.local scripts/backfill-release-upgrade.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

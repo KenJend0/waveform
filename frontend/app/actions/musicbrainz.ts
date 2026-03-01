@@ -265,14 +265,21 @@ export async function searchMusicBrainzAlbums(query: string, limit = 30): Promis
 
     // Group by release-group to deduplicate (same album in different formats)
     const releaseGroupMap = new Map<string, any>();
-    
+
     for (const release of releases) {
       const rgId = release['release-group']?.id;
       if (!rgId) continue;
-      
-      // Keep the first (best) release for each group
-      if (!releaseGroupMap.has(rgId)) {
+
+      const existing = releaseGroupMap.get(rgId);
+      if (!existing) {
         releaseGroupMap.set(rgId, release);
+      } else {
+        // Prefer the most complete release (highest track count)
+        const existingCount = existing['track-count'] ?? 0;
+        const newCount = release['track-count'] ?? 0;
+        if (newCount > existingCount) {
+          releaseGroupMap.set(rgId, release);
+        }
       }
     }
 
@@ -726,14 +733,21 @@ export async function previewArtistFromMusicBrainz(mbid: string) {
 
     // Deduplicate releases by release-group
     const releaseGroupMap = new Map<string, any>();
-    
+
     for (const release of releases) {
       const rgId = release['release-group']?.id;
       if (!rgId) continue;
-      
-      // Keep the first (best) release for each group
-      if (!releaseGroupMap.has(rgId)) {
+
+      const existing = releaseGroupMap.get(rgId);
+      if (!existing) {
         releaseGroupMap.set(rgId, release);
+      } else {
+        // Prefer the most complete release (highest track count)
+        const existingCount = existing['track-count'] ?? 0;
+        const newCount = release['track-count'] ?? 0;
+        if (newCount > existingCount) {
+          releaseGroupMap.set(rgId, release);
+        }
       }
     }
 
@@ -805,12 +819,21 @@ export async function getArtistReleases(mbid: string): Promise<{
     const data: any = await response.json();
     const releases = data.releases || [];
 
-    // Deduplicate by release-group
+    // Deduplicate by release-group, preferring the most complete release (highest track count)
     const rgMap = new Map<string, any>();
     for (const r of releases) {
       const rgId = r['release-group']?.id;
-      if (rgId && !rgMap.has(rgId)) {
+      if (!rgId) continue;
+
+      const existing = rgMap.get(rgId);
+      if (!existing) {
         rgMap.set(rgId, r);
+      } else {
+        const existingCount = existing['track-count'] ?? 0;
+        const newCount = r['track-count'] ?? 0;
+        if (newCount > existingCount) {
+          rgMap.set(rgId, r);
+        }
       }
     }
 

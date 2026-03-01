@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const verified = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -14,28 +15,28 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Lire le code PKCE depuis les query params (flow @supabase/ssr v0.8+)
-    const code = new URLSearchParams(window.location.search).get('code');
+    if (verified.current) return;
+    verified.current = true;
 
-    if (!code) {
-      // Accès direct sans lien valide → redirection silencieuse vers login
+    const params = new URLSearchParams(window.location.search);
+    const token_hash = params.get('token_hash');
+    const type = params.get('type');
+
+    if (token_hash && type === 'recovery') {
+      supabase.auth
+        .verifyOtp({ token_hash, type: 'recovery' })
+        .then(({ error: verifyError }) => {
+          if (verifyError) {
+            setError('Lien invalide ou expiré. Demande un nouvel email de réinitialisation.');
+          } else {
+            setReady(true);
+          }
+        })
+        .finally(() => setLoading(false));
+    } else {
+      // Accès direct sans lien → redirection vers login
       router.replace('/auth?mode=login');
-      return;
     }
-
-    supabase.auth
-      .exchangeCodeForSession(code)
-      .then(({ error: exchangeError }) => {
-        if (exchangeError) {
-          setError('Lien invalide ou expiré. Demande un nouvel email de réinitialisation.');
-        } else {
-          setReady(true);
-        }
-      })
-      .catch(() => {
-        setError('Impossible de traiter le lien. Demande un nouvel email.');
-      })
-      .finally(() => setLoading(false));
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,6 +58,7 @@ export default function ResetPasswordPage() {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
       setSuccess('Mot de passe changé. Tu vas être redirigé vers la connexion.');
+      await supabase.auth.signOut();
       setTimeout(() => router.push('/auth?mode=login'), 1500);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la mise à jour du mot de passe');

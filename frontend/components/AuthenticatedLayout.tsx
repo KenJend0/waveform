@@ -10,7 +10,7 @@ import BottomNav from '@/components/BottomNav';
 const PUBLIC_PATHS = ['/auth', '/search', '/albums', '/artists', '/explore', '/legal', '/faq'];
 
 // Pages où la navbar est masquée même pour les utilisateurs connectés
-const NO_NAV_PATHS = ['/onboarding'];
+const NO_NAV_PATHS = ['/onboarding', '/auth/reset'];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === '/') return true;

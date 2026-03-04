@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, MessageCircle } from "lucide-react";
@@ -114,7 +115,28 @@ export default function PublicProfileTabs({
   isLoggedIn,
   favoriteAlbums,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("journal");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const resolveTab = (raw: string | null): Tab => {
+    if (raw === "revues" || raw === "ecouter") return raw;
+    return "journal";
+  };
+
+  const [tab, setTab] = useState<Tab>(() => resolveTab(searchParams.get("tab")));
+
+  const handleTabChange = (t: Tab) => {
+    setTab(t);
+    const params = new URLSearchParams(searchParams.toString());
+    if (t === "journal") {
+      params.delete("tab");
+    } else {
+      params.set("tab", t);
+    }
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+  };
   const [listenFilter, setListenFilter] = useState<ListenFilter>("all");
   const [savedFilter, setSavedFilter] = useState<SavedFilter>("all");
   const [ecoutesSort, setEcoutesSort] = useState<EcoutesSort>("date_listened");
@@ -233,7 +255,7 @@ export default function PublicProfileTabs({
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => handleTabChange(t.id)}
               className={`text-[14px] pb-3 transition-colors duration-150 border-b-2 -mb-px flex items-baseline gap-1.5 ${
                 tab === t.id
                   ? "text-text-primary border-[#1C1C1C]"
@@ -362,7 +384,7 @@ export default function PublicProfileTabs({
                       className="p-4 border border-border hover:border-[#8E6F5E] transition-colors duration-150 flex gap-4 bg-background-secondary rounded-[12px]"
                     >
                       {review.cover_url && (
-                        <Link href={`/albums/${review.album_id}`} className="flex-shrink-0">
+                        <Link href={`/diary/${review.id}`} className="flex-shrink-0">
                           <Image
                             src={review.cover_url}
                             alt={review.album_title}
@@ -374,7 +396,7 @@ export default function PublicProfileTabs({
                       )}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div className="mb-3">
-                          <Link href={`/albums/${review.album_id}`} className="hover:text-[#8E6F5E] transition-colors duration-150 block">
+                          <Link href={`/diary/${review.id}`} className="hover:text-[#8E6F5E] transition-colors duration-150 block">
                             <h3 className="font-medium text-[14px] text-text-primary truncate">{review.album_title}</h3>
                           </Link>
                           <Link href={`/artists/${review.artist_id}`} className="text-text-tertiary text-[12px] hover:text-[#8E6F5E] transition-colors duration-150">

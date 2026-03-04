@@ -166,9 +166,14 @@ export default function EditFavoriteAlbumsPage() {
                 {/* Remove button */}
                 <button
                   onClick={() => handleRemoveAlbum(album.position)}
-                  className="absolute top-2 right-2 p-1.5 bg-[#1C1C1C]/70 hover:bg-[#1C1C1C]/90 rounded-[8px] transition-opacity duration-150 opacity-0 group-hover:opacity-100 z-10"
+                  className="absolute top-1.5 right-1.5 p-0.5 transition-opacity duration-150 hover:opacity-50 z-10"
                 >
-                  <X size={14} className="text-[#F5F3EF]" />
+                  <X
+                    size={11}
+                    strokeWidth={2}
+                    className="text-[#1C1C1C]"
+                    style={{ filter: "drop-shadow(0 0 2px #ECE8E1) drop-shadow(0 0 2px #ECE8E1)" }}
+                  />
                 </button>
                 {/* Replace overlay */}
                 <button

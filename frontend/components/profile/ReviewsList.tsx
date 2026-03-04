@@ -120,7 +120,7 @@ export default function ReviewsList({ reviews }: Props) {
         >
           {/* Album Cover - Left side */}
           {review.cover_url && (
-            <Link href={`/albums/${review.album_id}`} className="flex-shrink-0">
+            <Link href={`/diary/${review.id}`} className="flex-shrink-0">
               <Image
                 src={review.cover_url}
                 alt={review.album_title}
@@ -135,7 +135,7 @@ export default function ReviewsList({ reviews }: Props) {
           <div className="flex-1 min-w-0 flex flex-col justify-between">
             {/* Info */}
             <div className="mb-3">
-              <Link href={`/albums/${review.album_id}`} className="hover:text-[#8E6F5E] transition-colors duration-150 block">
+              <Link href={`/diary/${review.id}`} className="hover:text-[#8E6F5E] transition-colors duration-150 block">
                 <h3 className="font-medium text-[14px] text-text-primary truncate">{review.album_title}</h3>
               </Link>
               <Link href={`/artists/${review.artist_id}`} className="text-text-tertiary text-[12px] hover:text-[#8E6F5E] transition-colors duration-150">

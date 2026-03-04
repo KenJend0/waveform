@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ReviewsList from "./ReviewsList";
 import DiaryList from "./DiaryList";
 import SavedTracks from "./SavedTracks";
@@ -14,10 +14,20 @@ type Props = {
   savedAlbums: SavedAlbumUI[];
 };
 
+type TabId = "diary" | "reviews" | "saved";
+
+function resolveInitialTab(tab: string | null, isMe: boolean): TabId {
+  if (tab === "reviews") return "reviews";
+  if (tab === "saved" && isMe) return "saved";
+  return "diary";
+}
+
 export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) {
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "saved" && isMe ? "saved" : "diary";
-  const [activeTab, setActiveTab] = useState<"diary" | "reviews" | "saved">(initialTab);
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialTab = resolveInitialTab(searchParams.get("tab"), isMe);
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +36,17 @@ export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) 
     }
   }, []);
 
-  type TabId = "diary" | "reviews" | "saved";
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "diary") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+  };
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "diary", label: isMe ? "Mon journal" : "Journal" },
@@ -44,7 +64,7 @@ export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) 
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`text-[14px] pb-3 transition-colors duration-150 border-b-2 ${
               activeTab === tab.id
                 ? "text-text-primary border-[#1C1C1C]"

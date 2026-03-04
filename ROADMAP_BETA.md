@@ -46,13 +46,13 @@ Ce qui doit être fait *avant* de dire "V1". Must-haves, pas des features.
 Bugs et frictions identifiés, à régler avant de croître.
 
 ### Bugs
-- [ ] **Like optimistic UI** — sur le feed, liker nécessite un refresh pour voir le cœur s'activer ; doit être instantané côté client
-- [ ] **Liens streaming** — implémentés dans `musicbrainz.ts` (`getAlbumStreamingLinks`) mais pas affichés dans l'UI des pages album → brancher sur `AlbumHero`
+- [x] **Like optimistic UI** — sur le feed, liker est maintenant instantané coté client
+- [x] **SearchOverlay** - sur /explore, la barre de recherche fonctionne correctement
 
 ### UX & interactions
-- [ ] **Bottom sheet pour reviews et commentaires** — remplacer les modals centrées par un panneau qui monte du bas et occupe la moitié inférieure de l'écran (style iOS / Letterboxd)
-- [ ] **Redesign du like** — remplacer "❤️ X" par "J'aime · X" ; au clic sur le compteur, ouvrir la liste des gens qui ont liké (bottom sheet)
-- [ ] **Supprimer les pages inutiles** — `/diary` (redondant avec `/me`) et `/import` (remplacé par l'auto-import), les dépages correspondantes et les liens dans la nav
+- [x] **Bottom sheet pour reviews et commentaires** — remplacer les modals centrées par un panneau qui monte du bas et occupe la moitié inférieure de l'écran (style iOS / Letterboxd)
+- [x] **Redesign du like** — remplacer "❤️ X" par "J'aime · X" ; au clic sur le compteur, ouvrir la liste des gens qui ont liké (bottom sheet)
+- [x] **Supprimer les pages inutiles** — `/diary/page.tsx` et `/import/page.tsx` supprimées (remplacées par `/add` et auto-import), les liens dans le middleware mis à jour
 
 ### Layout desktop (version PC)
 - [ ] Refonte du layout pour les écrans larges : sidebar gauche (nav), colonne centrale (contenu), sidebar droite (contexte / widgets) — garder le design mobile-first intact
@@ -141,6 +141,7 @@ Une fois que l'app est stable et qu'il y a des utilisateurs.
 
 Une fois qu'il y a assez de données.
 
+- [ ] **Recherche par titre de chanson** — si l'utilisateur tape "Come Together", remonter l'album parent ("Abbey Road") via l'endpoint `/recording` de MusicBrainz, puis lookup release-group ; nécessite 2 appels MB + déduplication avec les résultats album classiques
 - [ ] **Recommandations ML** — matrix factorization (SVD/ALS) ou user-based CF sur ratings + follows + saves
 - [ ] **Listes thématiques UGC** — *"Best of 2024"*, *"Albums pluvieux"* (à la Letterboxd) — créer, partager, commenter
 - [ ] **Stats avancées** — graphes par année / genre / artiste, distribution des notes, tendances temporelles

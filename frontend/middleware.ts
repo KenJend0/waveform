@@ -7,7 +7,6 @@ import { Redis } from "@upstash/redis";
 const AUTH_MATCHER = [
   "/diary/:path*",
   "/settings/:path*",
-  "/import/:path*",
   "/add/:path*",
   "/me/:path*",
   "/feed/:path*",
@@ -97,7 +96,6 @@ export const config = {
     "/api/:path*",
     "/diary/:path*",
     "/settings/:path*",
-    "/import/:path*",
     "/add/:path*",
     "/me/:path*",
     "/feed/:path*",

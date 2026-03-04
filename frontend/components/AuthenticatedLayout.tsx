@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import { BottomSheetProvider } from '@/lib/BottomSheetContext';
 
 // Pages publiques qui ne nécessitent pas d'authentification
 const PUBLIC_PATHS = ['/auth', '/search', '/albums', '/artists', '/explore', '/legal', '/faq'];
@@ -58,11 +59,11 @@ export default function AuthenticatedLayout({ children }: Props) {
   const hideNav = NO_NAV_PATHS.some(path => pathname.startsWith(path));
 
   return (
-    <>
+    <BottomSheetProvider>
       {user && !hideNav && <Header />}
       <main>{children}</main>
       {user && !hideNav && <BottomNav />}
-    </>
+    </BottomSheetProvider>
   );
 }
 

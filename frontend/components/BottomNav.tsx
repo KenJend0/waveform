@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
+import { useBottomSheet } from "@/lib/BottomSheetContext";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import HomeIcon from "@/components/icons/HomeIcon";
 import SearchIcon from "@/components/icons/SearchIcon";
@@ -12,6 +13,9 @@ import ProfileIcon from "@/components/icons/ProfileIcon";
 export default function BottomNav() {
     const pathname = usePathname();
     const { user: authUser, profile } = useAuth();
+    const { openCount } = useBottomSheet();
+
+    if (openCount > 0) return null;
 
     const isActive = (route: string) => {
         if (route === "/feed") return pathname === "/feed";

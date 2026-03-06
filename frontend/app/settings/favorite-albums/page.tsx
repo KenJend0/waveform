@@ -35,17 +35,21 @@ export default function EditFavoriteAlbumsPage() {
         const res = await fetch("/api/me/favorite-albums");
         if (res.ok) {
           const data = await res.json();
-          const sorted = data.albums || [];
-          while (sorted.length < 3) {
-            sorted.push({
-              id: `empty-${sorted.length + 1}`,
+          const fetched: Album[] = data.albums || [];
+          // Build a map of occupied positions
+          const byPosition = new Map<number, Album>();
+          fetched.forEach((a: Album) => byPosition.set(a.position, a));
+          // Fill all 3 positions, adding empty slots for missing ones
+          const filled: Album[] = [1, 2, 3].map((pos) =>
+            byPosition.get(pos) || {
+              id: `empty-${pos}`,
               title: "",
               artist_name: "",
-              position: sorted.length + 1,
+              position: pos,
               empty: true,
-            });
-          }
-          setAlbums(sorted);
+            }
+          );
+          setAlbums(filled);
         } else {
           setAlbums(emptySlots());
         }
@@ -163,9 +167,14 @@ export default function EditFavoriteAlbumsPage() {
                     <div className="w-full h-full bg-background-tertiary" />
                   )}
                 </div>
-                {/* Remove button */}
+                {/* Replace overlay */}
                 <button
-                  onClick={() => handleRemoveAlbum(album.position)}
+                  onClick={() => setModalOpen(album.position)}
+                  className="absolute inset-0 rounded-[10px] bg-transparent hover:bg-[#1C1C1C]/10 transition-colors duration-150 cursor-pointer z-0"
+                />
+                {/* Remove button — above overlay */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleRemoveAlbum(album.position); }}
                   className="absolute top-1.5 right-1.5 p-0.5 transition-opacity duration-150 hover:opacity-50 z-10"
                 >
                   <X
@@ -175,11 +184,6 @@ export default function EditFavoriteAlbumsPage() {
                     style={{ filter: "drop-shadow(0 0 2px #ECE8E1) drop-shadow(0 0 2px #ECE8E1)" }}
                   />
                 </button>
-                {/* Replace overlay */}
-                <button
-                  onClick={() => setModalOpen(album.position)}
-                  className="absolute inset-0 rounded-[10px] bg-transparent hover:bg-[#1C1C1C]/10 transition-colors duration-150 cursor-pointer"
-                />
               </div>
             )}
 

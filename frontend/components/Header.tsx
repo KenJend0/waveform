@@ -20,6 +20,7 @@ export default function Header() {
     const navItems = [
         { href: "/feed", label: "Feed" },
         { href: "/explore", label: "Explore" },
+        { href: "/add", label: "Ajouter" },
         { href: "/me", label: "Profile" },
     ];
 
@@ -31,17 +32,18 @@ export default function Header() {
     return (
         user && (
             <header
-                className="hidden md:flex items-center justify-between px-8 py-3 border-b border-border sticky top-0 z-50 bg-background"
+                className="hidden md:flex items-center px-8 py-3 border-b border-border sticky top-0 z-50 bg-background"
             >
+                {/* LOGO — à gauche */}
                 <Link href="/" className="flex items-center space-x-2">
                     <span className="text-h2 font-medium tracking-tight text-text-primary">
                         Waveform
                     </span>
                 </Link>
 
-                {/* NAVIGATION */}
-                <nav className="flex space-x-6 items-center">
-                    {navItems.slice(0, 2).map((item) => (
+                {/* NAVIGATION — centrée */}
+                <nav className="flex-1 flex justify-center space-x-6 items-center">
+                    {navItems.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
@@ -54,27 +56,10 @@ export default function Header() {
                             {item.label}
                         </Link>
                     ))}
-
-                    {user && !loading && (
-                        <AddMenuClient />
-                    )}
-
-                    {navItems.slice(2).map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`text-meta font-medium px-3 py-2 transition-colors duration-150 ${
-                                isActive(item.href)
-                                    ? "text-text-primary"
-                                    : "text-text-secondary hover:text-text-primary"
-                            }`}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
                 </nav>
 
-            
+                {/* MENU PROFIL — à droite */}
+                <ProfileMenuClient />
             </header>
         )
     );

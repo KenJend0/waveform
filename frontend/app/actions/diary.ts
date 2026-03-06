@@ -676,6 +676,7 @@ export type AlbumReview = {
   created_at: string;
   display_name: string | null;
   username: string | null;
+  avatar_url: string | null;
 };
 
 export type AlbumReviewsTab = 'all' | 'friends' | 'my';
@@ -703,7 +704,7 @@ export async function getAlbumReviewsPreview(
   const userIds = [...new Set(rows.map((row: any) => row.user_id))];
   const { data: profilesData } = await supabase
     .from('profiles')
-    .select('id, display_name, username')
+    .select('id, display_name, username, avatar_url')
     .in('id', userIds);
 
   const profilesMap = new Map(
@@ -718,6 +719,7 @@ export async function getAlbumReviewsPreview(
     created_at: row.created_at,
     display_name: profilesMap.get(row.user_id)?.display_name || null,
     username: profilesMap.get(row.user_id)?.username || null,
+    avatar_url: profilesMap.get(row.user_id)?.avatar_url || null,
   }));
 }
 

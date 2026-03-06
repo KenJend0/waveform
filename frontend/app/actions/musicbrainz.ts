@@ -2,6 +2,7 @@
 
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import type { SearchResultUI } from './search';
+import { enrichAlbumMetadata } from './metadata';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
@@ -778,6 +779,9 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       await rollbackImport();
       return { success: false, error: externalError.message };
     }
+
+    // Enrichissement metadata (genres + description) — best-effort, n'impacte pas l'import
+    await enrichAlbumMetadata(newAlbumId, mbid, preview.title, preview.artist);
 
     return { success: true, albumId: newAlbumId, imported: true };
   } catch (err) {

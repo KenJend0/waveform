@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useState, useTransition } from "react";
 import { Heart } from "lucide-react";
 import { toggleDiaryLike } from "@/app/actions/diary";
 import { showToast } from "@/components/Toast";
@@ -11,22 +11,24 @@ export default function LikeButton({
     const [liked, setLiked] = useState(initialLiked);
     const [count, setCount] = useState(initialCount);
     const [isPending, startTransition] = useTransition();
-    const [optimisticLiked, setOptimisticLiked] = useOptimistic(liked);
-    const [optimisticCount, setOptimisticCount] = useOptimistic(count);
 
     const toggleLike = () => {
         if (isPending) return;
         const newLiked = !liked;
         const newCount = newLiked ? count + 1 : Math.max(0, count - 1);
 
+        // Mise à jour immédiate (hors transition = haute priorité, commit avant le prochain frame)
+        setLiked(newLiked);
+        setCount(newCount);
+
+        // Server action en arrière-plan (basse priorité, non bloquant)
         startTransition(async () => {
-            setOptimisticLiked(newLiked);
-            setOptimisticCount(newCount);
             try {
                 await toggleDiaryLike(entryId);
-                setLiked(newLiked);
-                setCount(newCount);
             } catch {
+                // Revert on error
+                setLiked(!newLiked);
+                setCount(count);
                 showToast("Erreur lors de la mise à jour", "error");
             }
         });
@@ -41,11 +43,11 @@ export default function LikeButton({
             >
                 <Heart
                     size={20}
-                    fill={optimisticLiked ? "currentColor" : "none"}
-                    className={optimisticLiked ? "text-[#8E6F5E]" : ""}
+                    fill={liked ? "currentColor" : "none"}
+                    className={liked ? "text-[#8E6F5E]" : ""}
                 />
             </button>
-            <span className="text-meta text-text-secondary">{optimisticCount}</span>
+            <span className="text-meta text-text-secondary">{count}</span>
         </div>
     );
 }

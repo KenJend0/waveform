@@ -47,9 +47,9 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
   return (
     <div className="bg-background-secondary border-b border-border-divider">
       <div className="max-w-page mx-auto px-4 sm:px-6 py-8 relative">
-        {/* Hamburger Menu — top right */}
+        {/* Hamburger Menu — top right, hidden on desktop (already in Header) */}
         {user.is_me && (
-          <div className="absolute top-4 right-4 z-50">
+          <div className="absolute top-4 right-4 z-50 md:hidden">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="p-2 rounded-[8px] hover:bg-background-tertiary transition-colors duration-150"

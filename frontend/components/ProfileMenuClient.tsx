@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Menu, Settings, Heart, FileText, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { showToast } from "@/components/Toast";
 
@@ -44,44 +45,49 @@ export default function ProfileMenuClient() {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Menu Button */}
+      {/* Menu Button — même icône que ProfileHeader /me */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-[8px] hover:bg-background-tertiary transition-colors duration-150 text-text-secondary hover:text-text-primary"
+        className="p-2 rounded-[8px] hover:bg-background-tertiary transition-colors duration-150"
         title="Menu profil"
       >
-        <svg
-          className="w-5 h-5"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M10.5 1.5H3.75A2.25 2.25 0 001.5 3.75v12.5A2.25 2.25 0 003.75 18.5h12.5a2.25 2.25 0 002.25-2.25V9.5m-15-4h0m4 0h0m4 0h0M5.5 14h9" />
-        </svg>
+        <Menu size={20} className="text-text-secondary" />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu — même style que ProfileHeader /me */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-[8px] overflow-hidden z-50">
-          <Link
-            href="/settings/profile"
-            className="block px-4 py-3 text-meta text-text-primary hover:bg-background-tertiary transition-colors duration-150"
-            onClick={() => setIsOpen(false)}
-          >
-            🧑‍💼 Mon profil
-          </Link>
+        <div className="absolute right-0 mt-2 bg-background border border-border rounded-[12px] overflow-hidden min-w-48 z-50 shadow-sm">
           <Link
             href="/settings"
-            className="block px-4 py-3 text-meta text-text-primary hover:bg-background-tertiary transition-colors duration-150"
             onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
           >
-            ⚙️ Paramètres
+            <Settings size={16} />
+            Éditer profil
+          </Link>
+          <Link
+            href="/settings/favorite-albums"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+          >
+            <Heart size={16} />
+            Albums favoris
+          </Link>
+          <Link
+            href="/legal"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+          >
+            <FileText size={16} />
+            Légal & infos
           </Link>
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="w-full text-left px-4 py-3 text-meta text-text-tertiary hover:text-[#C86C6C] hover:bg-background-tertiary transition-colors duration-150 disabled:opacity-50"
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] border-t border-border-divider text-[#C86C6C] text-left disabled:opacity-50"
           >
-            {isLoggingOut ? "Déconnexion..." : "🔒 Se déconnecter"}
+            <LogOut size={16} />
+            {isLoggingOut ? "Déconnexion..." : "Se déconnecter"}
           </button>
         </div>
       )}

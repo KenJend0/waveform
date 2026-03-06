@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     template: '%s — Waveform',
   },
   description:
-    "Une application de journal musical. Suivis tes écoutes, note tes albums, lis les avis de tes amis.",
+    "Une application de journal musical. Suis tes écoutes, note tes albums, lis les avis de tes amis.",
   authors: [{ name: 'Waveform' }],
   keywords: ['musique', 'journal', 'albums', 'reviews', 'Waveform'],
   openGraph: {
     title: 'Waveform — Journal musical',
     description:
-      "Une application de journal musical. Suivis tes écoutes, note tes albums, lis les avis de tes amis.",
+      "Une application de journal musical. Suis tes écoutes, note tes albums, lis les avis de tes amis.",
     siteName: 'Waveform',
     type: 'website',
     locale: 'fr_FR',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Waveform',
     description:
-      "Une application de journal musical. Suivis tes écoutes, note tes albums, lis les avis de tes amis.",
+      "Une application de journal musical. Suis tes écoutes, note tes albums, lis les avis de tes amis.",
   },
   // metadataBase permet de construire des URL pour les pages / OG images.
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),

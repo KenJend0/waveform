@@ -122,6 +122,37 @@ export default function AlbumHero({
                 </div>
             </div>
 
+            {/* Network listeners */}
+            {networkListeners.length > 0 && (() => {
+                const shown = networkListeners.slice(0, 3);
+                const rest = networkListeners.length - shown.length;
+                const names = shown.map((l) => l.displayName || l.username);
+                let label: string;
+                if (names.length === 1) {
+                    label = `${names[0]} a écouté cet album`;
+                } else if (rest === 0) {
+                    label = `${names.slice(0, -1).join(", ")} et ${names[names.length - 1]} ont écouté cet album`;
+                } else {
+                    label = `${names.join(", ")} et ${rest} autre${rest > 1 ? "s" : ""} ont écouté cet album`;
+                }
+                return (
+                    <div className="flex items-center gap-2 mt-5">
+                        <div className="flex -space-x-1.5">
+                            {shown.map((l) => (
+                                <div key={l.userId} className="w-5 h-5 rounded-full overflow-hidden bg-background-secondary border border-background-primary flex-shrink-0">
+                                    {l.avatarUrl ? (
+                                        <Image src={l.avatarUrl} alt={l.displayName || l.username} width={20} height={20} className="object-cover w-full h-full" />
+                                    ) : (
+                                        <div className="w-full h-full bg-background-tertiary" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <span className="text-[12px] text-text-tertiary leading-snug">{label}</span>
+                    </div>
+                );
+            })()}
+
             {/* ========== TA NOTE ========== */}
             {myLatestEntry && (
                 <div className="border-t border-border-divider mt-8 pt-8 mb-10">
@@ -180,37 +211,6 @@ export default function AlbumHero({
                     </div>
                 </div>
             )}
-
-            {/* Network listeners */}
-            {networkListeners.length > 0 && (() => {
-                const shown = networkListeners.slice(0, 3);
-                const rest = networkListeners.length - shown.length;
-                const names = shown.map((l) => l.displayName || l.username);
-                let label: string;
-                if (names.length === 1) {
-                    label = `${names[0]} a écouté cet album`;
-                } else if (rest === 0) {
-                    label = `${names.slice(0, -1).join(", ")} et ${names[names.length - 1]} ont écouté cet album`;
-                } else {
-                    label = `${names.join(", ")} et ${rest} autre${rest > 1 ? "s" : ""} ont écouté cet album`;
-                }
-                return (
-                    <div className="flex items-center gap-2 mt-5">
-                        <div className="flex -space-x-1.5">
-                            {shown.map((l) => (
-                                <div key={l.userId} className="w-5 h-5 rounded-full overflow-hidden bg-background-secondary border border-background-primary flex-shrink-0">
-                                    {l.avatarUrl ? (
-                                        <Image src={l.avatarUrl} alt={l.displayName || l.username} width={20} height={20} className="object-cover w-full h-full" />
-                                    ) : (
-                                        <div className="w-full h-full bg-background-tertiary" />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        <span className="text-[12px] text-text-tertiary leading-snug">{label}</span>
-                    </div>
-                );
-            })()}
 
             {/* Genres (only when no streaming links / description — avoids empty section below) */}
             {genres && genres.length > 0 && (

@@ -67,7 +67,6 @@ Rendre les pages albums et artistes vraiment riches.
 - [ ] **Activité réseau** — afficher les amis qui ont déjà écouté cet album (avatars + note si disponible) directement sur la page album
 - [ ] **Enrichissement metadata** — genres (tags) via MusicBrainz ou Last.fm, description de l'album si disponible
 - [ ] **Albums similaires / de la même disco** — carousel "Du même artiste" et "Albums similaires" en bas de page album
-- [ ] **Singles dans la recherche** — inclure les singles et EPs (types MusicBrainz) dans les résultats de recherche et dans la discographie artiste
 
 ### Pages artiste
 - [ ] **Bio et tags** — bio Wikipedia déjà fetchée (`fetchArtistMetadata`), l'afficher proprement avec genres et tags ; artistes similaires

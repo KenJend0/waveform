@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      album_genres: {
+        Row: {
+          album_id: string
+          genre_id: string
+          source: string
+          weight: number
+        }
+        Insert: {
+          album_id: string
+          genre_id: string
+          source: string
+          weight?: number
+        }
+        Update: {
+          album_id?: string
+          genre_id?: string
+          source?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "album_genres_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "album_genres_genre_id_fkey"
+            columns: ["genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      album_metadata: {
+        Row: {
+          album_id: string
+          description: string | null
+          description_src: string | null
+          fetched_at: string
+          lastfm_listeners: number | null
+          lastfm_playcount: number | null
+          lastfm_url: string | null
+        }
+        Insert: {
+          album_id: string
+          description?: string | null
+          description_src?: string | null
+          fetched_at?: string
+          lastfm_listeners?: number | null
+          lastfm_playcount?: number | null
+          lastfm_url?: string | null
+        }
+        Update: {
+          album_id?: string
+          description?: string | null
+          description_src?: string | null
+          fetched_at?: string
+          lastfm_listeners?: number | null
+          lastfm_playcount?: number | null
+          lastfm_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "album_metadata_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: true
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       albums: {
         Row: {
           artist_id: string
@@ -22,6 +96,7 @@ export type Database = {
           id: string
           mbid: string | null
           release_date: string | null
+          search_vector: unknown
           title: string
           updated_at: string
         }
@@ -32,6 +107,7 @@ export type Database = {
           id?: string
           mbid?: string | null
           release_date?: string | null
+          search_vector?: unknown
           title: string
           updated_at?: string
         }
@@ -42,6 +118,7 @@ export type Database = {
           id?: string
           mbid?: string | null
           release_date?: string | null
+          search_vector?: unknown
           title?: string
           updated_at?: string
         }
@@ -63,6 +140,7 @@ export type Database = {
           image_url: string | null
           mbid: string | null
           name: string
+          search_vector: unknown
           updated_at: string
         }
         Insert: {
@@ -72,6 +150,7 @@ export type Database = {
           image_url?: string | null
           mbid?: string | null
           name: string
+          search_vector?: unknown
           updated_at?: string
         }
         Update: {
@@ -81,6 +160,7 @@ export type Database = {
           image_url?: string | null
           mbid?: string | null
           name?: string
+          search_vector?: unknown
           updated_at?: string
         }
         Relationships: []
@@ -344,6 +424,24 @@ export type Database = {
         }
         Relationships: []
       }
+      genres: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       import_requests: {
         Row: {
           artist_id: string | null
@@ -385,6 +483,7 @@ export type Database = {
           id: string
           updated_at: string | null
           username: string | null
+          username_changed: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -394,6 +493,7 @@ export type Database = {
           id: string
           updated_at?: string | null
           username?: string | null
+          username_changed?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -403,6 +503,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
+          username_changed?: boolean | null
         }
         Relationships: []
       }
@@ -434,6 +535,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      search_cache: {
+        Row: {
+          created_at: string | null
+          data: Json
+          expires_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string | null
+          data: Json
+          expires_at: string
+          key: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          expires_at?: string
+          key?: string
+        }
+        Relationships: []
       }
       tracks: {
         Row: {

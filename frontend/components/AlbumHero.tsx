@@ -36,6 +36,7 @@ type AlbumHeroProps = {
     myEntriesCount?: number;
     autoOpenDiary?: boolean;
     albumHasGenres?: boolean;
+    genres?: string[];
     networkListeners?: Array<{ userId: string; username: string; displayName: string | null; avatarUrl: string | null }>;
 };
 
@@ -49,6 +50,7 @@ export default function AlbumHero({
     myEntriesCount = 0,
     autoOpenDiary = false,
     albumHasGenres = true,
+    genres,
     networkListeners = [],
 }: AlbumHeroProps) {
     const [coverError, setCoverError] = useState(false);
@@ -209,6 +211,17 @@ export default function AlbumHero({
                     </div>
                 );
             })()}
+
+            {/* Genres (only when no streaming links / description — avoids empty section below) */}
+            {genres && genres.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                    {genres.map((g) => (
+                        <span key={g} className="text-[11px] text-text-tertiary bg-background-secondary rounded-full px-2.5 py-0.5 capitalize">
+                            {g}
+                        </span>
+                    ))}
+                </div>
+            )}
 
             {/* Actions — always visible */}
             <div className="flex gap-2 mt-4">

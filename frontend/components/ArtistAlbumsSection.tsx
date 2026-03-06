@@ -32,12 +32,13 @@ const CoverPlaceholder = () => (
     </div>
 );
 
-function AlbumCard({ title, coverSrc, year, onClick, href }: {
+function AlbumCard({ title, coverSrc, year, onClick, href, importing }: {
     title: string;
     coverSrc: string | null;
     year: number | null;
     onClick?: () => void;
     href?: string;
+    importing?: boolean;
 }) {
     const inner = (
         <>
@@ -55,11 +56,20 @@ function AlbumCard({ title, coverSrc, year, onClick, href }: {
                     <CoverPlaceholder />
                 )}
             </div>
-            <p className="text-[13px] text-text-primary font-medium leading-snug line-clamp-2 group-hover:text-[#8E6F5E] transition-colors duration-150">
-                {title}
-            </p>
-            {year && (
-                <p className="text-[11px] text-text-tertiary mt-0.5">{year}</p>
+            {importing ? (
+                <div className="flex items-center gap-2 py-0.5">
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#8E6F5E] flex-shrink-0" />
+                    <span className="text-[12px] text-text-secondary">Import en cours…</span>
+                </div>
+            ) : (
+                <>
+                    <p className="text-[13px] text-text-primary font-medium leading-snug line-clamp-2 group-hover:text-[#8E6F5E] transition-colors duration-150">
+                        {title}
+                    </p>
+                    {year && (
+                        <p className="text-[11px] text-text-tertiary mt-0.5">{year}</p>
+                    )}
+                </>
             )}
         </>
     );
@@ -120,17 +130,13 @@ export default function ArtistAlbumsSection({ dbAlbums, mbAlbums }: Props) {
                     </div>
                 ))}
                 {mbAlbums.map((a) => (
-                    <div key={a.mbid} className="relative snap-center shrink-0 w-44 sm:w-48 md:w-52">
-                        {importing === a.mbid && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background-primary/60 rounded-[10px]">
-                                <span className="text-[12px] text-text-secondary">Import...</span>
-                            </div>
-                        )}
+                    <div key={a.mbid} className="snap-center shrink-0 w-44 sm:w-48 md:w-52">
                         <AlbumCard
                             title={a.title}
                             coverSrc={`https://coverartarchive.org/release-group/${a.mbid}/front`}
                             year={a.date ? new Date(a.date).getFullYear() : null}
                             onClick={() => handleImport(a.mbid)}
+                            importing={importing === a.mbid}
                         />
                     </div>
                 ))}

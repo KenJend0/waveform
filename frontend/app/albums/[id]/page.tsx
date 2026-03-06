@@ -224,12 +224,14 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                     myEntriesCount={myEntries.length}
                     autoOpenDiary={autoOpenDiary}
                     albumHasGenres={genres.length > 0}
+                    genres={genres.length > 0 && !description && Object.keys(streamingLinks).length === 0 ? genres : undefined}
                     networkListeners={networkListeners}
                 />
             </div>
 
             {/* ========== 1B. ALBUM INFO + DESCRIPTION ========== */}
-            {(genres.length > 0 || Object.keys(streamingLinks).length > 0 || !!description) && (
+            {/* 1B only renders when there's streaming links or description (genres-only → go to hero) */}
+            {(Object.keys(streamingLinks).length > 0 || !!description) && (
                 <div className="border-t border-border-divider pt-8 mb-20">
                     {(genres.length > 0 || Object.keys(streamingLinks).length > 0) && (
                         <div className="mb-6">

@@ -311,23 +311,50 @@ export async function getSimilarAlbums(
       scoreMap.set(c.album_id, entry);
     }
 
-    // 4. Top candidats triés par score
+    // 4. Top candidats — au moins 2 genres partagés, triés par nb de genres communs puis par score pondéré
     const topIds = [...scoreMap.entries()]
-      .sort((a, b) => b[1].score - a[1].score)
+      .filter(([, { shared }]) => shared >= 2)
+      .sort((a, b) =>
+        b[1].shared !== a[1].shared
+          ? b[1].shared - a[1].shared
+          : b[1].score - a[1].score
+      )
       .slice(0, limit)
       .map(([id]) => id);
 
     if (topIds.length === 0) return [];
 
-    // 5. Infos albums + artiste
-    const { data: albums } = await supabase
-      .from('albums')
-      .select('id, title, cover_url, release_date, artist_id, artists(id, name)')
-      .in('id', topIds);
+    // 5. Infos albums + artiste + stats de popularité (source + candidats)
+    const [albumsResult, statsResult] = await Promise.all([
+      supabase
+        .from('albums')
+        .select('id, title, cover_url, release_date, artist_id, artists(id, name)')
+        .in('id', topIds),
+      supabase
+        .from('album_stats')
+        .select('album_id, listeners_count')
+        .in('album_id', [...topIds, albumId]),
+    ]);
 
+    const albums = albumsResult.data;
     if (!albums) return [];
 
-    return topIds
+    const statsData = statsResult.data ?? [];
+    const myListeners = statsData.find((s) => s.album_id === albumId)?.listeners_count ?? 0;
+    const myLogListeners = Math.log1p(myListeners);
+    const listenersMap = new Map(statsData.map((s) => [s.album_id, s.listeners_count ?? 0]));
+
+    // 6. Rerank : shared (primary) → score × popularité-proximité (secondary)
+    const rankedIds = [...topIds].sort((a, b) => {
+      const sa = scoreMap.get(a)!;
+      const sb = scoreMap.get(b)!;
+      if (sb.shared !== sa.shared) return sb.shared - sa.shared;
+      const popSimA = 1 / (1 + Math.abs(myLogListeners - Math.log1p(listenersMap.get(a) ?? 0)));
+      const popSimB = 1 / (1 + Math.abs(myLogListeners - Math.log1p(listenersMap.get(b) ?? 0)));
+      return sb.score * popSimB - sa.score * popSimA;
+    });
+
+    return rankedIds
       .map((id) => {
         const a = albums.find((al) => al.id === id);
         if (!a) return null;

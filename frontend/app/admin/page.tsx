@@ -71,7 +71,9 @@ export default async function AdminPage() {
   const noGenreSet = new Set(noGenre.map((a) => a.id));
   const noDescSet = new Set(noDesc.map((a) => a.id));
   const notEnriched = albums.filter((a) => noGenreSet.has(a.id) || noDescSet.has(a.id));
+  // Saisie manuelle utile seulement si pas de MBID (sinon MusicBrainz peut trouver dynamiquement)
   const noSpotify = albums.filter((a) => {
+    if (a.mbid) return false; // MusicBrainz peut récupérer le lien auto
     const m = metaMap.get(a.id);
     return !m?.spotify_url;
   });

@@ -95,6 +95,7 @@ export type Database = {
           lastfm_listeners: number | null
           lastfm_playcount: number | null
           lastfm_url: string | null
+          spotify_url: string | null
         }
         Insert: {
           album_id: string
@@ -104,6 +105,7 @@ export type Database = {
           lastfm_listeners?: number | null
           lastfm_playcount?: number | null
           lastfm_url?: string | null
+          spotify_url?: string | null
         }
         Update: {
           album_id?: string
@@ -113,6 +115,7 @@ export type Database = {
           lastfm_listeners?: number | null
           lastfm_playcount?: number | null
           lastfm_url?: string | null
+          spotify_url?: string | null
         }
         Relationships: [
           {

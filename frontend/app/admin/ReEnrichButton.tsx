@@ -59,7 +59,7 @@ export default function ReEnrichButton({ album }: { album: Album }) {
       >
         {nothingChanged
           ? `Rien trouvé (MB:${result.mbTagsRaw} LFM:${result.lfmTagsRaw})${hasErrors ? ' ⚠' : ''}`
-          : `${result.genres} genre${result.genres > 1 ? 's' : ''} · ${result.hasDescription ? 'bio ✓' : 'sans bio'}`}
+          : `${result.genres} genre${result.genres > 1 ? 's' : ''} · ${result.hasDescription ? 'bio ✓' : 'sans bio'}${hasErrors ? ' ⚠' : ''}`}
       </span>
     );
   }

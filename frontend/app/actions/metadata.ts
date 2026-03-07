@@ -156,11 +156,13 @@ async function fetchLastFmData(
     }));
 
     // Nettoyage description : suppression du lien "Read more on Last.fm" et HTML
+    // wiki.summary est parfois vide ("") même quand wiki.content existe → fallback
     let description: string | null = null;
-    const summary: string | undefined = data.album.wiki?.summary;
-    if (summary) {
+    const rawDesc: string | undefined =
+      data.album.wiki?.summary || data.album.wiki?.content;
+    if (rawDesc) {
       description =
-        summary
+        rawDesc
           .replace(/<a\s[^>]*>Read more on Last\.fm<\/a>\.?/gi, '')
           .replace(/<[^>]+>/g, '')
           .trim() || null;

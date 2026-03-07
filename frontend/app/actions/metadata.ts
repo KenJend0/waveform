@@ -6,7 +6,7 @@ import { findGenreBySlug } from '@/lib/genre-families';
 const MB_API = 'https://musicbrainz.org/ws/2';
 const MB_USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
 const LASTFM_API = 'https://ws.audioscrobbler.com/2.0';
-const FETCH_TIMEOUT_MS = 3000;
+const FETCH_TIMEOUT_MS = 10_000;
 const ENRICHMENT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
 // Tags parasites — non pertinents pour la découverte musicale
@@ -167,45 +167,67 @@ async function fetchLastFmData(
   }
 }
 
+export type EnrichResult = {
+  genres: number;
+  hasDescription: boolean;
+  mbTagsRaw: number;
+  lfmTagsRaw: number;
+  errors: string[];
+};
+
 /**
  * Enrichit les métadonnées d'un album importé (genres + description).
  * Sources : Last.fm (primaire) + MusicBrainz (secondaire).
- * Idempotent : skip si enrichi il y a moins de 30 jours.
+ * Idempotent : skip si enrichi il y a moins de 30 jours (sauf force=true).
  * Toutes les erreurs sont silencieuses — ne bloque jamais l'import.
  */
 export async function enrichAlbumMetadata(
   albumId: string,
-  rgMbid: string,
+  releaseMbid: string,
   title: string,
-  artistName: string
-): Promise<void> {
+  artistName: string,
+  force = false
+): Promise<EnrichResult> {
+  const errors: string[] = [];
   try {
     const supabase = createSupabaseAdmin();
 
-    // Skip si enrichi récemment
-    const { data: existing } = await supabase
-      .from('album_metadata')
-      .select('fetched_at')
-      .eq('album_id', albumId)
-      .maybeSingle();
+    // Skip si enrichi récemment (sauf force)
+    if (!force) {
+      const { data: existing } = await supabase
+        .from('album_metadata')
+        .select('fetched_at')
+        .eq('album_id', albumId)
+        .maybeSingle();
 
-    if (existing?.fetched_at) {
-      const ageMs = Date.now() - new Date(existing.fetched_at).getTime();
-      if (ageMs < ENRICHMENT_TTL_MS) return;
+      if (existing?.fetched_at) {
+        const ageMs = Date.now() - new Date(existing.fetched_at).getTime();
+        if (ageMs < ENRICHMENT_TTL_MS) {
+          return { genres: 0, hasDescription: false, mbTagsRaw: 0, lfmTagsRaw: 0, errors: ['skipped: TTL'] };
+        }
+      }
     }
 
     // Fetch en parallèle
-    const [mbTags, lfm] = await Promise.all([
-      fetchMBTags(rgMbid),
+    const [mbTags, lfm] = await Promise.allSettled([
+      fetchMBTags(releaseMbid),
       fetchLastFmData(artistName, title),
     ]);
 
+    const mbTagsResult = mbTags.status === 'fulfilled' ? mbTags.value : [];
+    const lfmResult = lfm.status === 'fulfilled' ? lfm.value : { tags: [], description: null, url: null, listeners: null, playcount: null };
+
+    if (mbTags.status === 'rejected') errors.push(`MB error: ${String(mbTags.reason).slice(0, 120)}`);
+    if (lfm.status === 'rejected') errors.push(`LFM error: ${String(lfm.reason).slice(0, 120)}`);
+
+    console.log(`[enrichAlbumMetadata] albumId=${albumId} mbTags=${mbTagsResult.length} lfmTags=${lfmResult.tags.length} lfmDesc=${!!lfmResult.description}`);
+
     // Merge : Last.fm en primaire (meilleure classification), MB en secondaire
     const tagMap = new Map<string, { count: number; source: 'lastfm' | 'musicbrainz' }>();
-    for (const tag of lfm.tags) {
+    for (const tag of lfmResult.tags) {
       if (isValidTag(tag.name)) tagMap.set(tag.name, { count: tag.count, source: 'lastfm' });
     }
-    for (const tag of mbTags) {
+    for (const tag of mbTagsResult) {
       if (isValidTag(tag.name) && !tagMap.has(tag.name)) {
         tagMap.set(tag.name, { count: tag.count, source: 'musicbrainz' });
       }
@@ -244,26 +266,30 @@ export async function enrichAlbumMetadata(
       }
     }
 
-    // Upsert album_metadata
+    const hasDescription = !!lfmResult.description;
+
+    // Upsert album_metadata — fetched_at uniquement si on a trouvé quelque chose
+    const hasData = validTags.length > 0 || hasDescription;
+    const metaRow: Record<string, unknown> = {
+      album_id: albumId,
+      description: lfmResult.description ?? null,
+      description_src: lfmResult.description ? 'lastfm' : null,
+      lastfm_url: lfmResult.url ?? null,
+      lastfm_listeners: lfmResult.listeners ?? null,
+      lastfm_playcount: lfmResult.playcount ?? null,
+    };
+    if (hasData) metaRow.fetched_at = new Date().toISOString();
+
     await supabase
       .from('album_metadata')
-      .upsert(
-        {
-          album_id: albumId,
-          description: lfm.description ?? null,
-          description_src: lfm.description ? 'lastfm' : null,
-          lastfm_url: lfm.url ?? null,
-          lastfm_listeners: lfm.listeners ?? null,
-          lastfm_playcount: lfm.playcount ?? null,
-          fetched_at: new Date().toISOString(),
-        },
-        { onConflict: 'album_id' }
-      );
+      .upsert(metaRow as any, { onConflict: 'album_id' });
 
-    console.log(`[enrichAlbumMetadata] ✓ albumId=${albumId} — ${tagMap.size} genres`);
+    console.log(`[enrichAlbumMetadata] ✓ albumId=${albumId} — ${tagMap.size} genres, desc=${hasDescription}`);
+    return { genres: validTags.length, hasDescription, mbTagsRaw: mbTagsResult.length, lfmTagsRaw: lfmResult.tags.length, errors };
   } catch (err) {
     // Enrichissement best-effort — ne jamais bloquer l'import
     console.error('[enrichAlbumMetadata] error:', err);
+    return { genres: 0, hasDescription: false, mbTagsRaw: 0, lfmTagsRaw: 0, errors: [String(err).slice(0, 200)] };
   }
 }
 

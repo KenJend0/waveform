@@ -21,18 +21,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Album not found' }, { status: 404 });
     }
 
-    await enrichAlbumMetadata(albumId, mbid, title, artist);
-
-    // Renvoie ce qui a été enrichi pour le feedback UI
-    const [genresResult, metaResult] = await Promise.all([
-      supabase.from('album_genres').select('*', { count: 'exact', head: true }).eq('album_id', albumId),
-      supabase.from('album_metadata').select('description').eq('album_id', albumId).maybeSingle(),
-    ]);
+    const result = await enrichAlbumMetadata(albumId, mbid, title, artist, true);
 
     return NextResponse.json({
       ok: true,
-      genres: genresResult.count ?? 0,
-      hasDescription: !!metaResult.data?.description,
+      genres: result.genres,
+      hasDescription: result.hasDescription,
+      mbTagsRaw: result.mbTagsRaw,
+      lfmTagsRaw: result.lfmTagsRaw,
+      errors: result.errors,
     });
   } catch (err) {
     console.error('[/api/enrich] error:', err);

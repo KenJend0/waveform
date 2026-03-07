@@ -13,11 +13,9 @@ export async function clearAlbumMetadata(albumId: string): Promise<boolean> {
   const supabase = createSupabaseAdmin();
   await Promise.all([
     supabase.from('album_metadata').delete().eq('album_id', albumId),
-    supabase.from('album_genres').delete().eq('album_id', albumId).eq('source', 'lastfm'),
-    supabase.from('album_genres').delete().eq('album_id', albumId).eq('source', 'musicbrainz'),
+    supabase.from('album_genres').delete().eq('album_id', albumId),
   ]);
 
-  revalidatePath('/admin');
   return true;
 }
 

@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { clearAlbumMetadata } from './actions';
 
 type Album = { id: string; mbid: string | null; title: string; artist_name: string };
-type Result = { genres: number; hasDescription: boolean } | null;
+type Result = {
+  genres: number;
+  hasDescription: boolean;
+  mbTagsRaw: number;
+  lfmTagsRaw: number;
+  errors: string[];
+} | null;
 
 export default function ReEnrichButton({ album }: { album: Album }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -27,34 +33,39 @@ export default function ReEnrichButton({ album }: { album: Album }) {
 
       if (res.ok) {
         const data = await res.json();
-        setResult({ genres: data.genres ?? 0, hasDescription: data.hasDescription ?? false });
+        setResult({
+          genres: data.genres ?? 0,
+          hasDescription: data.hasDescription ?? false,
+          mbTagsRaw: data.mbTagsRaw ?? 0,
+          lfmTagsRaw: data.lfmTagsRaw ?? 0,
+          errors: data.errors ?? [],
+        });
+        setStatus('done');
+      } else {
+        setStatus('error');
       }
-      setStatus('done');
     } catch {
-      setStatus('done'); // peut avoir enrichi quand même, on marque done
+      setStatus('error');
     }
   };
 
-  if (status === 'done') {
-    if (!result) {
-      return (
-        <span className="text-[11px] text-amber-600 ml-4 flex-shrink-0">
-          En cours — vérifier dans quelques secondes
-        </span>
-      );
-    }
+  if (status === 'done' && result) {
     const nothingChanged = result.genres === 0 && !result.hasDescription;
+    const hasErrors = result.errors.length > 0;
     return (
-      <span className={`text-[11px] ml-4 flex-shrink-0 ${nothingChanged ? 'text-amber-600' : 'text-green-600'}`}>
+      <span
+        className={`text-[11px] ml-4 flex-shrink-0 ${nothingChanged ? 'text-amber-600' : 'text-green-600'}`}
+        title={hasErrors ? `Erreurs: ${result.errors.join(' | ')}` : `MB: ${result.mbTagsRaw} tags bruts, LFM: ${result.lfmTagsRaw} tags bruts`}
+      >
         {nothingChanged
-          ? 'Rien trouvé — à compléter manuellement'
+          ? `Rien trouvé (MB:${result.mbTagsRaw} LFM:${result.lfmTagsRaw})${hasErrors ? ' ⚠' : ''}`
           : `${result.genres} genre${result.genres > 1 ? 's' : ''} · ${result.hasDescription ? 'bio ✓' : 'sans bio'}`}
       </span>
     );
   }
 
   if (status === 'error') {
-    return <span className="text-[11px] text-red-500 ml-4 flex-shrink-0">Erreur</span>;
+    return <span className="text-[11px] text-red-500 ml-4 flex-shrink-0">Erreur — réessayer</span>;
   }
 
   return (

@@ -12,6 +12,7 @@ import AlbumReviewSection from "@/components/AlbumReviewSection";
 import ArtistAlbumsSection from "@/components/ArtistAlbumsSection";
 import DescriptionCollapse from "@/components/DescriptionCollapse";
 import ScrollToHashClient from "@/components/ScrollToHashClient";
+import AdminSpotifyEdit from "@/components/AdminSpotifyEdit";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -115,6 +116,9 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
         streamingLinks.spotify = albumMeta.data.spotify_url;
     }
     const artistAlbums = artistAlbumsData.data ?? [];
+    const isAdmin = user
+        ? (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean).includes(user.id)
+        : false;
 
     // Activité réseau : abonnés ayant écouté cet album
     type NetworkListener = { userId: string; username: string; displayName: string | null; avatarUrl: string | null };
@@ -235,7 +239,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
 
             {/* ========== 1B. ALBUM INFO + DESCRIPTION ========== */}
             {/* 1B only renders when there's streaming links or description (genres-only → go to hero) */}
-            {(Object.keys(streamingLinks).length > 0 || !!description) && (
+            {(Object.keys(streamingLinks).length > 0 || !!description || (isAdmin && !streamingLinks.spotify)) && (
                 <div className="border-t border-border-divider pt-8 mb-20">
                     {(genres.length > 0 || Object.keys(streamingLinks).length > 0) && (
                         <div className="mb-6">
@@ -283,6 +287,11 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                         </div>
                     )}
 
+                    {isAdmin && !streamingLinks.spotify && (
+                        <div className="mb-4">
+                            <AdminSpotifyEdit albumId={album.id} />
+                        </div>
+                    )}
                     {description && <DescriptionCollapse text={description} />}
                 </div>
             )}

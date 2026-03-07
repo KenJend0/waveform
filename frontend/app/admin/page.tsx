@@ -66,6 +66,11 @@ export default async function AdminPage() {
     const m = metaMap.get(a.id);
     return !m || !m.description;
   });
+
+  // Albums non enrichis = manque genres OU description (ou les deux)
+  const noGenreSet = new Set(noGenre.map((a) => a.id));
+  const noDescSet = new Set(noDesc.map((a) => a.id));
+  const notEnriched = albums.filter((a) => noGenreSet.has(a.id) || noDescSet.has(a.id));
   const noSpotify = albums.filter((a) => {
     const m = metaMap.get(a.id);
     return !m?.spotify_url;
@@ -100,8 +105,7 @@ export default async function AdminPage() {
       {/* Santé de la base */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-12">
         {[
-          { label: 'Sans genres', value: noGenre.length },
-          { label: 'Sans description', value: noDesc.length },
+          { label: 'Non enrichi', value: notEnriched.length },
           { label: 'Sans Spotify', value: noSpotify.length },
           { label: 'Sans cover', value: noCover.length },
           { label: 'Sans MBID', value: noMbid.length },
@@ -118,19 +122,18 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      {/* Albums sans genres */}
-      <Section title="Sans genres" count={noGenre.length}>
-        {noGenre.map((a) => (
+      {/* Albums non enrichis (genres et/ou description manquants) */}
+      <Section title="Non enrichi" count={notEnriched.length}>
+        {notEnriched.map((a) => (
           <AlbumRow key={a.id} album={a}>
-            <ReEnrichButton album={a} />
-          </AlbumRow>
-        ))}
-      </Section>
-
-      {/* Albums sans description */}
-      <Section title="Sans description" count={noDesc.length}>
-        {noDesc.map((a) => (
-          <AlbumRow key={a.id} album={a}>
+            <span className="flex items-center gap-1.5 mr-2 flex-shrink-0">
+              {noGenreSet.has(a.id) && (
+                <span className="text-[10px] rounded-full px-2 py-0.5 bg-amber-100 text-amber-700">sans genres</span>
+              )}
+              {noDescSet.has(a.id) && (
+                <span className="text-[10px] rounded-full px-2 py-0.5 bg-amber-100 text-amber-700">sans bio</span>
+              )}
+            </span>
             <ReEnrichButton album={a} />
           </AlbumRow>
         ))}

@@ -92,7 +92,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             .limit(3),
         supabase
             .from("album_metadata")
-            .select("description")
+            .select("description, spotify_url")
             .eq("album_id", id)
             .maybeSingle(),
         getSimilarAlbums(album.id),
@@ -110,6 +110,10 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     const genres: string[] = (genresData.data ?? [])
         .flatMap((row) => (row.genres && typeof row.genres === "object" && "name" in row.genres ? [row.genres.name as string] : []));
     const description: string | null = albumMeta.data?.description ?? null;
+    // Lien Spotify manuel (admin) prend la priorité sur MusicBrainz
+    if (albumMeta.data?.spotify_url) {
+        streamingLinks.spotify = albumMeta.data.spotify_url;
+    }
     const artistAlbums = artistAlbumsData.data ?? [];
 
     // Activité réseau : abonnés ayant écouté cet album

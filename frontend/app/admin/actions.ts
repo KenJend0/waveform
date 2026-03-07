@@ -1,31 +1,39 @@
 'use server';
 
 import { createSupabaseAdmin, getAuthUser } from '@/lib/supabase/server';
-import { enrichAlbumMetadata } from '@/app/actions/metadata';
 import { revalidatePath } from 'next/cache';
 
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
-export async function reEnrichAlbum(formData: FormData) {
+/** Supprime les métadonnées existantes pour bypasser le TTL — l'enrichissement est déclenché côté client via /api/enrich */
+export async function clearAlbumMetadata(albumId: string): Promise<boolean> {
   const user = await getAuthUser();
-  if (!user || !ADMIN_IDS.includes(user.id)) return;
-
-  const albumId = formData.get('albumId') as string;
-  const mbid = formData.get('mbid') as string;
-  const title = formData.get('title') as string;
-  const artist = formData.get('artist') as string;
-
-  if (!albumId || !mbid) return;
+  if (!user || !ADMIN_IDS.includes(user.id)) return false;
 
   const supabase = createSupabaseAdmin();
-
-  // Supprime les métadonnées existantes pour bypasser le TTL
   await Promise.all([
     supabase.from('album_metadata').delete().eq('album_id', albumId),
     supabase.from('album_genres').delete().eq('album_id', albumId).eq('source', 'lastfm'),
     supabase.from('album_genres').delete().eq('album_id', albumId).eq('source', 'musicbrainz'),
   ]);
 
-  await enrichAlbumMetadata(albumId, mbid, title, artist);
   revalidatePath('/admin');
+  return true;
+}
+
+/** Enregistre manuellement un lien Spotify pour un album. */
+export async function setAlbumSpotifyUrl(albumId: string, spotifyUrl: string): Promise<boolean> {
+  const user = await getAuthUser();
+  if (!user || !ADMIN_IDS.includes(user.id)) return false;
+
+  const supabase = createSupabaseAdmin();
+  await supabase
+    .from('album_metadata')
+    .upsert(
+      { album_id: albumId, spotify_url: spotifyUrl || null, fetched_at: new Date().toISOString() },
+      { onConflict: 'album_id' }
+    );
+
+  revalidatePath('/admin');
+  return true;
 }

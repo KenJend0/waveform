@@ -22,7 +22,18 @@ export async function POST(req: NextRequest) {
     }
 
     await enrichAlbumMetadata(albumId, mbid, title, artist);
-    return NextResponse.json({ ok: true });
+
+    // Renvoie ce qui a été enrichi pour le feedback UI
+    const [genresResult, metaResult] = await Promise.all([
+      supabase.from('album_genres').select('*', { count: 'exact', head: true }).eq('album_id', albumId),
+      supabase.from('album_metadata').select('description').eq('album_id', albumId).maybeSingle(),
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      genres: genresResult.count ?? 0,
+      hasDescription: !!metaResult.data?.description,
+    });
   } catch (err) {
     console.error('[/api/enrich] error:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

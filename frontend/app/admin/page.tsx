@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getAuthUser, createSupabaseAdmin } from '@/lib/supabase/server';
-import { reEnrichAlbum } from './actions';
+import ReEnrichButton from './ReEnrichButton';
+import SpotifyUrlInput from './SpotifyUrlInput';
 
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -18,6 +19,7 @@ type AlbumMeta = {
   album_id: string;
   description: string | null;
   fetched_at: string | null;
+  spotify_url: string | null;
 };
 
 export default async function AdminPage() {
@@ -42,7 +44,7 @@ export default async function AdminPage() {
     supabase.from('diary_entries').select('*', { count: 'exact', head: true }),
     supabase.from('albums').select('id, title, mbid, cover_url, release_date, artists(name)').order('title'),
     supabase.from('album_genres').select('album_id'),
-    supabase.from('album_metadata').select('album_id, description, fetched_at').order('fetched_at', { ascending: false }),
+    supabase.from('album_metadata').select('album_id, description, fetched_at, spotify_url').order('fetched_at', { ascending: false }),
     supabase.from('diary_entries').select('*', { count: 'exact', head: true }).not('review_body', 'is', null),
   ]);
 
@@ -63,6 +65,10 @@ export default async function AdminPage() {
   const noDesc = albums.filter((a) => {
     const m = metaMap.get(a.id);
     return !m || !m.description;
+  });
+  const noSpotify = albums.filter((a) => {
+    const m = metaMap.get(a.id);
+    return !m?.spotify_url;
   });
   const noCover = albums.filter((a) => !a.cover_url);
   const noMbid = albums.filter((a) => !a.mbid);
@@ -92,10 +98,11 @@ export default async function AdminPage() {
       </div>
 
       {/* Santé de la base */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-12">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-12">
         {[
           { label: 'Sans genres', value: noGenre.length },
           { label: 'Sans description', value: noDesc.length },
+          { label: 'Sans Spotify', value: noSpotify.length },
           { label: 'Sans cover', value: noCover.length },
           { label: 'Sans MBID', value: noMbid.length },
         ].map((s) => (
@@ -125,6 +132,15 @@ export default async function AdminPage() {
         {noDesc.map((a) => (
           <AlbumRow key={a.id} album={a}>
             <ReEnrichButton album={a} />
+          </AlbumRow>
+        ))}
+      </Section>
+
+      {/* Albums sans lien Spotify */}
+      <Section title="Sans lien Spotify" count={noSpotify.length}>
+        {noSpotify.map((a) => (
+          <AlbumRow key={a.id} album={a}>
+            <SpotifyUrlInput albumId={a.id} />
           </AlbumRow>
         ))}
       </Section>
@@ -227,20 +243,3 @@ function AlbumRow({ album, children }: { album: Album; children?: React.ReactNod
   );
 }
 
-function ReEnrichButton({ album }: { album: Album }) {
-  if (!album.mbid) return null;
-  return (
-    <form action={reEnrichAlbum}>
-      <input type="hidden" name="albumId" value={album.id} />
-      <input type="hidden" name="mbid" value={album.mbid} />
-      <input type="hidden" name="title" value={album.title} />
-      <input type="hidden" name="artist" value={album.artist_name} />
-      <button
-        type="submit"
-        className="text-[11px] text-text-tertiary hover:text-[#8E6F5E] border border-border hover:border-[#8E6F5E] rounded-full px-2.5 py-1 transition-colors duration-150 ml-4 flex-shrink-0"
-      >
-        Ré-enrichir
-      </button>
-    </form>
-  );
-}

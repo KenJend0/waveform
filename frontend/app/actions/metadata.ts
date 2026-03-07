@@ -211,25 +211,37 @@ export async function enrichAlbumMetadata(
       }
     }
 
-    // Upsert genres + album_genres
-    for (const [name, { count, source }] of tagMap) {
-      const slug = toSlug(name);
-      if (!slug) continue;
+    // Batch upsert genres + album_genres (3 DB calls total instead of N*2)
+    const validTags = [...tagMap.entries()]
+      .map(([name, { count, source }]) => ({ name, slug: toSlug(name), count, source }))
+      .filter((t) => t.slug);
 
-      const { data: genre } = await supabase
-        .from('genres')
-        .upsert({ name, slug }, { onConflict: 'slug' })
-        .select('id')
-        .single();
-
-      if (!genre?.id) continue;
-
+    if (validTags.length > 0) {
+      // 1. Batch upsert all genres
       await supabase
-        .from('album_genres')
-        .upsert(
-          { album_id: albumId, genre_id: genre.id, source, weight: count },
-          { onConflict: 'album_id,genre_id' }
-        );
+        .from('genres')
+        .upsert(validTags.map((t) => ({ name: t.name, slug: t.slug })), { onConflict: 'slug' });
+
+      // 2. Fetch all genre IDs in one query
+      const { data: genreRows } = await supabase
+        .from('genres')
+        .select('id, slug')
+        .in('slug', validTags.map((t) => t.slug));
+
+      if (genreRows && genreRows.length > 0) {
+        const slugToId = new Map(genreRows.map((g) => [g.slug, g.id]));
+
+        // 3. Batch upsert all album_genres
+        const albumGenreRows = validTags
+          .map((t) => ({ album_id: albumId, genre_id: slugToId.get(t.slug), source: t.source, weight: t.count }))
+          .filter((r) => r.genre_id != null);
+
+        if (albumGenreRows.length > 0) {
+          await supabase
+            .from('album_genres')
+            .upsert(albumGenreRows as any[], { onConflict: 'album_id,genre_id' });
+        }
+      }
     }
 
     // Upsert album_metadata

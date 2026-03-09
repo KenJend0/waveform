@@ -37,6 +37,7 @@ type AlbumHeroProps = {
     autoOpenDiary?: boolean;
     albumHasGenres?: boolean;
     genres?: string[];
+    streamingLinks?: { spotify?: string; appleMusic?: string; deezer?: string; tidal?: string };
     networkListeners?: Array<{ userId: string; username: string; displayName: string | null; avatarUrl: string | null }>;
 };
 
@@ -51,6 +52,7 @@ export default function AlbumHero({
     autoOpenDiary = false,
     albumHasGenres = true,
     genres,
+    streamingLinks,
     networkListeners = [],
 }: AlbumHeroProps) {
     const [coverError, setCoverError] = useState(false);
@@ -212,7 +214,7 @@ export default function AlbumHero({
                 </div>
             )}
 
-            {/* Genres (only when no streaming links / description — avoids empty section below) */}
+            {/* Inline metadata (when only one of genres/streaming is present, no bio) */}
             {genres && genres.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-4">
                     {genres.map((g) => (
@@ -220,6 +222,34 @@ export default function AlbumHero({
                             {g}
                         </span>
                     ))}
+                </div>
+            )}
+
+            {streamingLinks && Object.values(streamingLinks).some(Boolean) && (
+                <div className="flex items-center gap-2 flex-wrap mt-4">
+                    <span className="text-[12px] text-text-tertiary">Écouter sur</span>
+                    {[
+                        { key: "spotify", label: "Spotify", href: streamingLinks.spotify },
+                        { key: "appleMusic", label: "Apple Music", href: streamingLinks.appleMusic },
+                        { key: "deezer", label: "Deezer", href: streamingLinks.deezer },
+                        { key: "tidal", label: "Tidal", href: streamingLinks.tidal },
+                    ]
+                        .filter((s) => s.href)
+                        .map((s, i, arr) => (
+                            <span key={s.key} className="flex items-center gap-2">
+                                <a
+                                    href={s.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[12px] text-text-secondary hover:text-text-primary transition-colors duration-150"
+                                >
+                                    {s.label}
+                                </a>
+                                {i < arr.length - 1 && (
+                                    <span className="text-[12px] text-text-disabled">·</span>
+                                )}
+                            </span>
+                        ))}
                 </div>
             )}
 

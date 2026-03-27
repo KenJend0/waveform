@@ -1,7 +1,7 @@
 'use server';
 
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
-import { fanoutEvent } from './feed';
+import { fanoutEvent, backfillFolloweeEvents } from './feed';
 import { ensureProfile } from './profile';
 import { logAuthedProductEvent } from '@/lib/productEvents';
 
@@ -104,8 +104,9 @@ export async function toggleFollow(idOrUsername: string, source?: string) {
 
       // Fanout
       try {
-        await fanoutEvent('follow', { followerId: user.id, followeeId: targetId }, [
-          targetId,
+        await Promise.all([
+          fanoutEvent('follow', { followerId: user.id, followeeId: targetId }, [targetId]),
+          backfillFolloweeEvents(user.id, targetId),
         ]);
       } catch (fanoutErr) {
         console.error('Fanout follow error:', fanoutErr);

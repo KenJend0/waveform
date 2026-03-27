@@ -1,4 +1,7 @@
-﻿import { createSupabaseServer } from "@/lib/supabase/server";
+﻿import { createSupabaseAnon } from "@/lib/supabase/server";
+
+// Revalidate every hour — explore shows public trending data, no user-specific content
+export const revalidate = 3600;
 import DiscoverCard from "@/components/DiscoverCard";
 import SearchOverlay from "@/components/SearchOverlay";
 
@@ -16,7 +19,7 @@ type DiscoverItem = {
 };
 
 async function getTrendingThisWeek(): Promise<DiscoverItem[]> {
-    const supabase = await createSupabaseServer();
+    const supabase = createSupabaseAnon();
     const sevenDaysAgo = new Date(
         Date.now() - 7 * 24 * 60 * 60 * 1000
     ).toISOString();
@@ -90,7 +93,7 @@ async function getTrendingThisWeek(): Promise<DiscoverItem[]> {
 }
 
 async function getNewOnWaveform(): Promise<DiscoverItem[]> {
-    const supabase = await createSupabaseServer();
+    const supabase = createSupabaseAnon();
 
     // Albums most recently added to the Waveform catalog
     const { data: newAlbums } = await supabase

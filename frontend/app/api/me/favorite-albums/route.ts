@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
+import { applyRateLimit } from "@/lib/serverRateLimit";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const limited = await applyRateLimit(request);
+  if (limited) return limited;
+
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -43,6 +47,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = await applyRateLimit(request);
+  if (limited) return limited;
+
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { searchInternal } from "@/app/actions/search";
 import { searchMusicBrainzAlbums, searchMusicBrainzArtists } from "@/app/actions/musicbrainz";
 import type { SearchResultUI } from "@/app/actions/search";
+import { applyRateLimit } from "@/lib/serverRateLimit";
 
 // ---------------------------------------------------------------------------
 // Ranking logic — kept in sync with SearchOverlay.tsx (computeRank / mergeAndRank)
@@ -61,6 +62,9 @@ function computeRankDebug(item: SearchResultUI, query: string): ScoreBreakdown {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
+  const limited = await applyRateLimit(request);
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim();
   const kind = (searchParams.get("kind") || "albums") as "albums" | "artists" | "all";

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enrichAlbumMetadata } from '@/app/actions/metadata';
 import { createSupabaseAdmin } from '@/lib/supabase/server';
+import { applyRateLimit } from '@/lib/serverRateLimit';
 
 export async function POST(req: NextRequest) {
+  const limited = await applyRateLimit(req);
+  if (limited) return limited;
+
   try {
     const { albumId, mbid, title, artist } = await req.json();
     if (!albumId || !mbid || !title || !artist) {

@@ -1,33 +1,26 @@
 import Link from 'next/link';
-import { getMyFeed, getSupplementalFeedActivity } from '@/app/actions/feed';
+import { getMyFeed } from '@/app/actions/feed';
 import { redirect } from 'next/navigation';
 import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 import { getSuggestedUsers } from '@/app/actions/social';
+import type { SuggestedUser } from '@/app/actions/social';
 import FollowButton from '@/components/social/FollowButton';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 
 /**
  * Feed state machine — calculé une seule fois, drive fetches ET rendu.
  *
- * empty_no_network    0 events  <2 followings  → CTAs + suggestions
- * empty_with_network  0 events  ≥2 followings  → CTAs + activité récente
- * sparse_no_network   1-2 ev.   <2 followings  → feed + suggestions
- * sparse_with_network 1-2 ev.   ≥2 followings  → feed + activité récente
- * normal              ≥3 ev.    (peu importe)  → feed seul
+ * empty   0 events  → CTAs + suggestions
+ * sparse  1-2 ev.   → feed + suggestions
+ * normal  ≥3 ev.    → feed seul
  */
-type FeedState =
-  | 'empty_no_network'
-  | 'empty_with_network'
-  | 'sparse_no_network'
-  | 'sparse_with_network'
-  | 'normal';
+type FeedState = 'empty' | 'sparse' | 'normal';
 
-function computeFeedState(eventCount: number, followingCount: number): FeedState {
+function computeFeedState(eventCount: number): FeedState {
   if (eventCount >= 3) return 'normal';
-  const hasNetwork = followingCount >= 2;
-  if (eventCount === 0) return hasNetwork ? 'empty_with_network' : 'empty_no_network';
-  return hasNetwork ? 'sparse_with_network' : 'sparse_no_network';
+  if (eventCount === 0) return 'empty';
+  return 'sparse';
 }
 
 export default async function FeedPage() {
@@ -58,25 +51,19 @@ export default async function FeedPage() {
 
   const following = followingCount ?? 0;
 
-  const feedResult = await getMyFeed({ limit: 20 });
+  const [feedResult, suggestedUsers] = await Promise.all([
+    getMyFeed({ limit: 20 }),
+    following < 5 ? getSuggestedUsers(5) : Promise.resolve([] as SuggestedUser[]),
+  ]);
+
   if (!feedResult.success) console.error('Feed error:', feedResult.error);
 
   const events = feedResult.events;
-  const state = computeFeedState(events.length, following);
-
-  // Fetch only what this state needs
-  const needsSupplemental = state === 'empty_with_network' || state === 'sparse_with_network';
-  // Show suggestions until user has a solid network (< 5 followings), regardless of state
-  const needsSuggestions = following < 5;
-
-  const [supplementalEvents, suggestedUsers] = await Promise.all([
-    needsSupplemental ? getSupplementalFeedActivity(user.id, 5) : Promise.resolve([]),
-    needsSuggestions ? getSuggestedUsers(5) : Promise.resolve([]),
-  ]);
+  const state = computeFeedState(events.length);
 
   const SuggestedUsersSection = () => (
     <div className="divide-y divide-border-divider">
-      {suggestedUsers.map((p) => (
+      {suggestedUsers.map((p: SuggestedUser) => (
         <div key={p.id} className="flex items-center gap-4 py-4">
           <Link href={`/u/${p.username}`} className="flex-shrink-0">
             <div className="rounded-full overflow-hidden border border-border">
@@ -114,8 +101,8 @@ export default async function FeedPage() {
         <p className="text-[14px] text-text-tertiary">Ce qui se passe autour de toi.</p>
       </div>
 
-      {/* ── empty_no_network ─────────────────────────────────────────────────── */}
-      {state === 'empty_no_network' && (
+      {/* ── empty ────────────────────────────────────────────────────────────── */}
+      {state === 'empty' && (
         <div className="py-4">
           <p className="text-[16px] text-text-secondary mb-2">Le fil est calme pour l&apos;instant.</p>
           <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed">
@@ -124,7 +111,7 @@ export default async function FeedPage() {
           <div className="flex flex-col gap-3 mb-12">
             <AddAlbumCTA />
             <Link
-              href="/search"
+              href="/explore"
               className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
             >
               <p className="text-[14px] text-text-primary font-medium">Explorer des albums</p>
@@ -142,41 +129,8 @@ export default async function FeedPage() {
         </div>
       )}
 
-      {/* ── empty_with_network ───────────────────────────────────────────────── */}
-      {state === 'empty_with_network' && (
-        <div className="py-4">
-          <p className="text-[16px] text-text-secondary mb-2">Le fil est calme pour l&apos;instant.</p>
-          <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed">
-            Les gens que tu suis ne sont pas encore très actifs. En attendant, voici leurs dernières écoutes.
-          </p>
-          <div className="mb-10">
-            <AddAlbumCTA />
-          </div>
-          {supplementalEvents.length > 0 && (
-            <div>
-              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                Activité récente
-              </p>
-              <FeedInfiniteList
-                initialEvents={supplementalEvents}
-                initialCursor={null}
-                currentUserId={user.id}
-              />
-            </div>
-          )}
-          {suggestedUsers.length > 0 && (
-            <div className="mt-12">
-              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                Personnes à suivre
-              </p>
-              <SuggestedUsersSection />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── sparse_no_network ────────────────────────────────────────────────── */}
-      {state === 'sparse_no_network' && (
+      {/* ── sparse ───────────────────────────────────────────────────────────── */}
+      {state === 'sparse' && (
         <>
           <FeedInfiniteList
             initialEvents={events}
@@ -192,37 +146,6 @@ export default async function FeedPage() {
               <div className="mt-6">
                 <AddAlbumCTA />
               </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── sparse_with_network ──────────────────────────────────────────────── */}
-      {state === 'sparse_with_network' && (
-        <>
-          <FeedInfiniteList
-            initialEvents={events}
-            initialCursor={feedResult.nextCursor ?? null}
-            currentUserId={user.id}
-          />
-          {supplementalEvents.length > 0 && (
-            <div className="mt-12">
-              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                Activité récente
-              </p>
-              <FeedInfiniteList
-                initialEvents={supplementalEvents}
-                initialCursor={null}
-                currentUserId={user.id}
-              />
-            </div>
-          )}
-          {suggestedUsers.length > 0 && (
-            <div className="mt-12">
-              <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                Personnes à suivre
-              </p>
-              <SuggestedUsersSection />
             </div>
           )}
         </>

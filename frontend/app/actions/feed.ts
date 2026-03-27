@@ -110,6 +110,8 @@ export async function getMyFeed({
           rating,
           review_body,
           album_id,
+          likes_count,
+          comments_count,
           album:albums (
             id,
             title,
@@ -138,61 +140,45 @@ export async function getMyFeed({
       return { success: true, events: [], nextCursor: null };
     }
 
-    // Get like stats for all entries
+    // Only fetch which entries the current user has liked (small targeted query)
     const entryIds = (rawEvents || [])
       .filter((e: any) => e.entry_id)
       .map((e: any) => e.entry_id);
 
-    const { data: statsData } = entryIds.length > 0
+    const { data: likedData } = entryIds.length > 0
       ? await supabase
           .from('diary_likes')
-          .select('entry_id, user_id')
+          .select('entry_id')
           .in('entry_id', entryIds)
+          .eq('user_id', user.id)
       : { data: [] };
 
-    const likeStats = new Map<string, { count: number; userLiked: Set<string> }>();
-    (statsData || []).forEach((like: any) => {
-      if (!likeStats.has(like.entry_id)) {
-        likeStats.set(like.entry_id, { count: 0, userLiked: new Set() });
-      }
-      const stat = likeStats.get(like.entry_id)!;
-      stat.count++;
-      stat.userLiked.add(like.user_id);
-    });
+    const likedEntryIds = new Set((likedData || []).map((l: any) => l.entry_id));
 
-    // Get comment counts for all entries
-    const { data: commentsData } = entryIds.length > 0
+    // Also fetch which entries the current user has commented on (for COMMENT_CREATED flag)
+    const { data: commentedData } = entryIds.length > 0
       ? await supabase
           .from('diary_comments')
-          .select('entry_id, user_id')
+          .select('entry_id')
           .in('entry_id', entryIds)
+          .eq('user_id', user.id)
       : { data: [] };
 
-    const commentStats = new Map<string, number>();
-    const commentersByEntry = new Map<string, Set<string>>();
-    (commentsData || []).forEach((comment: any) => {
-      commentStats.set(comment.entry_id, (commentStats.get(comment.entry_id) || 0) + 1);
-      if (!commentersByEntry.has(comment.entry_id)) {
-        commentersByEntry.set(comment.entry_id, new Set());
-      }
-      commentersByEntry.get(comment.entry_id)!.add(comment.user_id);
-    });
+    const commentedEntryIds = new Set((commentedData || []).map((c: any) => c.entry_id));
 
     // Map DB events to frontend types
     const events: FeedEvent[] = (rawEvents || [])
       .map((raw: any) => {
         const mapped = mapFeedEvent(raw);
-        // Attach like stats if it's a review
-        if (mapped && mapped.type === 'REVIEW_CREATED' && mapped.entry_id) {
-          const stat = likeStats.get(mapped.entry_id);
-          mapped.likes_count = stat?.count || 0;
-          mapped.is_liked = stat?.userLiked.has(user.id) || false;
-          mapped.comments_count = commentStats.get(mapped.entry_id) || 0;
+        // Attach denormalized counts + is_liked for reviews
+        if (mapped && mapped.type === 'REVIEW_CREATED' && mapped.entry_id && raw.entry) {
+          mapped.likes_count = raw.entry.likes_count ?? 0;
+          mapped.comments_count = raw.entry.comments_count ?? 0;
+          mapped.is_liked = likedEntryIds.has(mapped.entry_id);
         }
         // Attach "also commented" flag for comment events from other users
         if (mapped && mapped.type === 'COMMENT_CREATED' && mapped.entry_id && mapped.actor.id !== user.id) {
-          const commenters = commentersByEntry.get(mapped.entry_id);
-          mapped.current_user_also_commented = commenters?.has(user.id) || false;
+          mapped.current_user_also_commented = commentedEntryIds.has(mapped.entry_id);
         }
         return mapped;
       })
@@ -336,78 +322,6 @@ function mapFeedEvent(raw: any): FeedEvent | null {
 }
 
 /**
- * Supplemental feed: fetch recent diary entries from followed users directly.
- * Used when the user has ≥2 followings but fewer than 3 feed events
- * (followees may not have been active since the follow happened).
- */
-export async function getSupplementalFeedActivity(userId: string, limit = 5): Promise<FeedEvent[]> {
-  try {
-    const supabase = await createSupabaseServer();
-
-    // Step 1 — get followees
-    const { data: follows, error: followsError } = await supabase
-      .from('follows')
-      .select('followee_id')
-      .eq('follower_id', userId);
-
-    if (followsError || !follows || follows.length === 0) return [];
-
-    const followeeIds = follows.map((f) => f.followee_id);
-
-    // Step 2 — fetch their recent diary entries + albums
-    // Note: diary_entries has no FK to profiles in the schema, so profiles must be fetched separately
-    const { data: entries, error: entriesError } = await supabase
-      .from('diary_entries')
-      .select(`
-        id,
-        user_id,
-        rating,
-        review_body,
-        created_at,
-        album:albums ( id, title, cover_url )
-      `)
-      .in('user_id', followeeIds)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (entriesError || !entries || entries.length === 0) return [];
-
-    // Step 3 — fetch profiles for the authors
-    const authorIds = [...new Set(entries.map((e: any) => e.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url')
-      .in('id', authorIds);
-
-    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-    return entries
-      .map((e: any): FeedEvent | null => {
-        const actor = profileMap.get(e.user_id);
-        if (!actor || !e.album) return null;
-        return {
-          id: `supplemental-${e.id}`,
-          type: e.rating !== null ? 'REVIEW_CREATED' : 'UNRATED_LISTEN',
-          actor: {
-            id: actor.id,
-            username: actor.username,
-            display_name: actor.display_name,
-            avatar_url: actor.avatar_url,
-          },
-          album: { id: e.album.id, title: e.album.title, cover_url: e.album.cover_url },
-          rating: e.rating ?? undefined,
-          review_excerpt: e.review_body ? e.review_body.substring(0, 150) : undefined,
-          entry_id: e.id,
-          created_at: e.created_at,
-        };
-      })
-      .filter(Boolean) as FeedEvent[];
-  } catch {
-    return [];
-  }
-}
-
-/**
  * Private: Fanout event to feed_events
  * Append-only: INSERT only, never UPDATE/DELETE
  * 
@@ -417,6 +331,47 @@ export async function getSupplementalFeedActivity(userId: string, limit = 5): Pr
  * 
  * Never exposed to client
  */
+/**
+ * Backfill: when a user follows someone, insert that person's last N feed_events
+ * into the follower's feed so it's not empty right away.
+ * Only inserts events that don't already exist (upsert by actor_id + type + entry_id + album_id).
+ */
+export async function backfillFolloweeEvents(followerId: string, followeeId: string, limit = 20) {
+  try {
+    const supabase = await createSupabaseServer();
+    const supabaseAdmin = createSupabaseAdmin();
+
+    // Fetch the followee's recent events that were already fanned out to any recipient
+    // We use a single known recipient (the followee themselves) as a proxy
+    const { data: sourceEvents, error } = await supabase
+      .from('feed_events')
+      .select('actor_id, followee_id, type, entry_id, album_id, created_at, payload')
+      .eq('actor_id', followeeId)
+      .eq('user_id', followeeId) // the followee's own copy of their events
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error || !sourceEvents || sourceEvents.length === 0) return;
+
+    const rows = sourceEvents.map((e) => ({
+      user_id: followerId,
+      actor_id: e.actor_id,
+      followee_id: e.followee_id ?? null,
+      type: e.type,
+      entry_id: e.entry_id ?? null,
+      album_id: e.album_id ?? null,
+      created_at: e.created_at,
+      payload: e.payload ?? {},
+    }));
+
+    await supabaseAdmin
+      .from('feed_events')
+      .upsert(rows, { onConflict: 'user_id,actor_id,type,entry_id,album_id', ignoreDuplicates: true });
+  } catch (err) {
+    console.error('backfillFolloweeEvents error:', err);
+  }
+}
+
 export async function fanoutEvent(
   type: 'diary_entry' | 'like' | 'comment' | 'follow' | 'discover',
   payload: Record<string, unknown>,

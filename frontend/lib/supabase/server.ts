@@ -37,6 +37,18 @@ export async function createSupabaseServer() {
 }
 
 /**
+ * Client Supabase anonyme — sans cookies, sans session utilisateur.
+ * À utiliser pour fetcher des données publiques dans des pages ISR/statiques.
+ * N'appelle PAS cookies() → ne force pas le rendu dynamique.
+ */
+export function createSupabaseAnon() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+/**
  * Client Supabase admin (service role) - server only.
  * A utiliser uniquement dans les server actions pour bypass RLS.
  */

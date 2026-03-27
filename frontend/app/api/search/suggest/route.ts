@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/server";
+import { applyRateLimit } from "@/lib/serverRateLimit";
 
 type SuggestItem = {
   id: string;
@@ -14,6 +15,9 @@ function escapeILike(s: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  const limited = await applyRateLimit(request);
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim();
   const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isProductEventName, logProductEvent } from '@/lib/productEvents';
 import { getAuthUser } from '@/lib/supabase/server';
+import { applyRateLimit } from '@/lib/serverRateLimit';
 
 export async function POST(request: NextRequest) {
+  const limited = await applyRateLimit(request);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const eventName = typeof body?.eventName === 'string' ? body.eventName : '';

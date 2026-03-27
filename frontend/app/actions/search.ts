@@ -1,5 +1,6 @@
 "use server";
 
+import { logAuthedProductEvent } from "@/lib/productEvents";
 import { createSupabaseServer } from "@/lib/supabase/server";
 
 export type SearchResultUI = {
@@ -140,6 +141,26 @@ export async function searchInternal(
     };
     return rankOf(bT) - rankOf(aT);
   });
+
+  // Fire-and-forget — analytics must not block the search response
+  logAuthedProductEvent("search_used", {
+    surface: "internal_search",
+    properties: {
+      kind,
+      query_length: trimmed.length,
+      result_count: results.length,
+    },
+  }).catch(() => {});
+
+  if (results.length === 0) {
+    logAuthedProductEvent("search_no_results", {
+      surface: "internal_search",
+      properties: {
+        kind,
+        query_length: trimmed.length,
+      },
+    }).catch(() => {});
+  }
 
   return results;
 }

@@ -1,0 +1,181 @@
+query,expected_title,expected_artist,type,eval_mode
+thriller,Thriller,Michael Jackson,album,core
+thriller michael jackson,Thriller,Michael Jackson,album+artist,core
+bad michael jackson,Bad,Michael Jackson,album,core
+off the wall michael jackson,Off the Wall,Michael Jackson,album+artist,core
+daft punk,Daft Punk,,artist,core
+random access memories,Random Access Memories,Daft Punk,album,core
+random access memories daft punk,Random Access Memories,Daft Punk,album+artist,core
+ram daft punk,Random Access Memories,Daft Punk,short,out_of_scope
+discovery daft punk,Discovery,Daft Punk,album+artist,core
+homework daft punk,Homework,Daft Punk,album+artist,core
+eminem,Eminem,,artist,core
+marshall mathers lp,The Marshall Mathers LP,Eminem,album,core
+eminem curtain call,Curtain Call: The Hits,Eminem,album,ambiguous
+recovery eminem,Recovery,Eminem,album+artist,core
+slim shady lp,The Slim Shady LP,Eminem,album,core
+kanye west,Kanye West,,artist,core
+graduation kanye west,Graduation,Kanye West,album+artist,core
+my beautiful dark twisted fantasy kanye,My Beautiful Dark Twisted Fantasy,Kanye West,album+artist,core
+yeezus kanye west,Yeezus,Kanye West,album+artist,core
+college dropout kanye,The College Dropout,Kanye West,album+artist,core
+drake,Drake,,artist,core
+take care drake,Take Care,Drake,album+artist,core
+nothing was the same drake,Nothing Was the Same,Drake,album+artist,core
+adele,Adele,,artist,core
+21 adele,21,Adele,album+artist,core
+25 adele,25,Adele,album+artist,core
+30 adele,30,Adele,album+artist,core
+taylor swift,Taylor Swift,,artist,core
+1989 taylor swift,1989,Taylor Swift,album+artist,core
+fearless taylor swift,Fearless,Taylor Swift,album+artist,core
+pink floyd,Pink Floyd,,artist,core
+dark side of the moon,The Dark Side of the Moon,Pink Floyd,album,core
+the dark side of the moon pink floyd,The Dark Side of the Moon,Pink Floyd,album+artist,core
+wish you were here pink floyd,Wish You Were Here,Pink Floyd,album+artist,core
+the wall pink floyd,The Wall,Pink Floyd,album+artist,core
+nirvana,Nirvana,,artist,core
+nevermind nirvana,Nevermind,Nirvana,album+artist,core
+in utero nirvana,In Utero,Nirvana,album+artist,core
+metallica,Metallica,,artist,core
+master of puppets,Master of Puppets,Metallica,album,core
+ride the lightning metallica,Ride the Lightning,Metallica,album+artist,core
+queen,Queen,,artist,core
+a night at the opera queen,A Night at the Opera,Queen,album+artist,core
+news of the world queen,News of the World,Queen,album+artist,core
+beatles,The Beatles,,artist,core
+abbey road,Abbey Road,The Beatles,album,core
+abbey road beatles,Abbey Road,The Beatles,album+artist,core
+let it be beatles,Let It Be,The Beatles,album+artist,core
+sgt pepper beatles,Sgt. Pepper's Lonely Hearts Club Band,The Beatles,album+artist,core
+weeknd,The Weeknd,,artist,core
+after hours weeknd,After Hours,The Weeknd,album+artist,core
+starboy weeknd,Starboy,The Weeknd,album+artist,core
+rihanna,Rihanna,,artist,core
+anti rihanna,Anti,Rihanna,album+artist,core
+radiohead,Radiohead,,artist,core
+ok computer,OK Computer,Radiohead,album,core
+ok computer radiohead,OK Computer,Radiohead,album+artist,core
+kid a radiohead,Kid A,Radiohead,album+artist,core
+in rainbows radiohead,In Rainbows,Radiohead,album+artist,core
+kendrick lamar,Kendrick Lamar,,artist,core
+good kid maad city,"good kid, m.A.A.d city",Kendrick Lamar,album,core
+good kid maad city kendrick lamar,"good kid, m.A.A.d city",Kendrick Lamar,album+artist,core
+to pimp a butterfly kendrick,To Pimp a Butterfly,Kendrick Lamar,album+artist,core
+david bowie,David Bowie,,artist,core
+ziggy stardust,The Rise and Fall of Ziggy Stardust and the Spiders from Mars,David Bowie,album,core
+heroes david bowie,Heroes,David Bowie,album+artist,core
+led zeppelin,Led Zeppelin,,artist,core
+led zeppelin iv,Led Zeppelin IV,Led Zeppelin,album,core
+born to run bruce springsteen,Born to Run,Bruce Springsteen,album+artist,core
+bruce springsteen,Bruce Springsteen,,artist,core
+boards of canada,Boards of Canada,,artist,core
+boards of canada geogaddi,Geogaddi,Boards of Canada,album+artist,core
+thriler michael jakson,Thriller,Michael Jackson,typo,out_of_scope
+daft pank random access,Random Access Memories,Daft Punk,typo,out_of_scope
+eminem lose yurself,Lose Yourself,Eminem,typo,out_of_scope
+nevrmind nirvana,Nevermind,Nirvana,typo,out_of_scope
+ok komputer radiohead,OK Computer,Radiohead,typo,out_of_scope
+dark side moon pink floyd,The Dark Side of the Moon,Pink Floyd,typo,core
+whats going on,What's Going On,Marvin Gaye,punctuation,ambiguous
+what's going on marvin gaye,What's Going On,Marvin Gaye,punctuation,core
+whos next the who,Who's Next,The Who,punctuation,core
+greatest hits queen,Greatest Hits,Queen,ambiguous,ambiguous
+greatest hits,Greatest Hits,,ambiguous,ambiguous
+black album metallica,Metallica,Metallica,ambiguous,ambiguous
+black album,Metallica,Metallica,ambiguous,ambiguous
+ram,RAM,Daft Punk,ambiguous,ambiguous
+the wall,The Wall,Pink Floyd,ambiguous,core
+love,Love,,ambiguous,ambiguous
+
+# --- FRANCE ---
+
+stromae racine carrée,Racine carrée,Stromae,artist_first,core
+indochine l aventurier,L'Aventurier,Indochine,punctuation,ambiguous
+daft punk discovery,Discovery,Daft Punk,artist_first,core
+jul bande organise,Bande organisée,Jul,modern_fr,ambiguous
+nekfeu feu,Feu,Nekfeu,artist_first,core
+
+# --- INDIA / TAMIL ---
+
+ar rahman roja,Roja,A. R. Rahman,artist_first,core
+anirudh vikram,Vikram,Anirudh Ravichander,artist_first,core
+master vijay songs,Master,Anirudh Ravichander,indian_noise,ambiguous
+why this kolaveri di,Why This Kolaveri Di,Anirudh Ravichander,track_like,ambiguous
+
+# --- JAPAN ---
+
+utada hikaru first love,First Love,Hikaru Utada,artist_first,core
+yoasobi idol,Idol,YOASOBI,artist_first,ambiguous
+radwimps your name,Your Name,RADWIMPS,anime_case,ambiguous
+
+# --- KOREA ---
+
+bts dynamite,Dynamite,BTS,kpop,ambiguous
+blackpink the album,The Album,BLACKPINK,kpop,core
+newjeans hype boy,Hype Boy,NewJeans,kpop,ambiguous
+
+# --- AFRICA ---
+
+wizkid made in lagos,Made in Lagos,Wizkid,afrobeats,core
+burna boy african giant,African Giant,Burna Boy,afrobeats,core
+diamond platnumz jeje,Jeje,Diamond Platnumz,africa,ambiguous
+
+# --- LATIN ---
+
+bad bunny yhlqmdlg,YHLQMDLG,Bad Bunny,latin,core
+rosalia motomami,MOTOMAMI,Rosalía,latin,core
+j balvin colores,Colores,J Balvin,latin,core
+
+# --- ELECTRONIC / LESS MAINSTREAM ---
+
+aphex twin selected ambient works,Selected Ambient Works 85-92,Aphex Twin,electronic,core
+boards of canada music has the right,Music Has the Right to Children,Boards of Canada,electronic,core
+burial untrue,Untrue,Burial,electronic,core
+
+# --- ROCK LESS OBVIOUS ---
+
+arctic monkeys am,AM,Arctic Monkeys,album,core
+the strokes is this it,Is This It,The Strokes,album,core
+tame impala currents,Currents,Tame Impala,album,core
+
+# --- EDGE CASES MB ---
+
+ok computer oknotok,OK Computer OKNOTOK 1997 2017,Radiohead,edition,ambiguous
+abbey road remastered,Abbey Road,The Beatles,remaster,ambiguous
+nevermind deluxe,Nevermind,Nirvana,deluxe,ambiguous
+
+# --- VERY SHORT / HARD ---
+
+am arctic monkeys,AM,Arctic Monkeys,short,core
+x ed sheeran,X,Ed Sheeran,short,core
+÷ ed sheeran,Divide,Ed Sheeran,symbol,ambiguous
+
+# --- SYMBOL / SPECIAL ---
+
+divide ed sheeran,Divide,Ed Sheeran,normalized,ambiguous
+the xx xx,xx,The xx,edge_symbol,ambiguous
+
+# --- USER BEHAVIOR REAL ---
+
+song from titanic,My Heart Will Go On,Celine Dion,user_intent,out_of_scope
+fast and furious song,See You Again,Wiz Khalifa,user_intent,out_of_scope
+interstellar soundtrack,Interstellar,Hans Zimmer,user_intent,ambiguous
+
+# --- CONFUSION ARTIST/TITLE ---
+
+phoenix phoenix,Phoenix,Phoenix,confusion,ambiguous
+metallica metallica,Metallica,Metallica,confusion,core
+blink 182 blink,Blink-182,Blink-182,confusion,core
+
+# --- MULTI LANGUAGE ---
+
+despacito luis fonsi,Despacito,Luis Fonsi,spanish,ambiguous
+ai se eu te pego,ai se eu te pego,Michel Teló,brazil,ambiguous
+zaz je veux,Je veux,Zaz,french,ambiguous
+
+# --- HARD PARTIAL ---
+
+dark side pink,The Dark Side of the Moon,Pink Floyd,partial,ambiguous
+random access daft,Random Access Memories,Daft Punk,partial,ambiguous
+beautiful fantasy kanye,My Beautiful Dark Twisted Fantasy,Kanye West,partial,ambiguous

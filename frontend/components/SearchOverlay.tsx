@@ -36,28 +36,49 @@ function stripArticle(s: string): string {
   return s.replace(/^(the|a|an) /, "");
 }
 
+// Keywords that indicate tribute/cover/karaoke artists — penalised heavily
+const TRIBUTE_KEYWORDS = ["tribute", "karaoke", "backing track", "made famous", "originally performed"];
+
 /** Score a result for ordering — higher = more relevant */
 function computeRank(item: SearchResultUI, query: string): number {
   const t = stripArticle(normalize(item.title));
   const q = stripArticle(normalize(query));
+  const artistStr = normalize(item.subtitle || "");
   let rank = 0;
 
-  // MB score (0–100 → 0–80) — dominant signal for external results
-  if (item.score !== undefined) rank += item.score * 0.8;
+  // Tribute / karaoke penalty: these are almost never what the user wants.
+  // Check both title and artist fields to catch "Kanye West Tribute Band" style names.
+  if (TRIBUTE_KEYWORDS.some((k) => t.includes(k) || artistStr.includes(k))) rank -= 150;
 
-  // Small bonus for internal (already imported), not enough to bury a perfect MB match
-  if (item.source === "internal") rank += 40;
+  // Live / remix version penalty: targets suffixes like "(live)", "(remix)", "(acoustic)"
+  // in parentheses or after a dash — avoids penalising "Live Through This", "Remix" (artist).
+  // Only fires when the query doesn't explicitly ask for a live/remix version.
+  const versionSuffix = /[\(\[]\s*(?:live|remix|acoustic|session|demo|version)\s*[\)\]]/i;
+  if (versionSuffix.test(item.title) && !versionSuffix.test(query)) rank -= 120;
 
-  // Popularity signal: log-scale bonus for release-count.
-  // Iconic albums (Thriller ~100 releases) score ~100 pts; obscure ones (~2) score ~24 pts.
-  // Separates MJ's Thriller from a no-name "Thriller" album that also exact-matches.
-  if (item.releaseCount) rank += Math.log2(item.releaseCount + 1) * 15;
+  // Artist match bonus: if the query contains the artist's name, the result is almost
+  // certainly the intended one — "thriller michael jackson" → bonus for MJ, not Augustus Pablo.
+  if (artistStr && q.includes(artistStr)) rank += 80;
+  else if (artistStr && artistStr.includes(q)) rank += 20;
 
-  // Text similarity on normalised + article-stripped strings.
-  // Bidirectional includes catches "Thriller" when query is "michael jackson thriller".
-  if (t === q) rank += 500;
-  else if (t.startsWith(q)) rank += 200;
-  else if (t.includes(q) || q.includes(t)) rank += 30;
+  // Text similarity — scored BEFORE MB to cap MB's contribution proportionally.
+  // Exact match (t === q): MB score barely matters — text quality already proves relevance.
+  // Starts-with: MB score capped at 40 to avoid titles like "Ziggy Stardust (Live)" by
+  // an obscure band beating Bowie's canonical album purely via a high MB title-match score.
+  let textScore = 0;
+  if (t === q) { textScore = 300; rank += Math.min((item.score ?? 0) * 0.8, 20); }
+  else if (t.startsWith(q)) { textScore = 150; rank += Math.min((item.score ?? 0) * 0.8, 40); }
+  else if (t.includes(q) || q.includes(t)) { textScore = 50; rank += (item.score ?? 0) * 0.8; }
+  else { rank += (item.score ?? 0) * 0.8; }
+  rank += textScore;
+
+  // Imported albums take clear priority: the user has already decided they're relevant.
+  if (item.source === "internal") rank += 120;
+
+  // Popularity: use actual releaseCount for MB results; default 50 for internal albums
+  // (internal = curated quality, should be competitive with popular MB results).
+  const effectiveReleaseCount = item.releaseCount ?? (item.source === "internal" ? 50 : 0);
+  if (effectiveReleaseCount > 0) rank += Math.min(Math.log2(effectiveReleaseCount + 1) * 12, 80);
 
   return rank;
 }
@@ -227,18 +248,23 @@ export default function SearchOverlay() {
     const limit = activeTab === "all" ? 8 : 6;
 
     const run = async () => {
-      // Debounce
-      await new Promise((r) => setTimeout(r, 200));
+      // Debounce — 300ms prevents MB spam on fast typing
+      await new Promise((r) => setTimeout(r, 300));
       if (aborted) return;
 
       setLoading(true);
       setResults([]);
 
-      // Launch MB immediately — runs in parallel with internal search
+      // ── PHASE 2 — launch MB in background (parallel with phase 1) ──────────
+      // Must be started BEFORE awaiting anything, so it runs concurrently.
+      // Cache hit (~1ms memory / ~15ms Supabase) → ready before phase 1 finishes.
+      // MB cold (~300ms) → enriches after phase 1 paint.
+      // Timeout 400ms server-side → if MB is slow, phase 1 result stands.
+      // ────────────────────────────────────────────────────────────────────────
       const mbPromise = activeTab !== "users"
         ? Promise.all([
             activeTab === "all" || activeTab === "albums"
-              ? searchMusicBrainzAlbums(q, 8)
+              ? searchMusicBrainzAlbums(q, 20)
               : Promise.resolve(null),
             activeTab === "all" || activeTab === "artists"
               ? searchMusicBrainzArtists(q, 5)
@@ -248,19 +274,23 @@ export default function SearchOverlay() {
 
       if (activeTab !== "users") setLoadingExtended(true);
 
-      // 1. Internal search (fast) — first paint
+      // ── PHASE 1 — internal search only (blocking, fast, immediate paint) ───
+      // INVARIANT: nothing between here and setResults() below may block on
+      // external I/O. searchInternal is a single Supabase query with no awaited
+      // side-effects (analytics are fire-and-forget).
+      // ────────────────────────────────────────────────────────────────────────
       let internal: SearchResultUI[] = [];
       try {
         internal = await searchInternal(q, activeTab);
       } catch {
-        // Internal failed — continue with MB only
+        // Internal failed — MB-only fallback handled in phase 2
       }
       if (aborted) return;
 
-      setResults(mergeAndRank(internal, [], q, limit));
+      setResults(mergeAndRank(internal, [], q, limit)); // ← first paint
       setLoading(false);
 
-      // 2. Await MB (already running)
+      // ── PHASE 2 — merge MB results (non-blocking update) ────────────────────
       if (mbPromise) {
         try {
           const [mbAlbumsRes, mbArtistsRes] = await mbPromise;

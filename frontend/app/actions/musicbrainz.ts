@@ -1,11 +1,16 @@
 'use server';
 
+import { logAuthedProductEvent } from '@/lib/productEvents';
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import type { SearchResultUI } from './search';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
-const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 heures
+const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 heures
+
+// Search timeout: prod (Vercel → MB) ~200ms, dev (localhost → MB) ~400ms.
+// 800ms gives comfortable headroom in both environments.
+const MB_SEARCH_TIMEOUT_MS = 800;
 
 // Secondary types that indicate non-studio releases (live, compilation, etc.)
 const EXCLUDED_SECONDARY_TYPES = new Set([
@@ -119,8 +124,13 @@ export type ArtistSearchResult = {
 export type SearchFilter = 'all' | 'albums' | 'artists';
 
 // ---------------------------------------------------------------------------
-// Search cache helpers (shared across all users, stored in Supabase)
+// Search cache — L1: module-level Map (~1ms), L2: Supabase (~15ms prod / ~250ms dev)
 // ---------------------------------------------------------------------------
+
+/** In-memory cache — persists across requests within the same server instance.
+ *  Shorter TTL than Supabase so stale data doesn't accumulate in long-running processes. */
+const memCache = new Map<string, { data: unknown; expiresAt: number }>();
+const MEM_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /** Simple non-cryptographic hash for cache keys — avoids storing raw queries */
 function hashCacheKey(query: string, type: string): string {
@@ -135,10 +145,14 @@ function hashCacheKey(query: string, type: string): string {
 }
 
 async function getCachedResults<T>(key: string): Promise<T | null> {
+  // L1: memory (~1ms)
+  const mem = memCache.get(key);
+  if (mem && mem.expiresAt > Date.now()) return mem.data as T;
+
+  // L2: Supabase (~15ms prod, ~250ms dev)
   try {
-    const supabase = await createSupabaseServer();
-    // Cast to any: search_cache table exists only after migration — TS types lag behind
-    const { data } = await (supabase as any)
+    const db = createSupabaseAdmin() as any;
+    const { data } = await db
       .from('search_cache')
       .select('data')
       .eq('key', key)
@@ -146,27 +160,29 @@ async function getCachedResults<T>(key: string): Promise<T | null> {
       .maybeSingle();
     if (!data) return null;
     const result = data.data as T;
-    // Don't treat empty arrays as cache hits — re-query MB to get fresh results
     if (Array.isArray(result) && result.length === 0) return null;
+    // Populate L1 from Supabase hit
+    memCache.set(key, { data: result, expiresAt: Date.now() + MEM_CACHE_TTL_MS });
     return result;
   } catch {
-    return null; // Cache miss on error — degrade gracefully
+    return null;
   }
 }
 
 async function setCachedResults<T>(key: string, results: T): Promise<void> {
+  // L1: write synchronously (instant, no await)
+  memCache.set(key, { data: results, expiresAt: Date.now() + MEM_CACHE_TTL_MS });
+
+  // L2: persist to Supabase (async, survives server restarts)
   try {
-    const supabase = await createSupabaseServer();
+    const db = createSupabaseAdmin() as any;
     const expiresAt = new Date(Date.now() + CACHE_TTL_SECONDS * 1000).toISOString();
-    // Cast to any: search_cache table exists only after migration — TS types lag behind
-    const db = supabase as any;
-    // Purge expired entries while we're here (keep the table lean)
     await db.from('search_cache').delete().lt('expires_at', new Date().toISOString());
     await db
       .from('search_cache')
       .upsert({ key, data: results, expires_at: expiresAt }, { onConflict: 'key' });
   } catch {
-    // Cache write failure is non-fatal — the search result was already returned
+    // Supabase write failure is non-fatal — L1 is already populated
   }
 }
 
@@ -318,19 +334,34 @@ async function fetchWithRetry(
  * The browser follows the 307 redirect; no server-side fetching or rate-limiting.
  */
 export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promise<{ success: boolean; results?: AlbumSearchResult[]; error?: string }> {
-  const authUser = await getAuthUser();
-  if (!authUser) return { success: false, error: 'not_authenticated' };
-
-  // Check cache first — shared across all users
+  // Check cache first — no auth needed (admin client, public MB data)
+  // Cache hit path skips the getAuthUser() HTTP round-trip entirely (~700ms saved)
   const cacheKey = hashCacheKey(query, 'albums');
   const cached = await getCachedResults<AlbumSearchResult[]>(cacheKey);
   if (cached) {
     return { success: true, results: cached }; // already sorted by releaseCount
   }
 
+  // Cache miss: verify auth before calling MB API
+  const authUser = await getAuthUser();
+  if (!authUser) return { success: false, error: 'not_authenticated' };
+
   try {
+    // Expand common apostrophe-less contractions so MB's standard analyser can match them.
+    // MB indexes "What's" as "what" and "Who's" as "who" — if the user types "whats" or
+    // "whos" (no apostrophe), our query must send "what"/"who" or both to get a match.
+    const CONTRACTION_MAP: Record<string, string> = {
+      'whats': 'what', 'whos': 'who', 'hows': 'how', 'thats': 'that',
+      'wont': 'will not', 'dont': 'do not', 'cant': 'can', 'doesnt': 'does not',
+      'isnt': 'is not', 'wasnt': 'was not', 'werent': 'were not',
+      'im': 'i am', 'youre': 'you are', 'theyre': 'they are', 'its': 'it',
+    };
+    const expandContractions = (s: string) =>
+      s.split(/\s+/).map((w) => CONTRACTION_MAP[w.toLowerCase()] ?? w).join(' ');
+    const queryExpanded = expandContractions(query);
+
     // Preserve original terms to detect apostrophes before stripping them.
-    const preEscape = query.replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g, ' ').trim();
+    const preEscape = queryExpanded.replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g, ' ').trim();
     const originalTerms = preEscape.split(/\s+/);
     // Strip apostrophes for the Lucene query (apostrophes aren't in the special set but
     // cause token mismatches: MB tokenises "What's" as "what", so we need to strip them).
@@ -362,19 +393,91 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     // Always limit=100 (MB max) — no popularity ranking from MB.
     const phraseA = `releasegroup:"${escapedQuery}"~2`;
     const phraseB = decontractedPhrase !== escapedQuery ? ` OR releasegroup:"${decontractedPhrase}"~2` : '';
-    const termsClause = `(${terms.map((t) => `(releasegroup:${t} OR artistname:${t})`).join(' AND ')})`;
+
+    // Clause B: per-term cross-field AND — use DECONTRACTED terms so "what's" → "what"
+    // matches MB's standard-analyser tokens (which strip apostrophe+suffix).
+    const termsClause = `(${decontractedTerms.map((t) => `(releasegroup:${t} OR artistname:${t})`).join(' AND ')})`;
+
+    // Split strategy — generates multiple hypotheses when query mixes title + artist.
+    // All OR-combined so spurious matches are absorbed into a larger candidate pool
+    // and re-sorted by computeRank (text similarity + popularity).
+    //
+    // Strategy A — TITLE-THEN-ARTIST (user typed title first, artist last):
+    //   Clause C: last 1 word = artist  → releasegroup:title AND artistname:last*
+    //   Clause D: last 2 words = artist → releasegroup:title AND artistname:"last two"
+    //
+    // Strategy B — ARTIST-THEN-TITLE (user typed artist first, title last):
+    //   Clause F: first 1 word = artist → artistname:first* AND releasegroup:title
+    //             (skipped if first word is a stop word like "the", "a", "my"…)
+    //   Clause G: first 2 words = artist → artistname:"first two" AND releasegroup:title
+    //             e.g. "ar rahman roja" → artistname:"ar rahman" AND releasegroup:roja
+    //             e.g. "utada hikaru first love" → artistname:"utada hikaru" AND releasegroup:"first love"~1
+    //
+    // Strategy E — TITLE-ONLY fallbacks (no artist constraint, 3+ words only):
+    //   E1: title = all-but-last-1 (phrase) → catches "college dropout kanye"
+    //   E2: title = all-but-last-2 (word or phrase) → catches "graduation kanye west"
+    //   Handles renamed artists (e.g. Kanye West → Ye on MB) where artist clauses all fail.
+    const SPLIT_STOP_WORDS = new Set([
+      'a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'by', 'my',
+      'it', 'its', 'or', 'and', 'as', 'if', 'so', 'is', 'am', 'are', 'be',
+    ]);
+
+    let splitClauses = '';
+
+    if (decontractedTerms.length >= 2) {
+      // Clause C — title-last-1
+      const titleC = decontractedTerms.slice(0, -1).join(' ');
+      const artistC = decontractedTerms[decontractedTerms.length - 1];
+      const titleQC = titleC.includes(' ') ? `"${titleC}"~1` : titleC;
+      splitClauses += ` OR (releasegroup:${titleQC} AND artistname:${artistC}*)`;
+
+      // Clause F — artist-first-1 (only when first word is not a stop word)
+      const artistF = decontractedTerms[0];
+      if (!SPLIT_STOP_WORDS.has(artistF)) {
+        const titleF = decontractedTerms.slice(1).join(' ');
+        const titleQF = titleF.includes(' ') ? `"${titleF}"~1` : titleF;
+        splitClauses += ` OR (artistname:${artistF}* AND releasegroup:${titleQF})`;
+      }
+    }
+
+    if (decontractedTerms.length >= 3) {
+      // Clause D — title-last-2
+      const titleD = decontractedTerms.slice(0, -2).join(' ');
+      const artistD = decontractedTerms.slice(-2).join(' ');
+      const titleQD = titleD.includes(' ') ? `"${titleD}"~1` : titleD;
+      splitClauses += ` OR (releasegroup:${titleQD} AND artistname:"${artistD}")`;
+
+      // Clause G — artist-first-2
+      const artistG = decontractedTerms.slice(0, 2).join(' ');
+      const titleG = decontractedTerms.slice(2).join(' ');
+      if (titleG.length > 0) {
+        const titleQG = titleG.includes(' ') ? `"${titleG}"~1` : titleG;
+        splitClauses += ` OR (artistname:"${artistG}" AND releasegroup:${titleQG})`;
+      }
+
+      // Clause E1 — title-only (all-but-last-1), phrase search
+      const titleC = decontractedTerms.slice(0, -1).join(' ');
+      const titleQC = titleC.includes(' ') ? `"${titleC}"~1` : titleC;
+      splitClauses += ` OR releasegroup:${titleQC}`;
+
+      // Clause E2 — title-only (all-but-last-2), word or short phrase
+      splitClauses += ` OR releasegroup:${titleQD}`;
+    }
+
     const luceneQuery = terms.length === 1
       ? `releasegroup:${terms[0]}`
-      : `${phraseA}${phraseB} OR ${termsClause}`;
+      : `${phraseA}${phraseB} OR ${termsClause}${splitClauses}`;
 
     const mbUrl = new URL(`${MUSICBRAINZ_API}/release-group`);
     mbUrl.searchParams.set('query', luceneQuery);
     mbUrl.searchParams.set('limit', '100'); // Always max — popularity-agnostic API
     mbUrl.searchParams.set('fmt', 'json');
+    mbUrl.searchParams.set('inc', 'releases'); // Include releases array → rg.releases.length = release count for popularity ranking
 
+    // No retry — fail fast for search, rely on cache/internal if MB is slow
     const response = await fetchWithRetry(mbUrl.toString(), {
       headers: { 'User-Agent': USER_AGENT },
-    });
+    }, 1, MB_SEARCH_TIMEOUT_MS);
 
     if (!response.ok) {
       const error = `MusicBrainz search failed: ${response.status}`;
@@ -397,7 +500,14 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     //    computeRank (releaseCount + title similarity) handles quality sorting.
     // 2. Primary type must be Album or EP (was previously in Lucene — moved here for recall)
     // 3. No excluded secondary types (Live, Compilation, Remix, etc.)
-    const scoreThreshold = terms.length === 1 ? 60 : 30;
+    // Threshold: 60 for single-word (avoids noise), 20 for multi-word.
+    // Was 30 — lowered to 20 because combined OR queries (phrase + terms) dilute individual
+    // scores: "graduation kanye west" matches Kanye West's Graduation via the terms clause
+    // but MB assigns it ~20-28 because title+artist terms are split across fields.
+    // computeRank's text-similarity + popularity re-sorts quality after retrieval.
+    const scoreThreshold = terms.length === 1 ? 60 : 20;
+    const preFilterCount = releaseGroups.length;
+    console.log(`[searchMusicBrainzAlbums] "${query}" → ${preFilterCount} raw results (threshold=${scoreThreshold})`);
     const studioAlbums = releaseGroups.filter((rg) => {
       if ((rg.score || 0) < scoreThreshold) return false;
       const primaryType: string = rg['primary-type'] || '';
@@ -406,11 +516,18 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
       return !secondaryTypes.some((t) => EXCLUDED_SECONDARY_TYPES.has(t));
     });
 
-    // Sort by release-count DESC — more releases = more iconic/widely-distributed album.
+    // Sort by releases.length DESC — more releases = more iconic/widely-distributed album.
     // MB doesn't rank by popularity; this re-sorts its arbitrary ordering so canonical
     // albums (MJ's Thriller, Pink Floyd's DSOTM…) surface before obscure homonyms.
-    // MB search returns `count` (not `release-count` which is the browse endpoint field name)
-    studioAlbums.sort((a, b) => ((b['count'] || b['release-count'] || 0) - (a['count'] || a['release-count'] || 0)));
+    // Requires inc=releases in the search URL to get the releases array per release-group.
+    const releaseCountOf = (rg: any): number => (rg.releases as any[] | undefined)?.length ?? 0;
+    console.log(`[searchMusicBrainzAlbums] "${query}" → ${studioAlbums.length}/${preFilterCount} passed filter`);
+    if (process.env.NODE_ENV === 'development') {
+      studioAlbums.slice(0, 5).forEach(rg => {
+        console.log(`[MB] "${rg.title}" score=${rg.score} releases=${releaseCountOf(rg)} type=${rg['primary-type']}`);
+      });
+    }
+    studioAlbums.sort((a, b) => releaseCountOf(b) - releaseCountOf(a));
 
     // Results are already unique release-groups — no deduplication needed.
     // No slice here: return all filtered results so mergeAndRank can re-rank
@@ -431,12 +548,30 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
           coverUrl: `https://coverartarchive.org/release-group/${rg.id}/front`,
           hasCover: true,   // assume true; AlbumCoverImage handles 404s gracefully
           score: rg.score || 0,
-          releaseCount: rg['count'] || rg['release-count'] || 0,
+          releaseCount: (rg.releases as any[] | undefined)?.length || rg['release-count'] || 0,
         };
       });
 
     // Store in cache before returning (fire-and-forget)
     setCachedResults(cacheKey, results);
+
+    // Fire-and-forget — analytics must not block the search response
+    logAuthedProductEvent('search_used', {
+      surface: 'musicbrainz_albums',
+      properties: {
+        query_length: query.trim().length,
+        result_count: results.length,
+      },
+    }).catch(() => {});
+
+    if (results.length === 0) {
+      logAuthedProductEvent('search_no_results', {
+        surface: 'musicbrainz_albums',
+        properties: {
+          query_length: query.trim().length,
+        },
+      }).catch(() => {});
+    }
 
     return { success: true, results };
   } catch (err) {
@@ -456,15 +591,16 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
  * Wildcard on the last term enables prefix matching: "marvin ga" → finds Marvin Gaye.
  */
 export async function searchMusicBrainzArtists(query: string, limit = 30): Promise<{ success: boolean; results?: ArtistSearchResult[]; error?: string }> {
-  const authUser = await getAuthUser();
-  if (!authUser) return { success: false, error: 'not_authenticated' };
-
-  // Check cache first — shared across all users
+  // Check cache first — no auth needed (admin client, public MB data)
   const cacheKey = hashCacheKey(query, 'artists');
   const cached = await getCachedResults<ArtistSearchResult[]>(cacheKey);
   if (cached) {
     return { success: true, results: cached.slice(0, limit) };
   }
+
+  // Cache miss: verify auth before calling MB API
+  const authUser = await getAuthUser();
+  if (!authUser) return { success: false, error: 'not_authenticated' };
 
   try {
     // Build term-by-term with wildcard on the last word: "marvin ga" → artist:marvin AND artist:ga*
@@ -474,9 +610,11 @@ export async function searchMusicBrainzArtists(query: string, limit = 30): Promi
       return i === terms.length - 1 ? `artist:${esc}*` : `artist:${esc}`;
     });
     const luceneQuery = luceneParts.join(' AND ');
+    // No retry — fail fast for search, rely on cache/internal if MB is slow
     const response = await fetchWithRetry(
       `${MUSICBRAINZ_API}/artist?query=${encodeURIComponent(luceneQuery)}&fmt=json&limit=${limit}`,
-      { headers: { 'User-Agent': USER_AGENT } }
+      { headers: { 'User-Agent': USER_AGENT } },
+      1, MB_SEARCH_TIMEOUT_MS
     );
 
     if (!response.ok) {
@@ -498,6 +636,24 @@ export async function searchMusicBrainzArtists(query: string, limit = 30): Promi
 
     // Store in cache before returning (fire-and-forget)
     setCachedResults(cacheKey, results);
+
+    // Fire-and-forget — analytics must not block the search response
+    logAuthedProductEvent('search_used', {
+      surface: 'musicbrainz_artists',
+      properties: {
+        query_length: query.trim().length,
+        result_count: results.length,
+      },
+    }).catch(() => {});
+
+    if (results.length === 0) {
+      logAuthedProductEvent('search_no_results', {
+        surface: 'musicbrainz_artists',
+        properties: {
+          query_length: query.trim().length,
+        },
+      }).catch(() => {});
+    }
 
     return { success: true, results };
   } catch (err) {
@@ -612,6 +768,7 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       success: true,
       preview: {
         mbid: data.id,
+        releaseGroupMbid: releaseGroupId, // canonical identifier — always use this for dedup & storage
         title: data.title,
         artist: artist.name,
         artistMbid: artist.id,
@@ -643,26 +800,53 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    await logAuthedProductEvent('album_import_started', {
+      surface: 'musicbrainz_import',
+      properties: {
+        mbid,
+      },
+    });
+
     const supabase = await createSupabaseServer();
     const supabaseAdmin = createSupabaseAdmin();
 
     // Fetch preview
     const previewResult = await previewAlbumFromMusicBrainz(mbid);
     if (!previewResult.success) {
+      await logAuthedProductEvent('album_import_failed', {
+        surface: 'musicbrainz_import',
+        properties: {
+          mbid,
+          reason: previewResult.error ?? 'preview_failed',
+        },
+      });
       return previewResult;
     }
 
     const preview = previewResult.preview!;
 
+    // Always use release-group MBID as canonical identifier.
+    // The caller may pass a release MBID or a release-group MBID depending on entry point
+    // (search overlay uses release MBID, artist page uses release-group MBID).
+    // Normalising here ensures the dedup check and stored mbid are always the same value.
+    const canonicalMbid = preview.releaseGroupMbid || mbid;
+
     // Check if album already imported
     const { data: existingAlbum, error: existingAlbumError } = await supabase
       .from('albums')
       .select('id')
-      .eq('mbid', mbid)
+      .eq('mbid', canonicalMbid)
       .limit(1)
       .maybeSingle();
 
     if (existingAlbumError) {
+      await logAuthedProductEvent('album_import_failed', {
+        surface: 'musicbrainz_import',
+        properties: {
+          mbid: canonicalMbid,
+          reason: existingAlbumError.message,
+        },
+      });
       return { success: false, error: existingAlbumError.message };
     }
 
@@ -689,6 +873,13 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
         mbid: preview.artistMbid,
       });
       if (artistError) {
+        await logAuthedProductEvent('album_import_failed', {
+          surface: 'musicbrainz_import',
+          properties: {
+            mbid: canonicalMbid,
+            reason: artistError.message,
+          },
+        });
         return { success: false, error: artistError.message };
       }
       artistId = newArtistId;
@@ -704,7 +895,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
         id: newAlbumId,
         title: preview.title,
         artist_id: artistId,
-        mbid: mbid,
+        mbid: canonicalMbid,
         release_date: normalizeReleaseDate(preview.date),
         cover_url: preview.coverUrl || null,  // Use actual cover from preview
       });
@@ -713,6 +904,13 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       if (createdArtist) {
         await supabase.from('artists').delete().eq('id', artistId);
       }
+      await logAuthedProductEvent('album_import_failed', {
+        surface: 'musicbrainz_import',
+        properties: {
+          mbid: canonicalMbid,
+          reason: albumError.message,
+        },
+      });
       return { success: false, error: albumError.message };
     }
 
@@ -759,6 +957,13 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       const { error: tracksError } = await supabase.from('tracks').insert(trackRows);
       if (tracksError) {
         await rollbackImport();
+        await logAuthedProductEvent('album_import_failed', {
+          surface: 'musicbrainz_import',
+          properties: {
+            mbid: canonicalMbid,
+            reason: tracksError.message,
+          },
+        });
         return { success: false, error: tracksError.message };
       }
     }
@@ -785,6 +990,13 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
     if (externalError) {
       console.error('[importAlbumFromMusicBrainz] external_ids error:', externalError);
       await rollbackImport();
+      await logAuthedProductEvent('album_import_failed', {
+        surface: 'musicbrainz_import',
+        properties: {
+          mbid: canonicalMbid,
+          reason: externalError.message,
+        },
+      });
       return { success: false, error: externalError.message };
     }
 
@@ -792,6 +1004,13 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
     return { success: true, albumId: newAlbumId, imported: true, title: preview.title, artist: preview.artist, mbid };
   } catch (err) {
     console.error('[importAlbumFromMusicBrainz] catch:', err);
+    await logAuthedProductEvent('album_import_failed', {
+      surface: 'musicbrainz_import',
+      properties: {
+        mbid,
+        reason: String(err),
+      },
+    });
     return { success: false, error: String(err) };
   }
 }

@@ -157,87 +157,100 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
   const current = productSignals.current;
   const previous = productSignals.previous;
+  const totalFrictions = current.authErrors + current.noResultSearches + current.importFailures;
+  const activationRate = current.onboardings > 0 ? Math.round((current.albumLoggers / current.onboardings) * 100) : 0;
 
   return (
     <main className="min-h-screen bg-background pb-24">
-      <div className="mx-auto max-w-page px-6 py-6 lg:py-8">
+      <div className="mx-auto max-w-page px-6 py-6 lg:py-8 space-y-6">
+
+        {/* ── 1. Header ───────────────────────────────────────────────── */}
         <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
-          <div className="grid gap-8 lg:grid-cols-[1.35fr_0.95fr] lg:items-end">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <Tag tone="neutral">Admin cockpit</Tag>
                 <Tag tone={productSignals.available ? 'success' : 'warning'}>
                   {productSignals.available ? 'product events actifs' : 'product events indisponibles'}
                 </Tag>
-                <Tag tone="neutral">fenetre {range.label.toLowerCase()}</Tag>
                 <Tag tone={notEnriched.length + noStreaming.length > 0 ? 'warning' : 'success'}>
                   {notEnriched.length + noStreaming.length} taches prioritaires
                 </Tag>
               </div>
-              <h1 className="max-w-3xl text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[34px]">
-                Tableau de bord admin Waveform
+              <h1 className="text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[34px]">
+                Tableau de bord admin
               </h1>
-              <p className="mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:text-[16px]">
+              <p className="mt-3 max-w-2xl text-[15px] leading-7 text-text-secondary">
                 Vue unifiee du catalogue, des signaux produit et des actions de maintenance prioritaires.
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {(Object.entries(RANGE_OPTIONS) as Array<[RangeKey, { label: string; days: number }]>).map(([key, option]) => (
-                  <Link
-                    key={key}
-                    href={key === '7d' ? '/admin' : `/admin?range=${key}`}
-                    className={`rounded-full px-3.5 py-1.5 text-[12px] transition-colors ${range.key === key ? 'bg-text-primary text-background' : 'border border-border bg-background text-text-secondary hover:border-[#8E6F5E] hover:text-[#8E6F5E]'}`}
-                  >
-                    {option.label}
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <GlassMetric label="Couverture enrichissement" value={coveragePercent(albums.length - notEnriched.length, albums.length)} subtitle={`${albums.length - notEnriched.length}/${albums.length} albums propres`} tone={notEnriched.length > 0 ? 'warning' : 'success'} />
-                <GlassMetric label="Couverture streaming" value={coveragePercent(albums.length - noStreaming.length, albums.length)} subtitle={`${albums.length - noStreaming.length}/${albums.length} avec au moins un lien`} tone={noStreaming.length > 0 ? 'warning' : 'success'} />
-                <GlassMetric label="Couverture covers" value={coveragePercent(albums.length - noCover.length, albums.length)} subtitle={`${albums.length - noCover.length}/${albums.length} avec cover`} tone={noCover.length > 0 ? 'warning' : 'success'} />
-              </div>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <MetricCard label={`WAU ${range.key}`} value={current.wau} subtitle="Utilisateurs actifs distincts" accent="sand" />
-              <MetricCard label={`Albums logges ${range.key}`} value={current.albumLogs} subtitle="Profondeur d'usage" accent="rose" />
-              <MetricCard label={`Auth errors ${range.key}`} value={current.authErrors} subtitle="Friction d'entree" accent={current.authErrors > 0 ? 'warning' : 'success'} />
-              <MetricCard label={`Search no result ${range.key}`} value={current.noResultSearches} subtitle="Pertinence catalogue" accent={current.noResultSearches > 0 ? 'warning' : 'success'} />
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(RANGE_OPTIONS) as Array<[RangeKey, { label: string; days: number }]>).map(([key, option]) => (
+                <Link
+                  key={key}
+                  href={key === '7d' ? '/admin' : `/admin?range=${key}`}
+                  className={`rounded-full px-3.5 py-1.5 text-[12px] transition-colors ${
+                    range.key === key
+                      ? 'bg-text-primary text-background'
+                      : 'border border-border bg-background text-text-secondary hover:border-text-tertiary hover:text-text-primary'
+                  }`}
+                >
+                  {option.label}
+                </Link>
+              ))}
+              <Link href="/" className="rounded-full border border-border bg-background px-3.5 py-1.5 text-[12px] text-text-secondary transition-colors hover:border-text-tertiary hover:text-text-primary">
+                ← Retour app
+              </Link>
             </div>
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DeltaCard label={`Signups ${range.key}`} value={current.signups} delta={current.signups - previous.signups} hint="Comparaison avec la fenetre precedente" />
-          <DeltaCard label={`Onboardings ${range.key}`} value={current.onboardings} delta={current.onboardings - previous.onboardings} hint={rateLabel(current.onboardings, current.signups, 'du signup a l onboarding')} />
-          <DeltaCard label={`Album loggers ${range.key}`} value={current.albumLoggers} delta={current.albumLoggers - previous.albumLoggers} hint={rateLabel(current.albumLoggers, current.onboardings, 'de l onboarding a l album')} />
-          <DeltaCard label={`Followers ${range.key}`} value={current.followers} delta={current.followers - previous.followers} hint={rateLabel(current.followers, current.albumLoggers, 'de l album au social')} />
+        {/* ── 2. Stats globales ────────────────────────────────────────── */}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <DeltaCard label={`Signups ${range.key}`} value={current.signups} delta={current.signups - previous.signups} hint="Comparaison fenetre precedente" />
+          <DeltaCard label={`Onboardings ${range.key}`} value={current.onboardings} delta={current.onboardings - previous.onboardings} hint={rateLabel(current.onboardings, current.signups, 'signup → onboarding')} />
+          <DeltaCard label={`Album loggers ${range.key}`} value={current.albumLoggers} delta={current.albumLoggers - previous.albumLoggers} hint={rateLabel(current.albumLoggers, current.onboardings, 'onboarding → album')} />
+          <DeltaCard label={`Followers ${range.key}`} value={current.followers} delta={current.followers - previous.followers} hint={rateLabel(current.followers, current.albumLoggers, 'album → social')} />
         </section>
 
-        <section className="mt-8 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-          <Panel title="Vue d'ensemble plateforme" subtitle="Les volumes globaux qui donnent le contexte du cockpit" action={<Link href="/" className="rounded-full border border-border px-3 py-1.5 text-[12px] text-text-secondary transition-colors hover:border-[#8E6F5E] hover:text-[#8E6F5E]">Retour app</Link>}>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniStat label="Albums" value={albumCount ?? 0} />
-              <MiniStat label="Artistes" value={artistCount ?? 0} />
-              <MiniStat label="Membres" value={userCount ?? 0} />
-              <MiniStat label="Ecoutes" value={entryCount ?? 0} />
-              <MiniStat label="Reviews" value={reviewCount ?? 0} />
-              <MiniStat label="Commentaires" value={commentCount ?? 0} />
-              <MiniStat label="Follows" value={followCount ?? 0} />
+        {/* ── 3. Santé catalogue ───────────────────────────────────────── */}
+        <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+          <Panel title="Vue d'ensemble plateforme" subtitle="Volumes globaux et couverture qualite catalogue">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MiniStat label="Albums" value={albumCount ?? 0} />
+                <MiniStat label="Artistes" value={artistCount ?? 0} />
+                <MiniStat label="Membres" value={userCount ?? 0} />
+                <MiniStat label="Ecoutes" value={entryCount ?? 0} />
+                <MiniStat label="Reviews" value={reviewCount ?? 0} />
+                <MiniStat label="Commentaires" value={commentCount ?? 0} />
+                <MiniStat label="Follows" value={followCount ?? 0} />
+                <MetricCard label={`WAU ${range.key}`} value={current.wau} subtitle="Utilisateurs actifs" accent="sand" />
+              </div>
+              <div className="grid gap-3 content-start">
+                <GlassMetric label="Couverture enrichissement" value={coveragePercent(albums.length - notEnriched.length, albums.length)} subtitle={`${albums.length - notEnriched.length}/${albums.length} albums propres`} tone={notEnriched.length > 0 ? 'warning' : 'success'} />
+                <GlassMetric label="Couverture streaming" value={coveragePercent(albums.length - noStreaming.length, albums.length)} subtitle={`${albums.length - noStreaming.length}/${albums.length} avec lien`} tone={noStreaming.length > 0 ? 'warning' : 'success'} />
+                <GlassMetric label="Couverture covers" value={coveragePercent(albums.length - noCover.length, albums.length)} subtitle={`${albums.length - noCover.length}/${albums.length} avec cover`} tone={noCover.length > 0 ? 'warning' : 'success'} />
+              </div>
             </div>
           </Panel>
 
-          <Panel title="Radar qualite" subtitle="Les points qui demandent une intervention manuelle ou batch">
+          <Panel title="Radar qualite" subtitle="Points qui demandent une intervention">
             <div className="space-y-3">
               <HealthRow label="Albums non enrichis" value={notEnriched.length} total={albums.length} tone={notEnriched.length > 0 ? 'warning' : 'success'} />
               <HealthRow label="Albums sans streaming" value={noStreaming.length} total={albums.length} tone={noStreaming.length > 0 ? 'warning' : 'success'} />
               <HealthRow label="Albums sans cover" value={noCover.length} total={albums.length} tone={noCover.length > 0 ? 'warning' : 'success'} />
               <HealthRow label="Albums sans MBID" value={noMbid.length} total={albums.length} tone={noMbid.length > 0 ? 'critical' : 'success'} />
             </div>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <MetricCard label={`Albums loggés ${range.key}`} value={current.albumLogs} subtitle="Profondeur d'usage" accent="rose" />
+              <MetricCard label={`Frictions ${range.key}`} value={totalFrictions} subtitle="auth + search + import" accent={totalFrictions > 0 ? 'warning' : 'success'} />
+            </div>
           </Panel>
         </section>
 
-        <section className="mt-8 grid gap-4 xl:grid-cols-3">
+        {/* ── 4. Files d'action ────────────────────────────────────────── */}
+        <section className="grid gap-4 xl:grid-cols-3">
           <QueuePanel title="Backlog enrichissement" subtitle="Genres et descriptions manquants" count={notEnriched.length} action={<EnrichAllButton albums={notEnriched} />}>
             {notEnriched.slice(0, 10).map((album) => (
               <AlbumTaskRow key={album.id} album={album} meta={metaMap.get(album.id)}>
@@ -267,7 +280,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                   {!album.cover_url && <Tag tone="warning">sans cover</Tag>}
                   {!album.mbid && <Tag tone="critical">sans MBID</Tag>}
                   {album.mbid && (
-                    <a href={`https://musicbrainz.org/release/${album.mbid}`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-border px-3 py-1 text-[11px] text-text-secondary transition-colors duration-150 hover:border-[#8E6F5E] hover:text-[#8E6F5E]">
+                    <a href={`https://musicbrainz.org/release/${album.mbid}`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-border px-3 py-1 text-[11px] text-text-secondary transition-colors hover:border-text-tertiary hover:text-text-primary">
                       MusicBrainz ↗
                     </a>
                   )}
@@ -278,12 +291,13 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           </QueuePanel>
         </section>
 
-        <section className="mt-8 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title="Signals beta" subtitle={`Metriques produit sur ${range.label.toLowerCase()} calculees a partir de product_events`} tone={productSignals.available ? 'neutral' : 'warning'}>
+        {/* ── 5. Signaux produit ───────────────────────────────────────── */}
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <Panel title="Signaux produit" subtitle={`Metriques calculees sur ${range.label.toLowerCase()} depuis product_events`} tone={productSignals.available ? 'neutral' : 'warning'}>
             {productSignals.available ? (
               <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-                <div className="rounded-[22px] border border-[#DDD4C9] bg-[rgba(255,255,255,0.64)] p-4">
-                  <h3 className="text-[14px] font-medium text-[#1C1C1C]">Funnel {range.label.toLowerCase()}</h3>
+                <div className="rounded-[18px] border border-border bg-background p-4">
+                  <h3 className="text-[14px] font-medium text-text-primary">Funnel {range.label.toLowerCase()}</h3>
                   <div className="mt-4 space-y-3">
                     <FunnelStep label="Signup" value={current.signups} nextValue={current.onboardings} />
                     <FunnelStep label="Onboarding" value={current.onboardings} nextValue={current.albumLoggers} />
@@ -293,21 +307,21 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 </div>
 
                 <div className="grid gap-4">
-                  <div className="rounded-[22px] border border-[#DDD4C9] bg-[rgba(255,255,255,0.64)] p-4">
-                    <h3 className="text-[14px] font-medium text-[#1C1C1C]">Frictions {range.label.toLowerCase()}</h3>
+                  <div className="rounded-[18px] border border-border bg-background p-4">
+                    <h3 className="text-[14px] font-medium text-text-primary">Frictions {range.label.toLowerCase()}</h3>
                     <div className="mt-3 space-y-2">
                       {productSignals.frictionByEvent.length > 0 ? productSignals.frictionByEvent.map((item) => (
                         <CompactRow key={item.label} label={item.label} value={item.count} />
-                      )) : <EmptyState message="Aucune friction critique loggee cette semaine." compact />}
+                      )) : <EmptyState message="Aucune friction critique loggee." compact />}
                     </div>
                   </div>
 
-                  <div className="rounded-[22px] border border-[#DDD4C9] bg-[rgba(255,255,255,0.64)] p-4">
-                    <h3 className="text-[14px] font-medium text-[#1C1C1C]">Recherche par surface</h3>
+                  <div className="rounded-[18px] border border-border bg-background p-4">
+                    <h3 className="text-[14px] font-medium text-text-primary">Recherche par surface</h3>
                     <div className="mt-3 space-y-2">
                       {productSignals.searchBySurface.length > 0 ? productSignals.searchBySurface.map((item) => (
                         <CompactRow key={item.label} label={item.label} value={item.count} />
-                      )) : <EmptyState message="Pas encore assez de donnees de recherche." compact />}
+                      )) : <EmptyState message="Pas encore assez de donnees." compact />}
                     </div>
                   </div>
                 </div>
@@ -317,17 +331,17 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             )}
           </Panel>
 
-          <Panel title="Evenements recents" subtitle={`Les derniers signaux utiles sur ${range.label.toLowerCase()}`}>
+          <Panel title="Evenements recents" subtitle={`Les derniers signaux sur ${range.label.toLowerCase()}`}>
             {productSignals.available && productSignals.recentEvents.length > 0 ? (
               <div className="space-y-2">
                 {productSignals.recentEvents.map((event, index) => (
-                  <div key={`${event.created_at}-${event.event_name}-${index}`} className="rounded-[16px] border border-border bg-background-secondary px-4 py-3">
+                  <div key={`${event.created_at}-${event.event_name}-${index}`} className="rounded-[14px] border border-border bg-background px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[13px] font-medium text-text-primary">{humanizeEvent(event.event_name)}</p>
                         <p className="mt-1 text-[12px] text-text-secondary">
                           {humanizeSurface(event.surface)}
-                          {event.user_id ? ` · user ${event.user_id.slice(0, 8)}...` : ' · anonyme'}
+                          {event.user_id ? ` · ${event.user_id.slice(0, 8)}…` : ' · anonyme'}
                         </p>
                       </div>
                       <span className="whitespace-nowrap text-[11px] text-text-tertiary">{formatRelative(event.created_at)}</span>
@@ -341,16 +355,17 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           </Panel>
         </section>
 
-        <section className="mt-8 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-          <Panel title="Tendance hebdo" subtitle="Lecture depuis la vue beta_dashboard_weekly pour l'admin" tone={productSignals.weeklyViewAvailable ? 'neutral' : 'warning'}>
+        {/* ── 6. Tendances ─────────────────────────────────────────────── */}
+        <section className="grid gap-4 xl:grid-cols-2">
+          <Panel title="Tendance hebdo" subtitle="Lecture depuis la vue beta_dashboard_weekly" tone={productSignals.weeklyViewAvailable ? 'neutral' : 'warning'}>
             {productSignals.weeklyViewAvailable ? (
               <div className="space-y-3">
                 {productSignals.weeklyTrend.map((row) => (
-                  <div key={row.week} className="rounded-[18px] border border-[#E2D9CF] bg-[rgba(255,255,255,0.62)] p-4">
+                  <div key={row.week} className="rounded-[18px] border border-border bg-background p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[13px] font-medium text-[#1E1E1E]">Semaine du {new Date(row.week).toLocaleDateString('fr-FR')}</p>
-                        <p className="mt-1 text-[12px] text-[#726960]">WAU {row.wau} · logs {row.album_logs} · signups {row.signup_users}</p>
+                        <p className="text-[13px] font-medium text-text-primary">Semaine du {new Date(row.week).toLocaleDateString('fr-FR')}</p>
+                        <p className="mt-1 text-[12px] text-text-secondary">WAU {row.wau} · logs {row.album_logs} · signups {row.signup_users}</p>
                       </div>
                       <Tag tone={row.search_no_results + row.auth_errors + row.import_failures > 0 ? 'warning' : 'success'}>
                         {row.search_no_results + row.auth_errors + row.import_failures > 0 ? `${row.search_no_results + row.auth_errors + row.import_failures} frictions` : 'stable'}
@@ -370,7 +385,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             )}
           </Panel>
 
-          <Panel title="Enrichissements recents" subtitle="Les metadonnees recuperees dans les 7 derniers jours">
+          <Panel title="Enrichissements recents" subtitle={`Metadonnees recuperees sur ${range.label.toLowerCase()}`}>
             {recentMeta.length > 0 ? (
               <div className="space-y-2">
                 {recentMeta.map((meta) => {
@@ -380,30 +395,54 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                     <AlbumTaskRow key={meta.album_id} album={album} meta={meta}>
                       <div className="flex items-center gap-2">
                         <Tag tone={meta.description ? 'success' : 'warning'}>{meta.description ? 'bio OK' : 'sans bio'}</Tag>
-                        <span className="text-[11px] text-[#8A8077]">{meta.fetched_at ? new Date(meta.fetched_at).toLocaleDateString('fr-FR') : '—'}</span>
+                        <span className="text-[11px] text-text-tertiary">{meta.fetched_at ? new Date(meta.fetched_at).toLocaleDateString('fr-FR') : '—'}</span>
                       </div>
                     </AlbumTaskRow>
                   );
                 })}
               </div>
             ) : (
-              <EmptyState message="Pas d'enrichissement recent detecte cette semaine." />
+              <EmptyState message="Pas d'enrichissement recent detecte cette periode." />
             )}
           </Panel>
-
-          <Panel title="Decisions rapides" subtitle="Ce que cette page doit t'aider a arbitrer immediatement">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <DecisionCard title="Reparer la decouvrabilite" body={`${noStreaming.length} albums n'ont encore aucun lien de streaming. C'est le backlog le plus visible pour l'utilisateur final.`} />
-              <DecisionCard title="Nettoyer l'activation" body={productSignals.available ? `${current.onboardings > 0 ? Math.round((current.albumLoggers / current.onboardings) * 100) : 0}% des onboardings ${range.key} vont jusqu'au premier album.` : 'Active product_events pour voir le vrai taux onboarding → album.'} />
-              <DecisionCard title="Traiter les frictions" body={productSignals.available ? `${current.authErrors + current.noResultSearches + current.importFailures} signaux de friction sur ${range.label.toLowerCase()}.` : 'Les frictions produit apparaitront ici une fois la migration activee.'} />
-              <DecisionCard title="Continuer le catalogage" body={`${notEnriched.length} albums restent partiellement incomplets, dont ${noMbid.length} non enrichissables automatiquement.`} />
-            </div>
-          </Panel>
         </section>
+
+        {/* ── 7. Decisions rapides ─────────────────────────────────────── */}
+        <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
+          <div className="mb-6">
+            <h2 className="text-[20px] font-medium tracking-[-0.02em] text-text-primary">Decisions rapides</h2>
+            <p className="mt-1 text-[13px] text-text-secondary">Ce que cette page doit t'aider a arbitrer immediatement.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <DecisionCard
+              title="Reparer la decouvrabilite"
+              body={`${noStreaming.length} album${noStreaming.length !== 1 ? 's' : ''} sans lien de streaming. Backlog le plus visible pour l'utilisateur final.`}
+              tone={noStreaming.length > 0 ? 'warning' : 'success'}
+            />
+            <DecisionCard
+              title="Taux d'activation"
+              body={productSignals.available ? `${activationRate}% des onboardings ${range.key} vont jusqu'au premier album.` : 'Active product_events pour voir le vrai taux onboarding → album.'}
+              tone={productSignals.available && activationRate < 50 ? 'warning' : 'neutral'}
+            />
+            <DecisionCard
+              title="Frictions produit"
+              body={productSignals.available ? `${totalFrictions} signal${totalFrictions !== 1 ? 's' : ''} de friction sur ${range.label.toLowerCase()} (auth, search, import).` : 'Les frictions apparaitront ici une fois la migration activee.'}
+              tone={totalFrictions > 0 ? 'warning' : 'success'}
+            />
+            <DecisionCard
+              title="Catalogue incomplet"
+              body={`${notEnriched.length} album${notEnriched.length !== 1 ? 's' : ''} partiellement incomplets, dont ${noMbid.length} non enrichissables automatiquement.`}
+              tone={notEnriched.length > 0 ? 'warning' : 'success'}
+            />
+          </div>
+        </section>
+
       </div>
     </main>
   );
 }
+
+// ── Data helpers ─────────────────────────────────────────────────────────────
 
 async function getProductSignals(supabase: any, rangeDays: number): Promise<ProductSignals> {
   try {
@@ -449,10 +488,7 @@ async function getWeeklyTrend(supabase: any, rangeDays: number): Promise<{ avail
       .gte('week', cutoff)
       .order('week', { ascending: false });
 
-    if (error || !data) {
-      return { available: false, rows: [] };
-    }
-
+    if (error || !data) return { available: false, rows: [] };
     return { available: true, rows: data as WeeklyTrendRow[] };
   } catch {
     return { available: false, rows: [] };
@@ -469,7 +505,6 @@ function resolveRange(rawValue: string | string[] | undefined): { key: RangeKey;
 
 function computeWindowMetrics(rows: ProductEventRow[]): WindowMetrics {
   const countUsers = (eventName?: string) => new Set(rows.filter((row) => row.user_id && (!eventName || row.event_name === eventName)).map((row) => row.user_id)).size;
-
   return {
     signups: countUsers('signup_completed'),
     onboardings: countUsers('onboarding_completed'),
@@ -500,7 +535,7 @@ function rateLabel(numerator: number, denominator: number, suffix: string): stri
 }
 
 function humanizeEvent(eventName: string): string {
-  return {
+  return ({
     signup_completed: 'Signup completed',
     onboarding_completed: 'Onboarding completed',
     album_logged: 'Album logged',
@@ -512,12 +547,12 @@ function humanizeEvent(eventName: string): string {
     album_import_started: 'Album import started',
     review_liked: 'Review liked',
     comment_created: 'Comment created',
-  }[eventName] ?? eventName.replaceAll('_', ' ');
+  } as Record<string, string>)[eventName] ?? eventName.replaceAll('_', ' ');
 }
 
 function humanizeSurface(surface: string | null): string {
   if (!surface) return 'surface inconnue';
-  return {
+  return ({
     internal_search: 'recherche interne',
     musicbrainz_albums: 'search albums MB',
     musicbrainz_artists: 'search artists MB',
@@ -526,7 +561,7 @@ function humanizeSurface(surface: string | null): string {
     follow_button: 'follow button',
     auth_form: 'auth form',
     diary: 'diary',
-  }[surface] ?? surface;
+  } as Record<string, string>)[surface] ?? surface;
 }
 
 function formatDelta(value: number): string {
@@ -541,6 +576,8 @@ function formatRelative(value: string): string {
   if (hours < 24) return `il y a ${hours} h`;
   return `il y a ${Math.round(hours / 24)} j`;
 }
+
+// ── UI Components ────────────────────────────────────────────────────────────
 
 function Panel({ title, subtitle, children, action, tone = 'neutral' }: { title: string; subtitle: string; children: ReactNode; action?: ReactNode; tone?: 'neutral' | 'warning' }) {
   return (
@@ -569,7 +606,7 @@ function QueuePanel({ title, subtitle, count, children, action }: { title: strin
 }
 
 function PanelFootnote({ value }: { value: number }) {
-  return <p className="mt-3 text-[12px] text-[#746D66]">+ {value} elements supplementaires dans cette file.</p>;
+  return <p className="mt-3 text-[12px] text-text-tertiary">+ {value} elements supplementaires dans cette file.</p>;
 }
 
 function MetricCard({ label, value, subtitle, accent }: { label: string; value: number; subtitle: string; accent: 'sand' | 'rose' | 'warning' | 'success' }) {
@@ -590,8 +627,8 @@ function MetricCard({ label, value, subtitle, accent }: { label: string; value: 
 }
 
 function DeltaCard({ label, value, delta, hint }: { label: string; value: number; delta: number; hint: string }) {
-  const deltaTone = delta > 0 ? 'text-[#2E6B48]' : delta < 0 ? 'text-[#9A5B4A]' : 'text-[#7A7169]';
-  const deltaBg = delta > 0 ? 'bg-[#E4F0E7]' : delta < 0 ? 'bg-[#F4E4DF]' : 'bg-[#EEE7DD]';
+  const deltaTone = delta > 0 ? 'text-[#2E6B48]' : delta < 0 ? 'text-[#9A5B4A]' : 'text-text-tertiary';
+  const deltaBg = delta > 0 ? 'bg-[#E4F0E7]' : delta < 0 ? 'bg-[#F4E4DF]' : 'bg-background-tertiary';
 
   return (
     <div className="rounded-[16px] border border-border bg-background p-5">
@@ -673,13 +710,13 @@ function AlbumTaskRow({ album, meta, children }: { album: Album; meta?: AlbumMet
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Link href={`/albums/${album.id}`} className="truncate text-[14px] font-medium text-text-primary transition-colors hover:text-[#8E6F5E]">
+            <Link href={`/albums/${album.id}`} className="truncate text-[14px] font-medium text-text-primary transition-colors hover:text-text-secondary">
               {album.title}
             </Link>
             <span className="text-[12px] text-text-secondary">{album.artist_name}{year ? ` · ${year}` : ''}</span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-text-tertiary">
-            {album.mbid ? <span className="font-mono">{album.mbid.slice(0, 8)}...</span> : <span>MBID absent</span>}
+            {album.mbid ? <span className="font-mono">{album.mbid.slice(0, 8)}…</span> : <span>MBID absent</span>}
             {meta?.fetched_at && <span>enrichi le {new Date(meta.fetched_at).toLocaleDateString('fr-FR')}</span>}
           </div>
         </div>
@@ -689,9 +726,15 @@ function AlbumTaskRow({ album, meta, children }: { album: Album; meta?: AlbumMet
   );
 }
 
-function DecisionCard({ title, body }: { title: string; body: string }) {
+function DecisionCard({ title, body, tone = 'neutral' }: { title: string; body: string; tone?: 'neutral' | 'warning' | 'success' }) {
+  const styles = {
+    neutral: 'border-border bg-background',
+    warning: 'border-[#E2D5BE] bg-[#FBF8F2]',
+    success: 'border-[#C3D5BE] bg-[#F5FAF4]',
+  }[tone];
+
   return (
-    <div className="rounded-[14px] border border-border bg-background p-4">
+    <div className={`rounded-[14px] border p-4 ${styles}`}>
       <h3 className="text-[14px] font-medium text-text-primary">{title}</h3>
       <p className="mt-2 text-[13px] leading-6 text-text-secondary">{body}</p>
     </div>
@@ -708,7 +751,7 @@ function EmptyState({ message, compact = false }: { message: string; compact?: b
 
 function Tag({ children, tone }: { children: ReactNode; tone: 'neutral' | 'warning' | 'success' | 'critical' }) {
   const styles = {
-    neutral: 'bg-[#F0ECE6] text-[#61584F]',
+    neutral: 'bg-background-tertiary text-text-secondary',
     warning: 'bg-[#F7EEDB] text-[#8A6A27]',
     success: 'bg-[#E8F1E6] text-[#376548]',
     critical: 'bg-[#F5E5E1] text-[#9A5A4D]',
@@ -716,4 +759,3 @@ function Tag({ children, tone }: { children: ReactNode; tone: 'neutral' | 'warni
 
   return <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${styles}`}>{children}</span>;
 }
-

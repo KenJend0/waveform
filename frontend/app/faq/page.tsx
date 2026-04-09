@@ -190,7 +190,7 @@ export default function FAQ() {
                         href="/"
                         className="inline-flex items-center gap-2 text-[14px] text-text-secondary hover:text-text-primary transition-colors duration-150 mb-6"
                     >
-                        ← Retour
+                        ← <span className="underline underline-offset-2">Retour</span>
                     </Link>
                     <div className="mb-1">
                         <span className="text-[13px] font-medium text-text-tertiary tracking-widest uppercase">Waveform</span>

@@ -24,7 +24,7 @@ export default function StarRating({ value, onChange }: StarRatingProps) {
                         onClick={() => onChange(starValue)}
                         onMouseEnter={() => setHoverValue(starValue)}
                         onMouseLeave={() => setHoverValue(null)}
-                        className="transition-colors duration-150"
+                        className="w-11 h-11 flex items-center justify-center transition-colors duration-150"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

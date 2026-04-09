@@ -473,37 +473,41 @@ export default function SearchOverlay() {
                 {q && (
                   <button
                     onClick={() => setQ("")}
-                    className="text-text-tertiary hover:text-text-primary transition-colors flex-shrink-0"
+                    className="p-1 -mr-1 text-text-tertiary hover:text-text-primary transition-colors flex-shrink-0"
+                    aria-label="Effacer la recherche"
                   >
-                    <X size={14} />
+                    <X size={18} />
                   </button>
                 )}
                 {!q && (
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="text-text-tertiary hover:text-text-primary transition-colors flex-shrink-0"
+                    className="p-1 -mr-1 text-text-tertiary hover:text-text-primary transition-colors flex-shrink-0"
+                    aria-label="Fermer la recherche"
                   >
-                    <X size={14} />
+                    <X size={18} />
                   </button>
                 )}
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-5">
-                {(["all", "albums", "artists", "users"] as SearchTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`text-[13px] font-medium pb-3 border-b-2 transition-colors duration-150 ${
-                      activeTab === tab
-                        ? "text-text-primary border-[#8E6F5E]"
-                        : "text-text-tertiary border-transparent hover:text-text-secondary"
-                    }`}
-                  >
-                    {tabLabels[tab]}
-                  </button>
-                ))}
-              </div>
+              {/* Tabs — visibles uniquement quand il y a une requête */}
+              {q.trim() && (
+                <div className="flex gap-5">
+                  {(["all", "albums", "artists", "users"] as SearchTab[]).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`text-[13px] font-medium pb-3 border-b-2 transition-colors duration-150 ${
+                        activeTab === tab
+                          ? "text-text-primary border-[#8E6F5E]"
+                          : "text-text-tertiary border-transparent hover:text-text-secondary"
+                      }`}
+                    >
+                      {tabLabels[tab]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Body */}

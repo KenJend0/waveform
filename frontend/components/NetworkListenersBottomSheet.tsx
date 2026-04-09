@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import BottomSheet from "@/components/BottomSheet";
+import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 
 type Listener = {
     userId: string;
@@ -36,13 +37,7 @@ export default function NetworkListenersBottomSheet({ listeners, isOpen, onClose
                             className="flex items-center gap-3 py-3 border-b border-border-divider last:border-0 hover:opacity-75 transition-opacity duration-150"
                         >
                             {/* Avatar */}
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-background-secondary flex-shrink-0">
-                                {l.avatarUrl ? (
-                                    <Image src={l.avatarUrl} alt={name} width={32} height={32} className="object-cover w-full h-full" />
-                                ) : (
-                                    <div className="w-full h-full bg-background-tertiary" />
-                                )}
-                            </div>
+                            <UserAvatar userId={l.userId} src={l.avatarUrl} size={32} />
 
                             {/* Name */}
                             <span className="flex-1 text-[14px] text-text-primary font-medium">{name}</span>

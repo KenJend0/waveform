@@ -124,7 +124,7 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
               {entry.album.title}
             </Link>
             <div className="text-body text-text-secondary mb-4">
-              <Link href={`/albums/${entry.album.id}#reviews`} className="hover:text-text-primary transition-colors duration-150">
+              <Link href={`/artists/${entry.artist.id}`} className="hover:text-text-primary transition-colors duration-150">
                 {entry.artist.name}
               </Link>
               {entry.album.release_date && ` · ${new Date(entry.album.release_date).getFullYear()}`}

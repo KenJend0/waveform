@@ -23,7 +23,6 @@ export default function AuthForm() {
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const urlError = searchParams.get("error");
 
@@ -84,9 +83,6 @@ export default function AuthForm() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: {
-              display_name: displayName || email.split("@")[0],
-            },
           },
         });
 
@@ -119,7 +115,6 @@ export default function AuthForm() {
           setMode("login");
           setEmail("");
           setPassword("");
-          setDisplayName("");
         } else {
           throw new Error("Signup succeeded but no user returned");
         }
@@ -180,20 +175,7 @@ export default function AuthForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {mode === "signup" && (
-          <div>
-            <label className="block text-[14px] font-medium text-text-secondary mb-1">
-              Nom d'affichage (optionnel)
-            </label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Votre nom"
-              className="w-full bg-background border border-border rounded-[10px] px-3 py-2 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E] transition-colors duration-150"
-            />
-          </div>
-        )}
+
 
         {mode !== "reset" && (
           <div>
@@ -270,7 +252,7 @@ export default function AuthForm() {
                   setEmail("");
                   setPassword("");
                 }}
-                className="text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
+                className="underline underline-offset-2 text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
               >
                 Créer un compte
               </button>
@@ -281,7 +263,7 @@ export default function AuthForm() {
                   setMode("reset");
                   setPassword("");
                 }}
-                className="text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
+                className="underline underline-offset-2 text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
               >
                 Mot de passe oublié ?
               </button>
@@ -293,9 +275,8 @@ export default function AuthForm() {
             <button
               onClick={() => {
                 setMode("login");
-                setDisplayName("");
               }}
-              className="text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
+              className="underline underline-offset-2 text-text-primary hover:text-[#8E6F5E] transition-colors duration-150"
             >
               Se connecter
             </button>
@@ -307,7 +288,7 @@ export default function AuthForm() {
                 setMode("login");
                 setEmail("");
               }}
-              className="text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150"
+              className="underline underline-offset-2 text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150"
             >
               Retour à la connexion
             </button>

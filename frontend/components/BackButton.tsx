@@ -16,10 +16,10 @@ export default function BackButton({ fallbackHref = "/", className = "", childre
             type="button"
             onClick={onClick}
             className={className || "flex items-center gap-2 text-meta text-text-secondary hover:text-text-primary transition-colors duration-150"}
-            aria-label="Go back"
+            aria-label="Retour"
         >
             <ArrowLeftIcon />
-            {children ?? "Back"}
+            <span className="underline underline-offset-2">{children ?? "Retour"}</span>
         </button>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { setOnboardingUsername, checkUsernameAvailability } from '@/app/actions/profile';
 import FollowButton from '@/components/social/FollowButton';
@@ -9,8 +8,8 @@ import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { showToast } from '@/components/Toast';
 import { trackProductEvent } from '@/lib/productEventsClient';
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,32}$/;
-const USERNAME_CHARS_REGEX = /^[a-zA-Z0-9_.-]*$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9]{3,32}$/;
+const USERNAME_CHARS_REGEX = /^[a-zA-Z0-9]*$/;
 const MIN_LENGTH = 3;
 
 type SuggestedUser = {
@@ -21,14 +20,12 @@ type SuggestedUser = {
 };
 
 type Props = {
-    currentDisplayName: string;
     suggestedUsers: SuggestedUser[];
 };
 
 type CheckState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'too_short';
 
-export default function OnboardingFlow({ currentDisplayName, suggestedUsers }: Props) {
-    const router = useRouter();
+export default function OnboardingFlow({ suggestedUsers }: Props) {
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [username, setUsername] = useState('');
     const [checkState, setCheckState] = useState<CheckState>('idle');
@@ -111,7 +108,7 @@ export default function OnboardingFlow({ currentDisplayName, suggestedUsers }: P
 
                     <p className="text-[12px] text-text-tertiary uppercase tracking-widest mb-6">Waveform</p>
                     <h1 className="text-h1 text-text-primary mb-2">
-                        Bienvenue{currentDisplayName ? `, ${currentDisplayName.split(' ')[0]}` : ''} !
+                        Bienvenue sur Waveform !
                     </h1>
                     <p className="text-[14px] text-text-secondary mb-8">
                         Commence par choisir ton pseudo. C'est ce que verront les autres.
@@ -124,7 +121,7 @@ export default function OnboardingFlow({ currentDisplayName, suggestedUsers }: P
                                 type="text"
                                 value={username}
                                 onChange={(e) => handleUsernameChange(e.target.value)}
-                                placeholder="ton-pseudo"
+                                placeholder="tonpseudo"
                                 autoFocus
                                 autoCapitalize="none"
                                 autoCorrect="off"
@@ -160,11 +157,11 @@ export default function OnboardingFlow({ currentDisplayName, suggestedUsers }: P
                                 checkState === 'available' ? 'text-green-500' :
                                 'text-text-tertiary'
                             }`}>
-                                {checkState === 'invalid' && 'Caractères non autorisés'}
-                                {checkState === 'too_short' && `Minimum ${MIN_LENGTH} caractères`}
+                                {checkState === 'invalid' && 'Les caractères - _ . ne sont pas autorisés'}
+                                {checkState === 'too_short' && 'Votre pseudo doit comporter entre 3 et 32 caractères'}
                                 {checkState === 'taken' && 'Déjà pris'}
                                 {checkState === 'available' && 'Disponible'}
-                                {(checkState === 'idle' || checkState === 'checking') && `${MIN_LENGTH}–32 car. · lettres, chiffres, _, ., -`}
+                                {(checkState === 'idle' || checkState === 'checking') && 'Entre 3 et 32 caractères · lettres et chiffres uniquement'}
                             </p>
                             {username.length > 0 && (
                                 <p className={`text-[12px] tabular-nums ${username.length < MIN_LENGTH ? 'text-[#C86C6C]' : 'text-text-tertiary'}`}>

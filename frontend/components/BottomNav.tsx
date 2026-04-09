@@ -32,7 +32,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 border-t border-border flex justify-around items-center h-16 md:hidden z-50 bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+        <nav className="fixed bottom-0 left-0 right-0 border-t border-border flex justify-around items-center h-[60px] md:hidden z-50 bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
             {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -40,14 +40,14 @@ export default function BottomNav() {
                     <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex flex-col items-center justify-center w-12 h-12 transition-colors duration-150 ${
+                        className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors duration-150 ${
                             active
                                 ? "text-text-primary"
                                 : "text-text-tertiary hover:text-text-secondary"
                         }`}
-                        title={item.label}
                     >
                         <Icon />
+                        <span className="text-[10px] leading-none">{item.label}</span>
                     </Link>
                 );
             })}
@@ -55,22 +55,22 @@ export default function BottomNav() {
             {/* Profile */}
             <Link
                 href="/me"
-                className={`flex flex-col items-center justify-center w-12 h-12 transition-colors duration-150 ${
+                className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors duration-150 ${
                     isActive("/me")
                         ? "text-text-primary"
                         : "text-text-tertiary hover:text-text-secondary"
                 }`}
-                title="Profil"
             >
                 {authUser ? (
-                    <div className={`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border flex items-center justify-center ${
+                    <div className={`w-6 h-6 rounded-full overflow-hidden flex-shrink-0 border flex items-center justify-center ${
                         isActive("/me") ? "border-[#1C1C1C]" : "border-border"
                     }`}>
-                        <UserAvatar userId={authUser.id} src={profile?.avatar_url} size={28} />
+                        <UserAvatar userId={authUser.id} src={profile?.avatar_url} size={24} />
                     </div>
                 ) : (
                     <ProfileIcon />
                 )}
+                <span className="text-[10px] leading-none">Profil</span>
             </Link>
         </nav>
     );

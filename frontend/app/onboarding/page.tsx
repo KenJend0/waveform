@@ -30,7 +30,6 @@ export default async function OnboardingPage() {
 
     return (
         <OnboardingFlow
-            currentDisplayName={profile.display_name ?? ''}
             suggestedUsers={suggestedUsers}
         />
     );

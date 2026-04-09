@@ -10,6 +10,7 @@ import AddToDiaryButton from "@/components/AddToDiaryButton";
 import EditDiaryEntryButton from "@/components/EditDiaryEntryButton";
 import GenrePills from "@/components/GenrePills";
 import NetworkListenersBottomSheet from "@/components/NetworkListenersBottomSheet";
+import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import { msToDuration } from "@/lib/time";
 
 type NetworkListener = {
@@ -175,12 +176,8 @@ export default function AlbumHero({
                     >
                         <div className="flex -space-x-1.5">
                             {shown.map((l) => (
-                                <div key={l.userId} className="w-5 h-5 rounded-full overflow-hidden bg-background-secondary border border-background-primary flex-shrink-0">
-                                    {l.avatarUrl ? (
-                                        <Image src={l.avatarUrl} alt={l.displayName || l.username} width={20} height={20} className="object-cover w-full h-full" />
-                                    ) : (
-                                        <div className="w-full h-full bg-background-tertiary" />
-                                    )}
+                                <div key={l.userId} className="border border-background-primary rounded-full flex-shrink-0">
+                                    <UserAvatar userId={l.userId} src={l.avatarUrl} size={20} />
                                 </div>
                             ))}
                         </div>

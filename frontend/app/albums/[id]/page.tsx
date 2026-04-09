@@ -181,19 +181,28 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     const followeeIds = ((followsResp as any).data ?? []).map((f: { followee_id: string }) => f.followee_id);
     if (user && followeeIds.length > 0) {
         // Single query: diary_entries joined with profiles — saves one round-trip
-        const { data: entries } = await supabase
-            .from("diary_entries")
-            .select("id, user_id, rating, listened_at, review_body, profiles(id, username, display_name, avatar_url)")
-            .eq("album_id", album.id)
-            .in("user_id", followeeIds)
-            .order("listened_at", { ascending: false });
+        const [{ data: entries }, { data: followeeProfiles }] = await Promise.all([
+            supabase
+                .from("diary_entries")
+                .select("id, user_id, rating, listened_at, review_body")
+                .eq("album_id", album.id)
+                .in("user_id", followeeIds)
+                .order("listened_at", { ascending: false }),
+            supabase
+                .from("profiles")
+                .select("id, username, display_name, avatar_url")
+                .in("id", followeeIds),
+        ]);
+
+        const profileMap = new Map<string, JoinedProfile>(
+            (followeeProfiles ?? []).map((p) => [p.id, p as JoinedProfile])
+        );
 
         // Dédupliquer par user_id : garder l'entrée la plus récente par abonné
         const latestByUser = new Map<string, { id: string; rating: number | null; listenedAt: string; hasReview: boolean; profile: JoinedProfile }>();
         for (const e of (entries ?? [])) {
-            const rawProfile = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
-            if (!latestByUser.has(e.user_id) && rawProfile) {
-                const p = rawProfile as JoinedProfile;
+            const p = profileMap.get(e.user_id);
+            if (!latestByUser.has(e.user_id) && p) {
                 latestByUser.set(e.user_id, {
                     id: e.id,
                     rating: e.rating,
@@ -204,7 +213,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             }
         }
 
-        networkListeners = [...latestByUser.values()].slice(0, 5).map(({ profile: p, ...entry }) => ({
+        networkListeners = [...latestByUser.values()].map(({ profile: p, ...entry }) => ({
             userId: p.id,
             username: p.username ?? "",
             displayName: p.display_name ?? null,

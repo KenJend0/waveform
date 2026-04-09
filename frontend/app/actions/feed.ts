@@ -9,24 +9,21 @@ import { getAuthUser } from '@/lib/supabase/server';
  */
 export type FeedEventType = 'REVIEW_CREATED' | 'UNRATED_LISTEN' | 'REVIEW_LIKED' | 'ALBUM_SAVED' | 'USER_FOLLOWED' | 'COMMENT_CREATED';
 
+export type FeedActor = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 /**
  * Feed event payload for frontend display
  */
 export interface FeedEvent {
   id: string;
   type: FeedEventType;
-  actor: {
-    id: string;
-    username: string;
-    display_name: string | null;
-    avatar_url: string | null;
-  };
-  followee?: {
-    id: string;
-    username: string;
-    display_name: string | null;
-    avatar_url: string | null;
-  };
+  actor: FeedActor;
+  followee?: FeedActor;
   album?: {
     id: string;
     title: string;
@@ -34,6 +31,7 @@ export interface FeedEvent {
   };
   rating?: number;
   review_excerpt?: string;
+  review_is_long?: boolean;
   entry_id?: string; // For actions (like/comment)
   liked_entry_id?: string; // For REVIEW_LIKED to avoid confusion
   likes_count?: number; // For REVIEW_CREATED
@@ -43,6 +41,9 @@ export interface FeedEvent {
   current_user_also_commented?: boolean; // For COMMENT_CREATED: current user has also commented on same entry
   created_at: string;
   _dedup_key?: string; // For client-side deduplication
+  // Aggregation: set when multiple actors performed the same action on the same target
+  actors?: FeedActor[];   // Up to 5 actors for display
+  actors_count?: number;  // Real total (may exceed actors.length)
 }
 
 /**
@@ -184,14 +185,114 @@ export async function getMyFeed({
       })
       .filter(Boolean) as FeedEvent[];
 
+    const aggregated = aggregateFeedEvents(events, user.id);
+
     // Cursor for the next page: created_at of the oldest event in this batch
     const nextCursor = events.length > 0 ? events[events.length - 1].created_at : null;
 
-    return { success: true, events, nextCursor };
+    return { success: true, events: aggregated, nextCursor };
   } catch (err) {
     console.error('getFeedEvents error:', err);
     return { success: false, error: 'An error occurred', events: [], nextCursor: null };
   }
+}
+
+/**
+ * Collapses repeated notification events targeting the current user into
+ * aggregated cards. Two conditions must both be met to aggregate:
+ *   1. Consecutive — no other event type interrupts the group in the feed
+ *   2. Within 24h — first and last event of the group are ≤ 24h apart
+ *
+ * Handles:
+ *   - USER_FOLLOWED  (followee === currentUser)
+ *   - REVIEW_LIKED   (entry_owner === currentUser) — grouped per liked_entry_id
+ *   - COMMENT_CREATED (entry_owner === currentUser) — grouped per entry_id
+ *
+ * Single-actor events are left untouched.
+ * Events are sorted desc by created_at; the aggregate inherits the most-recent
+ * timestamp (first in group).
+ */
+function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEvent[] {
+  const MS_24H = 24 * 60 * 60 * 1000;
+  const result: FeedEvent[] = [];
+  let i = 0;
+
+  while (i < events.length) {
+    const e = events[i];
+
+    // USER_FOLLOWED targeting currentUser
+    if (e.type === 'USER_FOLLOWED' && e.followee?.id === currentUserId && e.actor.id !== currentUserId) {
+      const group = [e];
+      const anchor = new Date(e.created_at).getTime();
+      let j = i + 1;
+      while (
+        j < events.length &&
+        events[j].type === 'USER_FOLLOWED' &&
+        events[j].followee?.id === currentUserId &&
+        events[j].actor.id !== currentUserId &&
+        anchor - new Date(events[j].created_at).getTime() < MS_24H
+      ) {
+        group.push(events[j++]);
+      }
+      result.push(group.length > 1
+        ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-follow-${currentUserId}` }
+        : e
+      );
+      i = j;
+      continue;
+    }
+
+    // REVIEW_LIKED targeting currentUser's entry — consecutive likes on the same entry
+    if (e.type === 'REVIEW_LIKED' && e.entry_owner_id === currentUserId && e.liked_entry_id && e.actor.id !== currentUserId) {
+      const group = [e];
+      const anchor = new Date(e.created_at).getTime();
+      let j = i + 1;
+      while (
+        j < events.length &&
+        events[j].type === 'REVIEW_LIKED' &&
+        events[j].entry_owner_id === currentUserId &&
+        events[j].liked_entry_id === e.liked_entry_id &&
+        events[j].actor.id !== currentUserId &&
+        anchor - new Date(events[j].created_at).getTime() < MS_24H
+      ) {
+        group.push(events[j++]);
+      }
+      result.push(group.length > 1
+        ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-like-${e.liked_entry_id}` }
+        : e
+      );
+      i = j;
+      continue;
+    }
+
+    // COMMENT_CREATED targeting currentUser's entry — consecutive comments on the same entry
+    if (e.type === 'COMMENT_CREATED' && e.entry_owner_id === currentUserId && e.entry_id && e.actor.id !== currentUserId) {
+      const group = [e];
+      const anchor = new Date(e.created_at).getTime();
+      let j = i + 1;
+      while (
+        j < events.length &&
+        events[j].type === 'COMMENT_CREATED' &&
+        events[j].entry_owner_id === currentUserId &&
+        events[j].entry_id === e.entry_id &&
+        events[j].actor.id !== currentUserId &&
+        anchor - new Date(events[j].created_at).getTime() < MS_24H
+      ) {
+        group.push(events[j++]);
+      }
+      result.push(group.length > 1
+        ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-comment-${e.entry_id}` }
+        : e
+      );
+      i = j;
+      continue;
+    }
+
+    result.push(e);
+    i++;
+  }
+
+  return result;
 }
 
 /**
@@ -233,9 +334,8 @@ function mapFeedEvent(raw: any): FeedEvent | null {
             cover_url: raw.album.cover_url,
           } : undefined,
           rating: raw.entry.rating,
-          review_excerpt: raw.entry.review_body
-            ? raw.entry.review_body.substring(0, 150)
-            : undefined,
+          review_excerpt: raw.entry.review_body ?? undefined,
+          review_is_long: (raw.entry.review_body?.length ?? 0) > 300,
         };
       } else {
         // No rating = UNRATED_LISTEN (user just logged the album, no opinion yet)
@@ -331,6 +431,52 @@ function mapFeedEvent(raw: any): FeedEvent | null {
  * 
  * Never exposed to client
  */
+/**
+ * Get all actors who followed a given user within 24h of an anchor timestamp.
+ * Used by the feed aggregation bottom sheet for USER_FOLLOWED cards.
+ */
+export async function getFollowActors(followeeId: string, anchorTime: string): Promise<FeedActor[]> {
+  try {
+    const supabase = await createSupabaseServer();
+    const windowStart = new Date(new Date(anchorTime).getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('feed_events')
+      .select('actor:profiles!actor_id(id, username, display_name, avatar_url)')
+      .eq('type', 'follow')
+      .eq('followee_id', followeeId)
+      .gte('created_at', windowStart)
+      .lte('created_at', anchorTime)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return (data as any[]).map((r) => r.actor).filter(Boolean) as FeedActor[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get all actors who commented on a diary entry.
+ * Used by the feed aggregation bottom sheet for COMMENT_CREATED cards.
+ */
+export async function getCommentActors(entryId: string): Promise<FeedActor[]> {
+  try {
+    const supabase = await createSupabaseServer();
+
+    const { data, error } = await supabase
+      .from('diary_comments')
+      .select('user:profiles!user_id(id, username, display_name, avatar_url)')
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return (data as any[]).map((r) => r.user).filter(Boolean) as FeedActor[];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Backfill: when a user follows someone, insert that person's last N feed_events
  * into the follower's feed so it's not empty right away.

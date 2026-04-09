@@ -25,6 +25,8 @@ export default function FeedCardReviewCreated({
   const [isLiked, setIsLiked] = useState(event.is_liked ?? false);
   const [likesCount, setLikesCount] = useState(event.likes_count ?? 0);
   const [liking, setLiking] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const isLong = event.review_is_long ?? false;
 
   const handleLike = async () => {
     if (liking || !event.entry_id) return;
@@ -78,7 +80,7 @@ export default function FeedCardReviewCreated({
           <Link href={entryHref} className="shrink-0">
             <Image
               src={event.album.cover_url}
-              alt={event.album.title}
+              alt=""
               width={80}
               height={80}
               className="w-20 h-20 object-cover rounded-[10px]"
@@ -104,11 +106,19 @@ export default function FeedCardReviewCreated({
 
       {/* Extrait de review — pleine largeur */}
       {hasWords && (
-        <Link href={entryHref} className="block mb-4">
-          <p className="text-[14px] leading-[1.8] text-text-secondary italic line-clamp-3">
+        <div className="mb-4">
+          <p className={`text-[14px] leading-[1.8] text-text-secondary italic ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
             &laquo;&thinsp;{event.review_excerpt}&thinsp;&raquo;
           </p>
-        </Link>
+          {isLong && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1 text-[12px] text-text-tertiary hover:text-text-primary transition-colors duration-150"
+            >
+              {expanded ? 'Voir moins' : 'Voir plus'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Actions */}

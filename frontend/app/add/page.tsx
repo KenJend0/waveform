@@ -371,8 +371,10 @@ export default function AddPage() {
                                     <div>
                                         <label className="block text-meta text-text-secondary mb-4">Note</label>
                                         <div className="flex items-center gap-3">
-                                            <StarRating value={rating} onChange={setRating} />
-                                            <span className="text-text-primary font-medium whitespace-nowrap">
+                                            <div className="flex-1 min-w-0">
+                                                <StarRating value={rating} onChange={setRating} />
+                                            </div>
+                                            <span className="flex-shrink-0 text-text-primary font-medium whitespace-nowrap">
                                                 {rating ?? 0} / 10
                                             </span>
                                         </div>

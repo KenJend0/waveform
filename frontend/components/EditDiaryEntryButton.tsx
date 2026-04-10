@@ -130,8 +130,10 @@ export default function EditDiaryEntryButton({
               <form onSubmit={handleUpdate} className="mt-3 space-y-3">
                 {/* Stars Rating */}
                 <div className="flex items-center gap-3">
-                  <StarRating value={rating} onChange={setRating} />
-                  <span className="text-text-primary font-medium text-[14px] whitespace-nowrap">
+                  <div className="flex-1 min-w-0">
+                    <StarRating value={rating} onChange={setRating} />
+                  </div>
+                  <span className="flex-shrink-0 text-text-primary font-medium text-[14px] whitespace-nowrap">
                     {rating ?? 0} / 10
                   </span>
                 </div>

@@ -32,7 +32,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 border-t border-border flex justify-around items-center h-[60px] md:hidden z-50 bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+        <nav className="fixed bottom-0 left-0 right-0 border-t border-border flex justify-around items-center md:hidden z-50 bg-background/95 backdrop-blur-sm h-[calc(60px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)]">
             {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);

@@ -12,7 +12,7 @@ export default function StarRating({ value, onChange }: StarRatingProps) {
     const currentValue = hoverValue ?? value ?? 0;
 
     return (
-        <div className="flex gap-1">
+        <div className="flex justify-between w-full">
             {Array.from({ length: 10 }).map((_, i) => {
                 const starValue = i + 1;
                 const isFilled = starValue <= currentValue;
@@ -24,7 +24,7 @@ export default function StarRating({ value, onChange }: StarRatingProps) {
                         onClick={() => onChange(starValue)}
                         onMouseEnter={() => setHoverValue(starValue)}
                         onMouseLeave={() => setHoverValue(null)}
-                        className="w-11 h-11 flex items-center justify-center transition-colors duration-150"
+                        className="flex items-center justify-center transition-colors duration-150 p-1"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

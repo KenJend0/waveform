@@ -127,7 +127,7 @@ export default async function ExplorePage() {
                 </div>
             </div>
 
-            <main className="p-6 pb-20 lg:pb-10 max-w-page lg:max-w-5xl mx-auto">
+            <main className="p-6 pb-28 lg:pb-10 max-w-page lg:max-w-5xl mx-auto">
                 {isEmpty ? (
                     <div className="text-center py-16 space-y-6">
                         <div className="space-y-3">

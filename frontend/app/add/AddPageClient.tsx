@@ -181,7 +181,7 @@ export default function AddPageClient({ initialSavedAlbums, initialSuggestions, 
                             : "Garde un album de côté pour l'écouter plus tard."}
                     </p>
 
-                    <div className="flex bg-background-secondary rounded-[10px] p-1 mb-8">
+                    <div className="flex bg-background-secondary rounded-[10px] p-1">
                         <button
                             onClick={() => handleModeChange("diary")}
                             className={`flex-1 py-2 text-[14px] font-medium rounded-[8px] transition-colors duration-150 ${
@@ -306,7 +306,7 @@ export default function AddPageClient({ initialSavedAlbums, initialSuggestions, 
 
                             {/* Colonne droite : suggestions (step=select uniquement) */}
                             {step === "select" && hasSaved && (
-                                <div className="mt-8 lg:mt-0">
+                                <div className="mt-6 lg:mt-0">
                                     <SectionTitle>Dans ta liste</SectionTitle>
                                     <div className="grid gap-3 grid-cols-2 lg:grid-cols-1">
                                         {initialSavedAlbums.map((s, idx) => (
@@ -331,7 +331,7 @@ export default function AddPageClient({ initialSavedAlbums, initialSuggestions, 
                             )}
 
                             {step === "select" && !hasSaved && (
-                                <div className="mt-8 lg:mt-0">
+                                <div className="mt-6 lg:mt-0">
                                     <SectionTitle>Par où commencer ?</SectionTitle>
                                     <div className="grid gap-3 grid-cols-2 lg:grid-cols-1">
                                         {CLASSIC_ALBUMS.map((album, idx) => (
@@ -367,7 +367,7 @@ export default function AddPageClient({ initialSavedAlbums, initialSuggestions, 
 
                             {/* Colonne droite : suggestions */}
                             {(hasSuggestions || hasDiscovery) && (
-                                <div className="mt-8 lg:mt-0 space-y-8">
+                                <div className="mt-6 lg:mt-0 space-y-8">
                                     {hasSuggestions && (
                                         <div>
                                             <SectionTitle>Pour toi</SectionTitle>

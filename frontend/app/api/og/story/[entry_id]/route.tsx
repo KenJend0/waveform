@@ -367,7 +367,7 @@ export async function GET(
         { name: 'Inter', data: fonts.italic,  weight: 400, style: 'italic' },
       ],
       headers: {
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'private, max-age=600',
       },
     });
   } catch (err) {

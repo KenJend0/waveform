@@ -19,7 +19,6 @@ import { showToast } from "@/components/Toast";
 
 type Profile = {
     id: string;
-    display_name: string | null;
     username: string | null;
     bio: string | null;
     avatar_url: string | null;
@@ -33,7 +32,6 @@ export default function ProfileSettings() {
     const router = useRouter();
     const [profile, setProfile] = useState<Profile>({
         id: "",
-        display_name: "",
         username: "",
         bio: null,
         avatar_url: null,
@@ -63,11 +61,9 @@ export default function ProfileSettings() {
                 }
 
                 const data = result.profile!;
-                const fallbackName = data.display_name || data.email?.split("@")[0] || "User";
 
                 setProfile({
                     id: data.id,
-                    display_name: fallbackName,
                     username: data.username || "",
                     bio: data.bio,
                     avatar_url: data.avatar_url || null,
@@ -192,7 +188,6 @@ export default function ProfileSettings() {
     const saveProfile = async () => {
         try {
             const result = await updateProfileSettings({
-                display_name: profile.display_name,
                 bio: profile.bio,
             });
 
@@ -424,18 +419,6 @@ export default function ProfileSettings() {
                 {/* Profile Info Section */}
                 <section className="mb-12">
                     <h2 className="text-h2 text-text-tertiary mb-4">Informations personnelles</h2>
-
-                    {/* Display Name */}
-                    <div className="py-4 border-b border-border-divider">
-                        <label className="block text-[14px] text-text-primary mb-2">Nom d'affichage</label>
-                        <input
-                            type="text"
-                            value={profile.display_name ?? ""}
-                            onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-                            placeholder="Votre nom"
-                            className="w-full bg-background-secondary border border-border hover:border-[#8E6F5E] focus:border-[#8E6F5E] rounded-[10px] px-3 py-2 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none transition-colors duration-150"
-                        />
-                    </div>
 
                     {/* Bio */}
                     <div className="py-4 border-b border-border-divider">

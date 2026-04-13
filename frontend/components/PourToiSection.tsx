@@ -8,13 +8,13 @@ export default function PourToiSection({ albums }: { albums: ForYouAlbum[] }) {
     return (
         <section>
             <h2 className="text-h2 text-text-primary mb-5">Pour toi</h2>
-            <div className={`grid gap-3 ${albums.length === 3 ? "grid-cols-1" : "grid-cols-2"}`}>
+            <div className={`grid gap-3 ${albums.length === 3 ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
                 {albums.map((album, idx) => (
                     <Link
                         key={album.album_id}
                         href={`/albums/${album.album_id}`}
                         className={`group flex items-center gap-3 hover:opacity-75 transition-opacity duration-150 ${
-                            albums.length !== 3 && albums.length % 2 !== 0 && idx === albums.length - 1 ? "col-span-2" : ""
+                            albums.length !== 3 && albums.length % 2 !== 0 && idx === albums.length - 1 ? "col-span-2 lg:col-span-1" : ""
                         }`}
                     >
                         <div className="w-12 h-12 rounded-[6px] overflow-hidden bg-background-secondary flex-shrink-0 relative">

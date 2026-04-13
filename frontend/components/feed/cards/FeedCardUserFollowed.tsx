@@ -49,7 +49,7 @@ export default function FeedCardUserFollowed({
                   href={`/u/${event.followee.username}`}
                   className="hover:text-text-primary transition-colors duration-150"
                 >
-                  {event.followee.display_name || event.followee.username}
+                  {event.followee.username}
                 </Link>
               ) : (
                 'quelqu\'un'
@@ -70,7 +70,7 @@ export default function FeedCardUserFollowed({
                 href={`/u/${event.actor.username}`}
                 className="text-text-secondary hover:text-text-primary transition-colors duration-150"
               >
-                {event.actor.display_name || event.actor.username}
+                {event.actor.username}
               </Link>
               {' '}a commencé à te suivre
             </>

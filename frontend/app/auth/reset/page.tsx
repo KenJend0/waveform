@@ -23,6 +23,7 @@ export default function ResetPasswordPage() {
     const type = params.get('type');
 
     if (token_hash && type === 'recovery') {
+      // Lien direct (flow OTP) — vérifier le token
       supabase.auth
         .verifyOtp({ token_hash, type: 'recovery' })
         .then(({ error: verifyError }) => {
@@ -34,8 +35,15 @@ export default function ResetPasswordPage() {
         })
         .finally(() => setLoading(false));
     } else {
-      // Accès direct sans lien → redirection vers login
-      router.replace('/auth?mode=login');
+      // Pas de token_hash — vérifier si une session recovery existe déjà (flow PKCE via /auth/callback)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setReady(true);
+        } else {
+          router.replace('/auth?mode=login');
+        }
+        setLoading(false);
+      });
     }
   }, [router]);
 

@@ -59,7 +59,7 @@ export default function MyActivitiesModal({
         loadEntries();
     }, [isOpen, albumId]);
 
-    const displayName = userProfile?.display_name || "Toi";
+    const displayName = userProfile?.username || "Toi";
 
     return (
         <BottomSheet

@@ -12,7 +12,6 @@ type Props = {
   user: {
     id: string;
     username: string;
-    display_name: string;
     picture_url: string | null;
     is_me?: boolean;
     is_admin?: boolean;
@@ -116,11 +115,8 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
 
           <div className="flex-1 min-w-0">
             <h1 className="text-[24px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
-              {user.display_name || user.username}
+              {user.username}
             </h1>
-            {user.display_name && (
-              <p className="text-[12px] text-text-tertiary mt-0.5">@{user.username}</p>
-            )}
 
             {/* Follow button for other users */}
             {!user.is_me && onFollowClick && (

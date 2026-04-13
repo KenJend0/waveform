@@ -11,7 +11,7 @@ export default function DiscoverySection({ albums }: { albums: DiscoveryAlbum[] 
             </div>
             <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
                 {albums.map((album) => (
-                    <div key={album.album_id} className="snap-center shrink-0 w-44 sm:w-48 md:w-52">
+                    <div key={album.album_id} className="snap-center shrink-0 w-44 sm:w-48 md:w-52 lg:w-60">
                         <DiscoverCard
                             item={{
                                 id: `discovery-${album.album_id}`,

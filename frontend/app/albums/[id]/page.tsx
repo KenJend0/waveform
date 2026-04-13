@@ -164,7 +164,6 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     type NetworkListener = {
         userId: string;
         username: string;
-        displayName: string | null;
         avatarUrl: string | null;
         rating: number | null;
         listenedAt: string | null;
@@ -174,7 +173,6 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     type JoinedProfile = {
         id: string;
         username: string | null;
-        display_name: string | null;
         avatar_url: string | null;
     };
     let networkListeners: NetworkListener[] = [];
@@ -190,7 +188,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                 .order("listened_at", { ascending: false }),
             supabase
                 .from("profiles")
-                .select("id, username, display_name, avatar_url")
+                .select("id, username, avatar_url")
                 .in("id", followeeIds),
         ]);
 
@@ -216,7 +214,6 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
         networkListeners = [...latestByUser.values()].map(({ profile: p, ...entry }) => ({
             userId: p.id,
             username: p.username ?? "",
-            displayName: p.display_name ?? null,
             avatarUrl: p.avatar_url ?? null,
             rating: entry.rating ?? null,
             listenedAt: entry.listenedAt ?? null,

@@ -112,7 +112,7 @@ export default async function ExplorePage() {
 
     return (
         <>
-            <section className="px-6 pt-safe pb-6 max-w-page mx-auto">
+            <section className="px-6 pt-safe pb-6 max-w-page lg:max-w-5xl mx-auto">
                 <h1 className="text-h1 text-text-primary mb-2">
                     Explorer
                 </h1>
@@ -122,12 +122,12 @@ export default async function ExplorePage() {
             </section>
 
             <div className="bg-background border-b border-border-divider">
-                <div className="px-6 pb-3 max-w-page mx-auto">
+                <div className="px-6 pb-3 max-w-page lg:max-w-5xl mx-auto">
                     <SearchOverlay />
                 </div>
             </div>
 
-            <main className="p-6 pb-20 max-w-page mx-auto">
+            <main className="p-6 pb-20 lg:pb-10 max-w-page lg:max-w-5xl mx-auto">
                 {isEmpty ? (
                     <div className="text-center py-16 space-y-6">
                         <div className="space-y-3">
@@ -162,7 +162,7 @@ export default async function ExplorePage() {
                                     {trending.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="snap-center shrink-0 w-44 sm:w-48 md:w-52"
+                                            className="snap-center shrink-0 w-44 sm:w-48 md:w-52 lg:w-60"
                                         >
                                             <DiscoverCard item={item} />
                                         </div>

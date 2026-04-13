@@ -46,7 +46,7 @@ export default function Reviews({ albumId, initialReviews }: { albumId: string; 
 }
 
 function ReviewItem({ review }: { review: Review }) {
-    const displayName = review.display_name || "User";
+    const displayName = review.username || "User";
 
     return (
         <Link

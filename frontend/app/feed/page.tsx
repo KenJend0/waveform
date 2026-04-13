@@ -73,9 +73,8 @@ export default async function FeedPage() {
           <div className="flex-1 min-w-0">
             <Link href={`/u/${p.username}`} className="block hover:opacity-70 transition-opacity duration-150">
               <p className="text-[14px] font-medium text-text-primary truncate">
-                {p.display_name || p.username}
+                @{p.username}
               </p>
-              <p className="text-[12px] text-text-tertiary mt-0.5">@{p.username}</p>
             </Link>
           </div>
           <FollowButton userId={p.id} initialIsFollowing={false} />
@@ -95,7 +94,7 @@ export default async function FeedPage() {
   );
 
   return (
-    <div className="mx-auto max-w-page px-4 md:px-6 pb-28">
+    <div className="mx-auto max-w-page lg:max-w-5xl px-4 md:px-6 pb-28 lg:pb-12">
       <div className="pt-8 pb-6">
         <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
         <p className="text-[14px] text-text-tertiary">Ce qui se passe autour de toi.</p>
@@ -103,42 +102,46 @@ export default async function FeedPage() {
 
       {/* ── empty ────────────────────────────────────────────────────────────── */}
       {state === 'empty' && (
-        <div className="py-4">
-          <p className="text-[16px] text-text-secondary mb-2">Le fil est calme pour l&apos;instant.</p>
-          <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed">
-            Suis des gens pour voir leurs écoutes ici, ou commence par noter un album.
-          </p>
-          <div className="flex flex-col gap-3 mb-12">
-            <AddAlbumCTA />
-            <Link
-              href="/explore"
-              className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
-            >
-              <p className="text-[14px] text-text-primary font-medium">Explorer des albums</p>
-              <span className="text-[18px] leading-none ml-4 text-text-tertiary">→</span>
-            </Link>
+        <div className="lg:flex lg:gap-12 lg:items-start">
+          <div className="py-4 lg:flex-1">
+            <p className="text-[16px] text-text-secondary mb-2">Le fil est calme pour l&apos;instant.</p>
+            <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed">
+              Suis des gens pour voir leurs écoutes ici, ou commence par noter un album.
+            </p>
+            <div className="flex flex-col gap-3 mb-12">
+              <AddAlbumCTA />
+              <Link
+                href="/explore"
+                className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
+              >
+                <p className="text-[14px] text-text-primary font-medium">Explorer des albums</p>
+                <span className="text-[18px] leading-none ml-4 text-text-tertiary">→</span>
+              </Link>
+            </div>
           </div>
           {suggestedUsers.length > 0 && (
-            <div>
+            <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
               <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
                 Personnes à suivre
               </p>
               <SuggestedUsersSection />
-            </div>
+            </aside>
           )}
         </div>
       )}
 
       {/* ── sparse ───────────────────────────────────────────────────────────── */}
       {state === 'sparse' && (
-        <>
-          <FeedInfiniteList
-            initialEvents={events}
-            initialCursor={feedResult.nextCursor ?? null}
-            currentUserId={user.id}
-          />
+        <div className="lg:flex lg:gap-12 lg:items-start">
+          <div className="lg:flex-1">
+            <FeedInfiniteList
+              initialEvents={events}
+              initialCursor={feedResult.nextCursor ?? null}
+              currentUserId={user.id}
+            />
+          </div>
           {suggestedUsers.length > 0 && (
-            <div className="mt-12">
+            <aside className="mt-12 lg:mt-0 lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
               <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
                 Personnes à suivre
               </p>
@@ -146,9 +149,9 @@ export default async function FeedPage() {
               <div className="mt-6">
                 <AddAlbumCTA />
               </div>
-            </div>
+            </aside>
           )}
-        </>
+        </div>
       )}
 
       {/* ── normal ───────────────────────────────────────────────────────────── */}

@@ -9,15 +9,15 @@ export async function generateMetadata({ params }: any) {
   const supabase = await createSupabaseServer();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url")
+    .select("avatar_url")
     .eq("username", username)
     .maybeSingle();
 
   if (!profile) return { title: `@${username}` };
 
   return {
-    title: profile.display_name || `@${username}`,
-    description: profile.display_name ? `Profil de ${profile.display_name}` : `Profil de @${username}`,
+    title: `@${username}`,
+    description: `Profil de @${username}`,
     openGraph: {
       images: profile.avatar_url ? [{ url: profile.avatar_url }] : [],
     },
@@ -44,7 +44,7 @@ export default async function PublicProfilePage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, bio, created_at, avatar_url")
+    .select("id, bio, created_at, avatar_url")
     .eq("username", username)
     .maybeSingle();
 
@@ -127,7 +127,7 @@ export default async function PublicProfilePage({
     mySavedAlbumIds.push(...(mySavedRes.data || []).map((e) => e.album_id));
   }
 
-  const displayName = (profile as any).display_name || username;
+  const displayName = username;
   const bio = (profile as any).bio || "";
 
   // ── Profil bloqué ───────────────────────────────────────────────────────

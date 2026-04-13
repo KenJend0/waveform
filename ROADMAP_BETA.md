@@ -106,7 +106,7 @@ Ce qui rend l'app vraiment utilisable au quotidien.
 - [ ] **Export RGPD** — dump JSON du diary sur demande (automatisé, pas manuel)
 
 ### Partage
-- [ ] **OG images dynamiques** pour les reviews (partage Twitter/Discord) — génération via `@vercel/og`
+- [x] **OG images dynamiques** pour les reviews (partage Twitter/Discord) — génération via `@vercel/og`
 
 ---
 
@@ -127,13 +127,13 @@ Une fois que l'app est stable et qu'il y a des utilisateurs.
 - [ ] **Pagination sur les pages artiste / profil** — les requêtes sans LIMIT peuvent devenir lentes avec de la donnée ; cursor-based comme le feed
 
 ### Rate limiting & sécurité
-- [ ] **Rate limiting généralisé** — étendre au-delà de `/api/*` : actions serveur sensibles (like, comment, follow, review), pas seulement les routes publiques
+- [x] **Rate limiting généralisé** — étendre au-delà de `/api/*` : actions serveur sensibles (like, comment, follow, review), pas seulement les routes publiques
 - [ ] **Headers de sécurité** — Content-Security-Policy, X-Frame-Options, HSTS via middleware Next.js
 
 ### Modération & abus
-- [ ] **Signalement de contenu** — bouton "Signaler" sur les reviews et commentaires, file de modération admin
-- [ ] **Blocage d'utilisateurs** — bloquer un user retire ses events du feed et cache son profil
-- [ ] **Panel admin** — dashboard liste des signalements, actions ban/warn/delete
+- [x] **Signalement de contenu** — bouton "Signaler" sur les reviews et commentaires, file de modération admin
+- [x] **Blocage d'utilisateurs** — bloquer un user retire ses events du feed et cache son profil
+- [x] **Panel admin** — dashboard liste des signalements, actions ban/warn/delete
 
 ---
 

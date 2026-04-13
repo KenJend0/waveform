@@ -16,7 +16,6 @@ type LikesBottomSheetProps = {
 type LikeUser = {
   id: string;
   username: string;
-  display_name: string | null;
   avatar_url: string | null;
 };
 
@@ -78,7 +77,7 @@ export default function LikesBottomSheet({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-medium text-text-primary truncate">
-                  {user.display_name || user.username}
+                  {user.username}
                 </p>
                 <p className="text-[12px] text-text-tertiary truncate">
                   @{user.username}

@@ -58,7 +58,7 @@ export default function ProfileTabs({ isMe, diaryEntries, savedAlbums }: Props) 
   const reviews = diaryEntries.filter(e => e.review_body);
 
   return (
-    <div className="max-w-page mx-auto px-4 sm:px-6 pb-28">
+    <div className="max-w-page mx-auto px-4 sm:px-6 pb-28 lg:max-w-none lg:px-0 lg:pb-12">
       {/* Tabs Navigation */}
       <div ref={tabsRef} className="flex gap-4 mb-6">
         {tabs.map((tab) => (

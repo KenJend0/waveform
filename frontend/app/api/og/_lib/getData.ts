@@ -82,7 +82,7 @@ export async function getOgEntryData(entryId: string): Promise<OgEntryData | nul
       .maybeSingle(),
     supabase
       .from('profiles')
-      .select('username, display_name')
+      .select('username')
       .eq('id', entry.user_id)
       .maybeSingle(),
   ]);
@@ -116,9 +116,7 @@ export async function getOgEntryData(entryId: string): Promise<OgEntryData | nul
   }
 
   const year = album?.release_date ? new Date(album.release_date).getFullYear() : null;
-  const authorName =
-    profile?.display_name ||
-    (profile?.username ? `@${profile.username}` : 'Quelqu\u2019un');
+  const authorName = profile?.username ? `@${profile.username}` : 'Quelqu\u2019un';
 
   return {
     albumTitle: album?.title ?? 'Album inconnu',

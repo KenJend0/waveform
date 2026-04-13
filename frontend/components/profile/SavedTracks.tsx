@@ -71,7 +71,7 @@ export default function SavedTracks({ albums }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {sortedAlbums.map((album) => (
         <div key={album.id}>
           <Link

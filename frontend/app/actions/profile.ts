@@ -33,7 +33,7 @@ export async function ensureProfile() {
     // Check if profile exists
     const { data: existing, error: selectError } = await supabase
       .from('profiles')
-      .select('id, username, display_name, bio, avatar_url')
+      .select('id, username, bio, avatar_url')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -50,29 +50,20 @@ export async function ensureProfile() {
       };
     }
 
-    // If not, create it with deterministic defaults
-    const email = user.email || '';
-    const defaultUsername = user.id.substring(0, 8); // First 8 chars of UUID
-    
-    // Try to get display_name from Supabase user metadata first
-    let defaultDisplayName = email.split('@')[0] || 'User'; // Email prefix as fallback
-    if ((user.user_metadata as any)?.display_name) {
-      defaultDisplayName = (user.user_metadata as any).display_name;
-    }
+    // Si pas de profil, créer avec upsert (ignoreDuplicates protège contre les race conditions)
+    const defaultUsername = user.id.substring(0, 8);
 
-    const { data: newProfile, error: insertError } = await supabase
+    await supabase
       .from('profiles')
-      .insert({
-        id: user.id,
-        username: defaultUsername,
-        display_name: defaultDisplayName,
-      })
-      .select('id, username, display_name, bio, avatar_url')
+      .upsert({ id: user.id, username: defaultUsername }, { onConflict: 'id', ignoreDuplicates: true });
+
+    const { data: newProfile, error: selectError2 } = await supabase
+      .from('profiles')
+      .select('id, username, bio, avatar_url')
+      .eq('id', user.id)
       .single();
 
-    if (insertError) {
-      throw insertError;
-    }
+    if (selectError2) throw selectError2;
 
     return {
       ok: true,
@@ -147,7 +138,6 @@ export async function getMyProfileSettings() {
 }
 
 export async function updateProfileSettings(input: {
-  display_name?: string | null;
   bio?: string | null;
 }) {
   const user = await getAuthUser();
@@ -155,12 +145,8 @@ export async function updateProfileSettings(input: {
     return { ok: false, error: 'not_authenticated' };
   }
 
-  const displayName = input.display_name ?? null;
   const bio = input.bio ?? null;
 
-  if (displayName && displayName.length > 255) {
-    return { ok: false, error: 'display_name_too_long' };
-  }
   if (bio && bio.length > 500) {
     return { ok: false, error: 'bio_too_long' };
   }
@@ -168,10 +154,7 @@ export async function updateProfileSettings(input: {
   const supabase = await createSupabaseServer();
   const { error } = await supabase
     .from('profiles')
-    .update({
-      display_name: displayName,
-      bio: bio,
-    })
+    .update({ bio })
     .eq('id', user.id);
 
   if (error) {

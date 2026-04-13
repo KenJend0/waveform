@@ -23,7 +23,7 @@ export default async function MyProfilePage() {
     // Fetch user profile
     const { data: profile } = await supabase
         .from("profiles")
-        .select("id, username, display_name, bio, avatar_url")
+        .select("id, username, bio, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -68,14 +68,12 @@ export default async function MyProfilePage() {
     const albumsCount = diaryEntries.length;
     const reviewsCount = diaryEntries.filter(e => e.review_body).length;
 
-    const displayName = profile?.display_name || user.email?.split("@")[0] || "User";
     const username = profile?.username || user.email?.split("@")[0] || "user";
     const isAdmin = ADMIN_IDS.includes(user.id);
 
     const userData = {
         id: user.id,
         username: username,
-        display_name: displayName,
         picture_url: profile?.avatar_url ?? null,
         is_me: true,
         is_admin: isAdmin,
@@ -90,17 +88,23 @@ export default async function MyProfilePage() {
     };
 
     return (
-        <>
-            <ProfileHeader user={userData} stats={stats} />
-            <div className="max-w-page mx-auto px-4 sm:px-6">
-                <Top3Albums userId={user.id} isMe={true} initialAlbums={favoriteAlbums} />
+        <div className="lg:flex lg:items-start lg:gap-12 lg:max-w-5xl lg:mx-auto lg:px-8 lg:pt-8">
+            {/* Sidebar gauche (desktop) / Layout empilé (mobile) */}
+            <aside className="lg:w-64 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
+                <ProfileHeader user={userData} stats={stats} />
+                <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
+                    <Top3Albums userId={user.id} isMe={true} initialAlbums={favoriteAlbums} />
+                </div>
+            </aside>
+
+            {/* Contenu principal : tabs */}
+            <div className="lg:flex-1 lg:min-w-0">
+                <ProfileTabs
+                    isMe={true}
+                    diaryEntries={diaryEntries}
+                    savedAlbums={savedAlbums}
+                />
             </div>
-            <div className="py-6" />
-            <ProfileTabs
-                isMe={true}
-                diaryEntries={diaryEntries}
-                savedAlbums={savedAlbums}
-            />
-        </>
+        </div>
     );
 }

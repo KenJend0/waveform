@@ -12,7 +12,6 @@ type Review = {
     rating: number | null;
     review_body: string | null;
     created_at: string;
-    display_name?: string | null;
     username?: string | null;
 };
 
@@ -185,7 +184,7 @@ export default function ReviewsBottomSheet({
 }
 
 function ReviewItem({ review }: { review: Review }) {
-    const displayName = review.display_name || "User";
+    const displayName = review.username || "User";
 
     return (
         <Link

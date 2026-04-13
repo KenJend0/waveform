@@ -70,7 +70,7 @@ export default function FeedCardCommentCreated({
                 href={`/u/${event.actor.username}`}
                 className="text-text-secondary hover:text-text-primary transition-colors duration-150"
               >
-                {event.actor.display_name || event.actor.username}
+                {event.actor.username}
               </Link>
               {event.entry_owner_id === currentUserId ? (
                 <>{' '}a commenté ton écoute</>

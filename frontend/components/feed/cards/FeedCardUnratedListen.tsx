@@ -38,7 +38,7 @@ export default function FeedCardUnratedListen({
               href={`/u/${event.actor.username}`}
               className="hover:text-text-primary transition-colors duration-150"
             >
-              {event.actor.display_name || event.actor.username}
+              {event.actor.username}
             </Link>
             <span>·</span>
             <span>a écouté</span>

@@ -8,7 +8,6 @@ import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 type Listener = {
     userId: string;
     username: string;
-    displayName: string | null;
     avatarUrl: string | null;
     rating: number | null;
     listenedAt: string | null;
@@ -27,7 +26,7 @@ export default function NetworkListenersBottomSheet({ listeners, isOpen, onClose
         <BottomSheet isOpen={isOpen} onClose={onClose} title="Ont écouté cet album" maxHeight="h-[50vh]">
             <div className="px-6 py-2">
                 {listeners.map((l) => {
-                    const name = l.displayName || l.username;
+                    const name = l.username;
                     const href = l.entryId ? `/diary/${l.entryId}` : `/u/${l.username}`;
                     return (
                         <Link

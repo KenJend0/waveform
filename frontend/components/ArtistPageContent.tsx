@@ -38,7 +38,6 @@ type MBRelease = {
 type NetworkListener = {
     userId: string;
     username: string;
-    displayName: string | null;
     avatarUrl: string | null;
     rating?: number | null;
     listenedAt?: string | null;
@@ -235,7 +234,7 @@ export function ArtistPageContent({
                 {networkListeners.length > 0 && (() => {
                     const shown = networkListeners.slice(0, 3);
                     const rest = networkListeners.length - shown.length;
-                    const tokens = shown.map(l => l.displayName || l.username);
+                    const tokens = shown.map(l => l.username);
                     let label: string;
                     if (tokens.length === 1) {
                         label = `${tokens[0]} a écouté cet artiste`;

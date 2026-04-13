@@ -78,9 +78,6 @@ export default function FeedActorsBottomSheet({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-medium text-text-primary truncate">
-                  {actor.display_name || actor.username}
-                </p>
-                <p className="text-[12px] text-text-tertiary truncate">
                   @{actor.username}
                 </p>
               </div>

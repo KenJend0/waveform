@@ -164,7 +164,7 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
                 href={`/u/${entry.author.username}`}
                 className="font-medium hover:text-text-primary transition-colors duration-150"
               >
-                {entry.author.display_name || entry.author.username}
+                {entry.author.username}
               </Link>
             </p>
             <p className="text-label text-text-tertiary mt-1">
@@ -333,7 +333,7 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
                         href={`/u/${comment.author.username}`}
                         className="font-medium text-text-primary hover:text-text-secondary transition-colors duration-150"
                       >
-                        {comment.author.display_name || comment.author.username}
+                        {comment.author.username}
                       </Link>
                       <span className="text-label text-text-tertiary flex-1">
                         {formatDate(comment.created_at)}

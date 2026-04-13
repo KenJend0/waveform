@@ -129,7 +129,6 @@ export default async function ArtistPage({ params }: PageProps) {
     type NetworkListener = {
         userId: string;
         username: string;
-        displayName: string | null;
         avatarUrl: string | null;
     };
     let networkListeners: NetworkListener[] = [];
@@ -149,7 +148,7 @@ export default async function ArtistPage({ params }: PageProps) {
             if (followeeListenerIds.length > 0) {
                 const { data: followeeProfiles } = await supabase
                     .from("profiles")
-                    .select("id, username, display_name, avatar_url")
+                    .select("id, username, avatar_url")
                     .in("id", followeeListenerIds);
                 const profileMap = new Map((followeeProfiles ?? []).map(p => [p.id, p]));
                 for (const uid of followeeListenerIds) {
@@ -157,7 +156,6 @@ export default async function ArtistPage({ params }: PageProps) {
                     if (p) networkListeners.push({
                         userId: p.id,
                         username: (p as any).username ?? "",
-                        displayName: (p as any).display_name ?? null,
                         avatarUrl: (p as any).avatar_url ?? null,
                     });
                 }

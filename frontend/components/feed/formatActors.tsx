@@ -25,7 +25,7 @@ export function formatActors(
       href={`/u/${a.username}`}
       className="text-text-secondary hover:text-text-primary transition-colors duration-150"
     >
-      {a.display_name || a.username}
+      {a.username}
     </Link>
   );
 

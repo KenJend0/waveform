@@ -85,8 +85,8 @@ export async function searchInternal(
     (kind === "all" || kind === "users")
       ? supabase
           .from("profiles")
-          .select("id, username, display_name, avatar_url")
-          .or(`username.ilike.%${escapedQuery}%,display_name.ilike.%${escapedQuery}%`)
+          .select("id, username, avatar_url")
+          .ilike("username", `%${escapedQuery}%`)
           .limit(5)
       : Promise.resolve({ data: null }),
   ]);
@@ -119,7 +119,7 @@ export async function searchInternal(
     if (u.username) {
       results.push({
         id: u.id,
-        title: u.display_name || u.username,
+        title: u.username,
         subtitle: `@${u.username}`,
         slug: u.username,
         kind: "user",

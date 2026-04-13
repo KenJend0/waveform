@@ -28,16 +28,16 @@ export default async function HomePage() {
 
             <div className="flex items-center gap-4">
                 <Link
-                    href="/auth"
+                    href="/auth?mode=signup"
                     className="bg-[#1C1C1C] text-[#F5F3EF] px-6 py-3 rounded-[8px] text-[16px] font-medium hover:opacity-85 transition-opacity duration-150"
                 >
-                    Se connecter
+                    Créer un compte
                 </Link>
                 <Link
-                    href="/auth?mode=signup"
+                    href="/auth"
                     className="text-[16px] text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150"
                 >
-                    Créer un compte
+                    Se connecter
                 </Link>
             </div>
         </div>

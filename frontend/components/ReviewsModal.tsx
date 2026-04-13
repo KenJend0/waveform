@@ -12,7 +12,6 @@ type Review = {
     rating: number | null;
     review_body: string | null;
     created_at: string;
-    display_name?: string | null;
     username?: string | null;
 };
 
@@ -167,7 +166,7 @@ export default function ReviewsModal({
 }
 
 function ReviewItem({ review }: { review: Review }) {
-    const displayName = review.display_name || "User";
+    const displayName = review.username || "User";
     const username = review.username || review.user_id;
     const profileLink = `/u/${username}`;
 

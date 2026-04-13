@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: any) {
 
   const [{ data: album }, { data: profile }] = await Promise.all([
     supabase.from('albums').select('title, cover_url, artist_id').eq('id', entry.album_id).maybeSingle(),
-    supabase.from('profiles').select('username, display_name').eq('id', entry.user_id).maybeSingle(),
+    supabase.from('profiles').select('username').eq('id', entry.user_id).maybeSingle(),
   ]);
 
   let artistName = '';
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: any) {
   }
 
   const albumTitle = album?.title || 'Album inconnu';
-  const authorName = profile?.display_name || (profile?.username ? `@${profile.username}` : 'Quelqu\'un');
+  const authorName = profile?.username ? `@${profile.username}` : 'Quelqu\'un';
   const rating = entry.rating ? `${entry.rating}/10` : null;
 
   const title = entry.review_title || `${albumTitle}${artistName ? ` — ${artistName}` : ''}`;

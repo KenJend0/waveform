@@ -78,11 +78,12 @@ export default function AuthForm() {
           return;
         }
       } else if (mode === "signup") {
+        const redirectTo = `${window.location.origin}/auth/callback`;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: redirectTo,
           },
         });
 
@@ -135,10 +136,8 @@ export default function AuthForm() {
         }
 
         const { data, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${base}/auth/reset`,
+          redirectTo: `${base}/auth/callback`,
         });
-
-        console.log('resetPasswordForEmail result', { data, error: resetError });
 
         if (resetError) {
           throw new Error(resetError.message);

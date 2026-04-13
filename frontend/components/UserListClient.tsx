@@ -7,7 +7,6 @@ import { toggleFollow } from "@/app/actions/social";
 type User = {
   id: string;
   username: string;
-  display_name: string;
   picture_url?: string;
   is_following?: boolean;
   is_me?: boolean;

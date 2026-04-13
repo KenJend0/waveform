@@ -80,7 +80,7 @@ export default function DiaryList({ entries, isMe }: Props) {
         )}
       </div>
 
-      <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
       {displayedEntries.map((entry) => (
         <div key={entry.id}>
           <div className="flex flex-col">

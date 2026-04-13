@@ -11,7 +11,6 @@ type MyAlbumEntry = {
 };
 
 type MyAlbumProfile = {
-  display_name: string | null;
   username: string | null;
 };
 
@@ -36,7 +35,7 @@ export async function getMyAlbumEntries(albumId: string): Promise<{
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, username')
+    .select('username')
     .eq('id', user.id)
     .maybeSingle();
 

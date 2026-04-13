@@ -18,9 +18,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   } else if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const redirectTo = type === 'recovery' ? '/auth/reset' : type === 'signup' ? '/onboarding' : next;
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/auth/reset`);
+      }
+      const username = data.user?.user_metadata?.username as string | undefined;
+      const needsOnboarding = !username || /^[0-9a-f-]{36}$/.test(username);
+      const redirectTo = needsOnboarding ? '/onboarding' : next;
       return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   }

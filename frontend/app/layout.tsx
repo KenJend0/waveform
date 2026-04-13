@@ -55,7 +55,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <link rel="icon" href="/logo.png" />
+          <meta name="apple-mobile-web-app-title" content="Waveform" />
+          <link rel="apple-touch-icon" href="/logo.png" />
+          <link rel="manifest" href="/manifest.webmanifest" />
         </head>
         <body className="bg-background text-text-primary font-sans antialiased">
         <AuthProvider>

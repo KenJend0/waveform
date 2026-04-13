@@ -15,7 +15,6 @@ const MIN_LENGTH = 3;
 type SuggestedUser = {
     id: string;
     username: string | null;
-    display_name: string | null;
     avatar_url: string | null;
 };
 
@@ -213,9 +212,8 @@ export default function OnboardingFlow({ suggestedUsers }: Props) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[14px] font-medium text-text-primary truncate">
-                                            {user.display_name || user.username}
+                                            @{user.username}
                                         </p>
-                                        <p className="text-[12px] text-text-tertiary">@{user.username}</p>
                                     </div>
                                     <FollowButton userId={user.id} initialIsFollowing={false} skipRefresh eventSource="onboarding" />
                                 </div>

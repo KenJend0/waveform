@@ -5,7 +5,7 @@ import Image from "next/image";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 
 type User = {
-    id: string; username: string; display_name: string; picture_url?: string;
+    id: string; username: string; picture_url?: string;
     is_following?: boolean; is_me?: boolean;
 };
 
@@ -23,7 +23,7 @@ export default function UserCard({
                 {user.picture_url ? (
                     <Image
                         src={user.picture_url}
-                        alt={user.display_name}
+                        alt={user.username}
                         width={44}
                         height={44}
                         className="rounded-full border border-border bg-background-tertiary flex-shrink-0 object-cover"
@@ -35,7 +35,7 @@ export default function UserCard({
                 )}
                 <div className="min-w-0">
                     <p className="text-[14px] font-medium text-text-primary truncate">
-                        {user.display_name}
+                        {user.username}
                     </p>
                     <p className="text-[12px] text-text-secondary truncate">
                         @{user.username}

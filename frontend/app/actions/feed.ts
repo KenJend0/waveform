@@ -1,6 +1,6 @@
 'use server';
 
-import { createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
+import { createSupabaseServer, createSupabaseAdmin, createSupabaseAnon } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/supabase/server';
 
 /**
@@ -602,5 +602,67 @@ export async function fanoutEvent(
   } catch (err) {
     console.error('fanoutEvent error:', err);
     return { success: false, error: 'An error occurred' };
+  }
+}
+
+/**
+ * Public feed for unauthenticated visitors — recent public diary entries
+ * with album and author info. No auth required.
+ */
+export type PublicFeedEntry = {
+  id: string;
+  rating: number | null;
+  review_body: string | null;
+  listened_at: string | null;
+  created_at: string;
+  author: { id: string; username: string; avatar_url: string | null };
+  album: { id: string; title: string; cover_url: string | null; artist_name: string };
+};
+
+export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
+  try {
+    const supabase = createSupabaseAnon();
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('diary_entries')
+      .select(`
+        id,
+        rating,
+        review_body,
+        listened_at,
+        created_at,
+        profiles:user_id (id, username, avatar_url),
+        albums:album_id (id, title, cover_url, artists:artist_id (name))
+      `)
+      .eq('is_public', true)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error || !data) return [];
+
+    return (data as any[])
+      .filter((r) => r.profiles && r.albums)
+      .map((r) => ({
+        id: r.id,
+        rating: r.rating ?? null,
+        review_body: r.review_body ?? null,
+        listened_at: r.listened_at ?? null,
+        created_at: r.created_at,
+        author: {
+          id: r.profiles.id,
+          username: r.profiles.username ?? '',
+          avatar_url: r.profiles.avatar_url ?? null,
+        },
+        album: {
+          id: r.albums.id,
+          title: r.albums.title ?? '',
+          cover_url: r.albums.cover_url ?? null,
+          artist_name: r.albums.artists?.name ?? '',
+        },
+      }));
+  } catch {
+    return [];
   }
 }

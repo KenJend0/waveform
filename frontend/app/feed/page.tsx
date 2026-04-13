@@ -1,12 +1,13 @@
 import Link from 'next/link';
-import { getMyFeed } from '@/app/actions/feed';
 import { redirect } from 'next/navigation';
+import { getMyFeed, getPublicFeed } from '@/app/actions/feed';
 import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 import { getSuggestedUsers } from '@/app/actions/social';
 import type { SuggestedUser } from '@/app/actions/social';
 import FollowButton from '@/components/social/FollowButton';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
+import Image from 'next/image';
 
 /**
  * Feed state machine — calculé une seule fois, drive fetches ET rendu.
@@ -25,8 +26,99 @@ function computeFeedState(eventCount: number): FeedState {
 
 export default async function FeedPage() {
   const user = await getAuthUser();
-  if (!user) redirect('/auth?mode=login');
 
+  // ── Visiteur non connecté ─────────────────────────────────────────────────
+  if (!user) {
+    const publicEntries = await getPublicFeed(30);
+
+    return (
+      <div className="mx-auto max-w-page lg:max-w-5xl px-4 md:px-6 pb-28 lg:pb-12">
+        <div className="pt-8 pb-6">
+          <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
+          <p className="text-[14px] text-text-tertiary">Ce qui se passe autour de toi.</p>
+        </div>
+
+        {/* CTA bannière */}
+        <div className="flex items-center justify-between gap-4 px-4 py-4 mb-8 bg-background-secondary border border-border rounded-[12px]">
+          <p className="text-[14px] text-text-secondary leading-snug">
+            Crée un compte pour voir ce qu&apos;écoutent tes amis.
+          </p>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <Link
+              href="/auth?mode=signup"
+              className="text-[13px] font-medium px-3 py-1.5 bg-[#1C1C1C] text-[#F5F3EF] rounded-[8px] hover:opacity-85 transition-opacity"
+            >
+              Créer un compte
+            </Link>
+            <Link
+              href="/auth?mode=login"
+              className="text-[13px] text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Se connecter
+            </Link>
+          </div>
+        </div>
+
+        {/* Feed public */}
+        {publicEntries.length === 0 ? (
+          <p className="text-[14px] text-text-tertiary py-8 text-center">Aucune activité récente.</p>
+        ) : (
+          <div className="divide-y divide-border-divider">
+            {publicEntries.map((entry) => (
+              <div key={entry.id} className="py-4 flex items-start gap-3">
+                {/* Cover */}
+                <Link href={`/albums/${entry.album.id}`} className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-[6px] overflow-hidden bg-background-secondary">
+                    {entry.album.cover_url ? (
+                      <Image
+                        src={entry.album.cover_url}
+                        alt={entry.album.title}
+                        width={40}
+                        height={40}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-background-tertiary" />
+                    )}
+                  </div>
+                </Link>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <Link href={`/u/${entry.author.username}`} className="text-[13px] font-medium text-text-primary hover:opacity-70 transition-opacity">
+                      @{entry.author.username}
+                    </Link>
+                    <span className="text-[13px] text-text-tertiary">a écouté</span>
+                    <Link href={`/albums/${entry.album.id}`} className="text-[13px] text-text-primary hover:opacity-70 transition-opacity truncate">
+                      {entry.album.title}
+                    </Link>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {entry.rating !== null && (
+                      <span className="text-[12px] text-text-secondary font-medium">{entry.rating}/10</span>
+                    )}
+                    {entry.review_body && (
+                      <p className="text-[12px] text-text-tertiary truncate">{entry.review_body}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Avatar */}
+                <Link href={`/u/${entry.author.username}`} className="flex-shrink-0">
+                  <div className="rounded-full overflow-hidden border border-border">
+                    <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={28} />
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Utilisateur connecté ─────────────────────────────────────────────────
   const supabase = await createSupabaseServer();
 
   // Redirect to onboarding if user still has a default UUID-like username
@@ -41,7 +133,9 @@ export default async function FeedPage() {
     !profile ||
     !profile.username ||
     profile.username === defaultUsername;
-  if (needsOnboarding) redirect('/onboarding');
+  if (needsOnboarding) {
+    redirect('/onboarding');
+  }
 
   // Count followings
   const { count: followingCount } = await supabase

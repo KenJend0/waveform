@@ -15,7 +15,24 @@ export default async function MyProfilePage() {
     const supabase = await createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) redirect("/auth?mode=login");
+    if (!user) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+                <p className="text-[16px] text-text-primary font-medium mb-2">Tu n&apos;as pas encore de compte.</p>
+                <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed max-w-xs">
+                    Crée un compte pour accéder à ton profil, noter des albums et partager tes écoutes.
+                </p>
+                <div className="flex flex-col items-center gap-3">
+                    <a href="/auth?mode=signup" className="px-6 py-3 bg-[#1C1C1C] text-[#F5F3EF] text-[14px] font-medium rounded-[10px] hover:opacity-85 transition-opacity">
+                        Créer un compte
+                    </a>
+                    <a href="/auth?mode=login" className="text-[14px] text-text-secondary hover:text-text-primary transition-colors">
+                        Se connecter →
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     // Créer le profil s'il n'existe pas (première connexion)
     await ensureProfile();

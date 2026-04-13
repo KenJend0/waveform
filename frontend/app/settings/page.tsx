@@ -39,6 +39,7 @@ export default function ProfileSettings() {
         email: "",
     });
     const [loading, setLoading] = useState(true);
+    const [unauthenticated, setUnauthenticated] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [showCropModal, setShowCropModal] = useState(false);
@@ -53,7 +54,8 @@ export default function ProfileSettings() {
                 const result = await getMyProfileSettings();
                 if (!result.ok) {
                     if (result.error === "not_authenticated") {
-                        router.push("/auth");
+                        setUnauthenticated(true);
+                        setLoading(false);
                         return;
                     }
                     showToast("Erreur au chargement du profil", "error");
@@ -333,7 +335,26 @@ export default function ProfileSettings() {
                 </div>
             </div>
         );
-    };
+    }
+
+    if (unauthenticated) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+                <p className="text-[16px] text-text-primary font-medium mb-2">Accès réservé aux membres.</p>
+                <p className="text-[14px] text-text-tertiary mb-8 leading-relaxed max-w-xs">
+                    Crée un compte pour accéder à tes paramètres et personnaliser ton profil.
+                </p>
+                <div className="flex flex-col items-center gap-3">
+                    <a href="/auth?mode=signup" className="px-6 py-3 bg-[#1C1C1C] text-[#F5F3EF] text-[14px] font-medium rounded-[10px] hover:opacity-85 transition-opacity">
+                        Créer un compte
+                    </a>
+                    <a href="/auth?mode=login" className="text-[14px] text-text-secondary hover:text-text-primary transition-colors">
+                        Se connecter →
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="pb-24">

@@ -6,13 +6,17 @@ import { toggleDiaryLike } from "@/app/actions/diary";
 import { showToast } from "@/components/Toast";
 
 export default function LikeButton({
-    entryId, initialLiked, initialCount,
-}: { entryId: string; initialLiked: boolean; initialCount: number; }) {
+    entryId, initialLiked, initialCount, currentUserId,
+}: { entryId: string; initialLiked: boolean; initialCount: number; currentUserId?: string }) {
     const [liked, setLiked] = useState(initialLiked);
     const [count, setCount] = useState(initialCount);
     const [isPending, startTransition] = useTransition();
 
     const toggleLike = () => {
+        if (!currentUserId) {
+            showToast("Connecte-toi pour liker une entrée", "error");
+            return;
+        }
         if (isPending) return;
         const newLiked = !liked;
         const newCount = newLiked ? count + 1 : Math.max(0, count - 1);
@@ -39,7 +43,11 @@ export default function LikeButton({
             <button
                 onClick={toggleLike}
                 disabled={isPending}
-                className="text-text-secondary hover:text-[#8E6F5E] transition-colors duration-150 focus:outline-none"
+                className={`transition-colors duration-150 focus:outline-none ${
+                    currentUserId
+                        ? "text-text-secondary hover:text-[#8E6F5E]"
+                        : "text-text-tertiary opacity-50 cursor-default"
+                }`}
             >
                 <Heart
                     size={20}

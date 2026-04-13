@@ -293,7 +293,7 @@ export default function AlbumHero({
                     albumHasGenres={albumHasGenres}
                     onSuccess={() => setIsMyActivitiesOpen(myEntriesCount > 0)}
                 />
-                <SaveAlbumButton albumId={albumId || album.id} initialSaved={isSaved} />
+                <SaveAlbumButton albumId={albumId || album.id} initialSaved={isSaved} userId={userId} />
             </div>
 
             {/* My Activities Modal */}

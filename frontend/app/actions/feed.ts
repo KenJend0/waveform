@@ -12,7 +12,6 @@ export type FeedEventType = 'REVIEW_CREATED' | 'UNRATED_LISTEN' | 'REVIEW_LIKED'
 export type FeedActor = {
   id: string;
   username: string;
-  display_name: string | null;
   avatar_url: string | null;
 };
 
@@ -98,13 +97,11 @@ export async function getMyFeed({
         actor:profiles!actor_id (
           id,
           username,
-          display_name,
           avatar_url
         ),
         followee:profiles!followee_id (
           id,
           username,
-          display_name,
           avatar_url
         ),
         album:albums (
@@ -321,7 +318,6 @@ function mapFeedEvent(raw: any): FeedEvent | null {
     actor: {
       id: raw.actor.id,
       username: raw.actor.username,
-      display_name: raw.actor.display_name,
       avatar_url: raw.actor.avatar_url,
     },
     created_at: raw.created_at,
@@ -371,7 +367,6 @@ function mapFeedEvent(raw: any): FeedEvent | null {
         followee: raw.followee ? {
           id: raw.followee.id,
           username: raw.followee.username,
-          display_name: raw.followee.display_name,
           avatar_url: raw.followee.avatar_url,
         } : undefined,
       };
@@ -454,7 +449,7 @@ export async function getFollowActors(followeeId: string, anchorTime: string): P
 
     const { data, error } = await supabase
       .from('feed_events')
-      .select('actor:profiles!actor_id(id, username, display_name, avatar_url)')
+      .select('actor:profiles!actor_id(id, username, avatar_url)')
       .eq('type', 'follow')
       .eq('followee_id', followeeId)
       .gte('created_at', windowStart)
@@ -478,7 +473,7 @@ export async function getCommentActors(entryId: string): Promise<FeedActor[]> {
 
     const { data, error } = await supabase
       .from('diary_comments')
-      .select('user:profiles!user_id(id, username, display_name, avatar_url)')
+      .select('user:profiles!user_id(id, username, avatar_url)')
       .eq('entry_id', entryId)
       .order('created_at', { ascending: false });
 

@@ -12,6 +12,7 @@ import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import BackButton from '@/components/BackButton';
 import EditDiaryEntryButton from '@/components/EditDiaryEntryButton';
 import LikesBottomSheet from '@/components/LikesBottomSheet';
+import ShareButton from '@/components/ShareButton';
 import type { DiaryEntryDetail, DiaryEntryComment } from '@/app/actions/diary';
 
 interface DiaryEntryClientProps {
@@ -252,6 +253,9 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
           <div className="flex items-center gap-2 text-text-tertiary">
             <MessageCircle size={18} />
             <span className="text-label">{comments.length}</span>
+          </div>
+          <div className="ml-auto">
+            <ShareButton entryId={entry.id} />
           </div>
         </div>
 

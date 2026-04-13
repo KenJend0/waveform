@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, MessageCircle } from 'lucide-react';
 import { FeedEvent } from '@/app/actions/feed';
 import { toggleDiaryLike } from '@/app/actions/diary';
@@ -28,12 +28,19 @@ export default function FeedCardReviewCreated({
   const [expanded, setExpanded] = useState(false);
   const isLong = event.review_is_long ?? false;
 
+  useEffect(() => {
+    setIsLiked(event.is_liked ?? false);
+    setLikesCount(event.likes_count ?? 0);
+  }, [event.entry_id, event.is_liked, event.likes_count]);
+
   const handleLike = async () => {
     if (!currentUserId) {
       showToast("Connecte-toi pour aimer cette revue", "error");
       return;
     }
-    if (liking || !event.entry_id) return;
+    if (liking || !event.entry_id) {
+      return;
+    }
 
     // Optimistic update
     const prevLiked = isLiked;
@@ -47,9 +54,9 @@ export default function FeedCardReviewCreated({
       await toggleDiaryLike(event.entry_id);
     } catch (err) {
       // Revert on error
+      console.error('Like error:', err);
       setIsLiked(prevLiked);
       setLikesCount(prevCount);
-      console.error('Like error:', err);
       showToast("Impossible d'aimer cette revue", "error");
     } finally {
       setLiking(false);

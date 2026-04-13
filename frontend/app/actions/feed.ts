@@ -165,6 +165,23 @@ export async function getMyFeed({
 
     const likedEntryIds = new Set((likedData || []).map((l: any) => l.entry_id));
 
+    const { data: statsData } = entryIds.length > 0
+      ? await supabase
+          .from('diary_entry_stats')
+          .select('entry_id, likes_count, comments_count')
+          .in('entry_id', entryIds)
+      : { data: [] };
+
+    const statsMap = new Map(
+      (statsData || []).map((stats: any) => [
+        stats.entry_id,
+        {
+          likes_count: stats.likes_count ?? 0,
+          comments_count: stats.comments_count ?? 0,
+        },
+      ])
+    );
+
     // Also fetch which entries the current user has commented on (for COMMENT_CREATED flag)
     const { data: commentedData } = entryIds.length > 0
       ? await supabase
@@ -180,10 +197,11 @@ export async function getMyFeed({
     const events: FeedEvent[] = (rawEvents || [])
       .map((raw: any) => {
         const mapped = mapFeedEvent(raw);
-        // Attach denormalized counts + is_liked for reviews
-        if (mapped && mapped.type === 'REVIEW_CREATED' && mapped.entry_id && raw.entry) {
-          mapped.likes_count = raw.entry.likes_count ?? 0;
-          mapped.comments_count = raw.entry.comments_count ?? 0;
+        // Attach fresh counts + is_liked for reviews
+        if (mapped && mapped.type === 'REVIEW_CREATED' && mapped.entry_id) {
+          const stats = statsMap.get(mapped.entry_id);
+          mapped.likes_count = stats?.likes_count ?? 0;
+          mapped.comments_count = stats?.comments_count ?? 0;
           mapped.is_liked = likedEntryIds.has(mapped.entry_id);
         }
         // Attach "also commented" flag for comment events from other users

@@ -29,15 +29,26 @@ export default function FeedCardReviewCreated({
   const isLong = event.review_is_long ?? false;
 
   const handleLike = async () => {
+    if (!currentUserId) {
+      showToast("Connecte-toi pour aimer cette revue", "error");
+      return;
+    }
     if (liking || !event.entry_id) return;
+
+    // Optimistic update
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
+    const newLiked = !prevLiked;
+    setIsLiked(newLiked);
+    setLikesCount(newLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
     setLiking(true);
+
     try {
       await toggleDiaryLike(event.entry_id);
-      const newLiked = !isLiked;
-      const newCount = newLiked ? likesCount + 1 : likesCount - 1;
-      setIsLiked(newLiked);
-      setLikesCount(newCount);
     } catch (err) {
+      // Revert on error
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
       console.error('Like error:', err);
       showToast("Impossible d'aimer cette revue", "error");
     } finally {

@@ -642,45 +642,65 @@ export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
     const supabase = createSupabaseAnon();
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data, error } = await supabase
+    // Step 1: fetch diary entries
+    const { data: entries, error: entriesError } = await supabase
       .from('diary_entries')
-      .select(`
-        id,
-        rating,
-        review_body,
-        listened_at,
-        created_at,
-        profiles:user_id (id, username, avatar_url),
-        albums:album_id (id, title, cover_url, artists:artist_id (name))
-      `)
+      .select('id, rating, review_body, listened_at, created_at, user_id, album_id')
       .eq('is_public', true)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error || !data) return [];
+    if (entriesError || !entries || entries.length === 0) {
+      if (entriesError) console.error('getPublicFeed entries error:', entriesError.message, entriesError.details);
+      return [];
+    }
 
-    return (data as any[])
-      .filter((r) => r.profiles && r.albums)
-      .map((r) => ({
-        id: r.id,
-        rating: r.rating ?? null,
-        review_body: r.review_body ?? null,
-        listened_at: r.listened_at ?? null,
-        created_at: r.created_at,
-        author: {
-          id: r.profiles.id,
-          username: r.profiles.username ?? '',
-          avatar_url: r.profiles.avatar_url ?? null,
-        },
-        album: {
-          id: r.albums.id,
-          title: r.albums.title ?? '',
-          cover_url: r.albums.cover_url ?? null,
-          artist_name: r.albums.artists?.name ?? '',
-        },
-      }));
-  } catch {
+    const userIds = [...new Set(entries.map((e: any) => e.user_id))];
+    const albumIds = [...new Set(entries.map((e: any) => e.album_id))];
+
+    // Step 2: fetch profiles and albums in parallel
+    const [{ data: profiles }, { data: albums }] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url').in('id', userIds),
+      supabase.from('albums').select('id, title, cover_url, artist_id').in('id', albumIds),
+    ]);
+
+    const artistIds = [...new Set((albums ?? []).map((a: any) => a.artist_id).filter(Boolean))];
+    const { data: artists } = artistIds.length > 0
+      ? await supabase.from('artists').select('id, name').in('id', artistIds)
+      : { data: [] };
+
+    const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+    const albumMap = new Map((albums ?? []).map((a: any) => [a.id, a]));
+    const artistMap = new Map((artists ?? []).map((a: any) => [a.id, a]));
+
+    return entries
+      .filter((e: any) => profileMap.has(e.user_id) && albumMap.has(e.album_id))
+      .map((e: any) => {
+        const profile = profileMap.get(e.user_id);
+        const album = albumMap.get(e.album_id);
+        const artist = artistMap.get(album?.artist_id);
+        return {
+          id: e.id,
+          rating: e.rating ?? null,
+          review_body: e.review_body ?? null,
+          listened_at: e.listened_at ?? null,
+          created_at: e.created_at,
+          author: {
+            id: profile.id,
+            username: profile.username ?? '',
+            avatar_url: profile.avatar_url ?? null,
+          },
+          album: {
+            id: album.id,
+            title: album.title ?? '',
+            cover_url: album.cover_url ?? null,
+            artist_name: artist?.name ?? '',
+          },
+        };
+      });
+  } catch (err) {
+    console.error('getPublicFeed unexpected error:', err);
     return [];
   }
 }

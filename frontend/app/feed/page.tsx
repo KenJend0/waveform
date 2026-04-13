@@ -7,7 +7,7 @@ import { getSuggestedUsers } from '@/app/actions/social';
 import type { SuggestedUser } from '@/app/actions/social';
 import FollowButton from '@/components/social/FollowButton';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
-import Image from 'next/image';
+import PublicFeedCard from '@/components/feed/PublicFeedCard';
 
 /**
  * Feed state machine — calculé une seule fois, drive fetches ET rendu.
@@ -63,54 +63,9 @@ export default async function FeedPage() {
         {publicEntries.length === 0 ? (
           <p className="text-[14px] text-text-tertiary py-8 text-center">Aucune activité récente.</p>
         ) : (
-          <div className="divide-y divide-border-divider">
+          <div className="flex flex-col gap-3">
             {publicEntries.map((entry) => (
-              <div key={entry.id} className="py-4 flex items-start gap-3">
-                {/* Cover */}
-                <Link href={`/albums/${entry.album.id}`} className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-[6px] overflow-hidden bg-background-secondary">
-                    {entry.album.cover_url ? (
-                      <Image
-                        src={entry.album.cover_url}
-                        alt={entry.album.title}
-                        width={40}
-                        height={40}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-background-tertiary" />
-                    )}
-                  </div>
-                </Link>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-1.5 flex-wrap">
-                    <Link href={`/u/${entry.author.username}`} className="text-[13px] font-medium text-text-primary hover:opacity-70 transition-opacity">
-                      @{entry.author.username}
-                    </Link>
-                    <span className="text-[13px] text-text-tertiary">a écouté</span>
-                    <Link href={`/albums/${entry.album.id}`} className="text-[13px] text-text-primary hover:opacity-70 transition-opacity truncate">
-                      {entry.album.title}
-                    </Link>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {entry.rating !== null && (
-                      <span className="text-[12px] text-text-secondary font-medium">{entry.rating}/10</span>
-                    )}
-                    {entry.review_body && (
-                      <p className="text-[12px] text-text-tertiary truncate">{entry.review_body}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Avatar */}
-                <Link href={`/u/${entry.author.username}`} className="flex-shrink-0">
-                  <div className="rounded-full overflow-hidden border border-border">
-                    <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={28} />
-                  </div>
-                </Link>
-              </div>
+              <PublicFeedCard key={entry.id} entry={entry} />
             ))}
           </div>
         )}

@@ -39,11 +39,11 @@ export default async function FeedPage() {
         </div>
 
         {/* CTA bannière */}
-        <div className="flex items-center justify-between gap-4 px-4 py-4 mb-8 bg-background-secondary border border-border rounded-[12px]">
+        <div className="flex flex-col items-start gap-3 px-4 py-4 mb-8 bg-background-secondary border border-border rounded-[12px]">
           <p className="text-[14px] text-text-secondary leading-snug">
             Crée un compte pour voir ce qu&apos;écoutent tes amis.
           </p>
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/auth?mode=signup"
               className="text-[13px] font-medium px-3 py-1.5 bg-[#1C1C1C] text-[#F5F3EF] rounded-[8px] hover:opacity-85 transition-opacity"

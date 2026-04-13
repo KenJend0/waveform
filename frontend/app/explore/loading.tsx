@@ -18,7 +18,7 @@ export default function Loading() {
                 {/* Pour toi — grille 2 colonnes */}
                 <section>
                     <div className="h-5 bg-background-secondary rounded w-20 mb-5" />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-[repeat(4,minmax(0,15rem))]">
                         {[0, 1, 2, 3].map((i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-[6px] bg-background-secondary flex-shrink-0" />

@@ -5,10 +5,14 @@ import { type ForYouAlbum } from "@/app/actions/explore";
 export default function PourToiSection({ albums }: { albums: ForYouAlbum[] }) {
     if (albums.length === 0) return null;
 
+    const gridClassName = albums.length === 3
+        ? "grid-cols-1 lg:grid-cols-[repeat(3,minmax(0,15rem))]"
+        : "grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,15rem))]";
+
     return (
         <section>
             <h2 className="text-h2 text-text-primary mb-5">Pour toi</h2>
-            <div className={`grid gap-3 ${albums.length === 3 ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
+            <div className={`grid gap-3 lg:gap-4 ${gridClassName}`}>
                 {albums.map((album, idx) => (
                     <Link
                         key={album.album_id}

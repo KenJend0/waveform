@@ -31,6 +31,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { signOut } = useAuth();
+  const alignIdentityToAvatar = !!user.is_me;
 
   const handleLogout = async () => {
     try {
@@ -106,7 +107,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
         )}
 
         {/* Avatar + Name inline */}
-        <div className="flex items-start gap-5">
+        <div className={`flex gap-5 ${alignIdentityToAvatar ? 'items-center' : 'items-start'}`}>
           <div className="flex-shrink-0 rounded-full border border-border overflow-hidden">
             <div style={{ width: '80px', height: '80px' }}>
               <UserAvatar userId={user.id} src={user.picture_url} size={80} />

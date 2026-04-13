@@ -12,11 +12,11 @@ export default async function AddPage() {
                     <h1 className="text-h1 text-text-primary mb-2">Ajouter</h1>
                     <p className="text-[14px] text-text-tertiary">Note une écoute, donne une note, écris une review.</p>
                 </div>
-                <div className="flex items-center justify-between gap-4 px-4 py-4 bg-background-secondary border border-border rounded-[12px]">
+                <div className="flex flex-col items-start gap-3 px-4 py-4 bg-background-secondary border border-border rounded-[12px]">
                     <p className="text-[14px] text-text-secondary leading-snug">
                         Crée un compte pour noter tes écoutes.
                     </p>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <a href="/auth?mode=signup" className="text-[13px] font-medium px-3 py-1.5 bg-[#1C1C1C] text-[#F5F3EF] rounded-[8px] hover:opacity-85 transition-opacity">
                             Créer un compte
                         </a>

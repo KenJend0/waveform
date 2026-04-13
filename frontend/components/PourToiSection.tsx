@@ -1,24 +1,13 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getForYouSuggestions, type ForYouAlbum } from "@/app/actions/explore";
+import { type ForYouAlbum } from "@/app/actions/explore";
 
-export default function PourToiSection() {
-    const [albums, setAlbums] = useState<ForYouAlbum[] | null>(null);
-
-    useEffect(() => {
-        getForYouSuggestions().then(setAlbums);
-    }, []);
-
-    // null = chargement (invisible), [] = rien à suggérer (invisible)
-    if (!albums || albums.length === 0) return null;
+export default function PourToiSection({ albums }: { albums: ForYouAlbum[] }) {
+    if (albums.length === 0) return null;
 
     return (
         <section>
             <h2 className="text-h2 text-text-primary mb-5">Pour toi</h2>
-            {/* 3 items → 1 colonne (3 lignes), sinon 2 colonnes */}
             <div className={`grid gap-3 ${albums.length === 3 ? "grid-cols-1" : "grid-cols-2"}`}>
                 {albums.map((album, idx) => (
                     <Link
@@ -36,6 +25,7 @@ export default function PourToiSection() {
                                     fill
                                     className="object-cover"
                                     sizes="48px"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="w-full h-full bg-background-tertiary" />

@@ -1,17 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { getDiscoveryAlbums, type DiscoveryAlbum } from "@/app/actions/explore";
+import { type DiscoveryAlbum } from "@/app/actions/explore";
 import DiscoverCard from "@/components/DiscoverCard";
 
-export default function DiscoverySection() {
-    const [albums, setAlbums] = useState<DiscoveryAlbum[] | null>(null);
-
-    useEffect(() => {
-        getDiscoveryAlbums().then(setAlbums);
-    }, []);
-
-    if (!albums || albums.length === 0) return null;
+export default function DiscoverySection({ albums }: { albums: DiscoveryAlbum[] }) {
+    if (albums.length === 0) return null;
 
     return (
         <section>

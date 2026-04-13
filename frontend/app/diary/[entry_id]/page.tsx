@@ -40,11 +40,14 @@ export async function generateMetadata({ params }: any) {
     ? entry.review_body.slice(0, 160)
     : `${authorName} a écouté ${albumTitle}${artistName ? ` de ${artistName}` : ''}${rating ? ` — ${rating}` : ''}.`;
 
+  const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
+  const ogImageUrl = `${appUrl}/api/og/review/${entry_id}`;
+
   return {
     title,
     description,
     openGraph: {
-      images: album?.cover_url ? [{ url: album.cover_url }] : [],
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
   };
 }

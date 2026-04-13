@@ -1,7 +1,5 @@
 ﻿import { createSupabaseAnon } from "@/lib/supabase/server";
-
-// Revalidate every hour — explore shows public trending data, no user-specific content
-export const revalidate = 3600;
+import { getForYouSuggestions, getDiscoveryAlbums, type ForYouAlbum, type DiscoveryAlbum } from "@/app/actions/explore";
 import DiscoverCard from "@/components/DiscoverCard";
 import SearchOverlay from "@/components/SearchOverlay";
 import PourToiSection from "@/components/PourToiSection";
@@ -97,13 +95,17 @@ async function getTrendingThisWeek(): Promise<DiscoverItem[]> {
 
 export default async function ExplorePage() {
     let trending: DiscoverItem[] = [];
+    let forYou: ForYouAlbum[] = [];
+    let discovery: DiscoveryAlbum[] = [];
 
     try {
-        trending = await getTrendingThisWeek();
+        [trending, forYou, discovery] = await Promise.all([
+            getTrendingThisWeek(),
+            getForYouSuggestions(),
+            getDiscoveryAlbums(),
+        ]);
     } catch (err) {
-        // eslint-disable-next-line no-console
         console.error("Explore data fetch failed:", err);
-        trending = [];
     }
 
     const isEmpty = trending.length === 0;
@@ -144,8 +146,8 @@ export default async function ExplorePage() {
                     </div>
                 ) : (
                     <div className="space-y-12">
-                        {/* Pour toi — suggestions personnalisées (client-side, user-specific) */}
-                        <PourToiSection />
+                        {/* Pour toi — suggestions personnalisées */}
+                        <PourToiSection albums={forYou} />
 
                         {/* Trending this week */}
                         <section>
@@ -174,7 +176,7 @@ export default async function ExplorePage() {
                         </section>
 
                         {/* Découverte — artistes inconnus de l'utilisateur, bien notés */}
-                        <DiscoverySection />
+                        <DiscoverySection albums={discovery} />
                     </div>
                 )}
             </main>

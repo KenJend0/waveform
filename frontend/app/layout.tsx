@@ -5,6 +5,9 @@ import { AuthProvider } from "@/lib/AuthContext";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { BackgroundColorProvider } from "@/lib/BackgroundColorContext";
 import { BackgroundWrapper } from "@/components/BackgroundWrapper";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import InstagramBanner from "@/components/InstagramBanner";
+import InstallBanner from "@/components/InstallBanner";
 import { Inter } from 'next/font/google';
 import type { Metadata, Viewport } from 'next';
 
@@ -68,6 +71,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </AuthenticatedLayout>
               <Toast />
               <Analytics />
+              <ServiceWorkerRegistration />
+              <InstagramBanner />
+              <InstallBanner />
             </BackgroundWrapper>
           </BackgroundColorProvider>
         </AuthProvider>

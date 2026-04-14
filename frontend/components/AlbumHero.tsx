@@ -9,6 +9,7 @@ import SaveAlbumButton from "@/components/SaveAlbumButton";
 import AddToDiaryButton from "@/components/AddToDiaryButton";
 import EditDiaryEntryButton from "@/components/EditDiaryEntryButton";
 import GenrePills from "@/components/GenrePills";
+import StreamingLinks from "@/components/StreamingLinks";
 import NetworkListenersBottomSheet from "@/components/NetworkListenersBottomSheet";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import { msToDuration } from "@/lib/time";
@@ -185,7 +186,7 @@ export default function AlbumHero({
                 );
             })()}
 
-            {/* Genres */}
+            {/* Genres (cas : pills seules, sans liens) */}
             {genres !== undefined && (genres.length > 0 || userId) && (
                 <GenrePills
                     genres={genres}
@@ -196,32 +197,10 @@ export default function AlbumHero({
                 />
             )}
 
-            {/* Streaming links */}
-            {streamingLinks && Object.values(streamingLinks).some(Boolean) && (
-                <div className="flex items-center gap-2 flex-wrap mt-4">
-                    <span className="text-[12px] text-text-tertiary">Écouter sur</span>
-                    {[
-                        { key: "spotify", label: "Spotify", href: streamingLinks.spotify },
-                        { key: "appleMusic", label: "Apple Music", href: streamingLinks.appleMusic },
-                        { key: "deezer", label: "Deezer", href: streamingLinks.deezer },
-                        { key: "tidal", label: "Tidal", href: streamingLinks.tidal },
-                    ]
-                        .filter((s) => s.href)
-                        .map((s, i, arr) => (
-                            <span key={s.key} className="flex items-center gap-2">
-                                <a
-                                    href={s.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[12px] text-text-secondary hover:text-text-primary transition-colors duration-150"
-                                >
-                                    {s.label}
-                                </a>
-                                {i < arr.length - 1 && (
-                                    <span className="text-[12px] text-text-disabled">·</span>
-                                )}
-                            </span>
-                        ))}
+            {/* Streaming links (cas : liens seuls, sans pills) */}
+            {streamingLinks && (
+                <div className="mt-4">
+                    <StreamingLinks albumId={albumId || album.id} initial={streamingLinks} />
                 </div>
             )}
 

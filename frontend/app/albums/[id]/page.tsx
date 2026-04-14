@@ -11,11 +11,11 @@ import Image from "next/image";
 import AlbumHero from "@/components/AlbumHero";
 import AlbumReviewSection from "@/components/AlbumReviewSection";
 import ArtistAlbumsSection from "@/components/ArtistAlbumsSection";
-import DescriptionCollapse from "@/components/DescriptionCollapse";
 import ScrollToHashClient from "@/components/ScrollToHashClient";
-import AdminSpotifyEdit from "@/components/AdminSpotifyEdit";
 import GenrePills from "@/components/GenrePills";
 import StreamingLinks from "@/components/StreamingLinks";
+import AdminSpotifyEdit from "@/components/AdminSpotifyEdit";
+import AdminRefreshCover from "@/components/AdminRefreshCover";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -107,7 +107,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             .limit(3),
         supabase
             .from("album_metadata")
-            .select("description, spotify_url, apple_music_url, deezer_url")
+            .select("spotify_url, apple_music_url, deezer_url")
             .eq("album_id", id)
             .maybeSingle(),
         getSimilarAlbums(album.id),
@@ -146,9 +146,6 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             .filter((row) => row.source === 'community' && row.genres && typeof row.genres === "object" && "name" in row.genres)
             .map((row) => [(row.genres as { name: string }).name, row.weight ?? 1])
     );
-    const description: string | null = albumMeta.data?.description ?? null;
-
-    // Liens streaming depuis la DB uniquement — si absents, le composant StreamingLinks les charge côté client
     const streamingLinks: { spotify?: string; appleMusic?: string; deezer?: string; tidal?: string } = {
         ...(albumMeta.data?.spotify_url ? { spotify: albumMeta.data.spotify_url } : {}),
         ...(albumMeta.data?.apple_music_url ? { appleMusic: albumMeta.data.apple_music_url } : {}),
@@ -279,12 +276,11 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     };
 
     const hasGenres = genres.length > 0;
-    const hasDescription = !!description;
-    const hasStreamingLinks = !!(streamingLinks.spotify || streamingLinks.appleMusic || streamingLinks.deezer || streamingLinks.tidal);
-    // showInHero: only 1 type of metadata (genres OR streaming only), no description
-    const metadataCount = [hasGenres, hasDescription, hasStreamingLinks].filter(Boolean).length;
-    const showInHero = metadataCount === 1 && !hasDescription;
-    const showInSection = metadataCount >= 2 || hasDescription;
+    const hasSomeLinks = !!(streamingLinks.spotify || streamingLinks.appleMusic || streamingLinks.deezer || streamingLinks.tidal);
+    const hasPills = hasGenres || !!user;
+    const showBothInSection = hasPills && hasSomeLinks;
+    const showOnlyPillsInHero = hasPills && !hasSomeLinks;
+    const showOnlyLinksInHero = hasSomeLinks && !hasPills;
 
     return (
         <main className="max-w-page mx-auto px-4 py-8 pb-24 overflow-x-hidden">
@@ -302,51 +298,41 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                     myEntriesCount={myEntries.length}
                     autoOpenDiary={autoOpenDiary}
                     albumHasGenres={hasGenres}
-                    genres={showInHero ? genres : (genres.length === 0 && user ? [] : undefined)}
+                    genres={showOnlyPillsInHero ? genres : undefined}
                     genreWeights={genreWeights}
-                    streamingLinks={showInHero && hasStreamingLinks ? streamingLinks : undefined}
+                    streamingLinks={showOnlyLinksInHero ? streamingLinks : undefined}
                     networkListeners={networkListeners}
                 />
             </div>
 
-            {/* ========== 1B. ALBUM INFO + DESCRIPTION ========== */}
-            {(showInSection || (isAdmin && !streamingLinks.spotify)) && (
+            {/* Section unifiée — seulement si pills ET liens sont présents */}
+            {showBothInSection && (
+                <div className="border-t border-border-divider pt-8 mb-8">
+                    <StreamingLinks albumId={album.id} initial={streamingLinks} />
+                    <div className="mt-3">
+                        <GenrePills
+                            genres={genres}
+                            albumId={album.id}
+                            userId={genres.length < 3 ? user?.id : undefined}
+                            genreWeights={genreWeights}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Admin tools */}
+            {isAdmin && (!streamingLinks.spotify || !!album.mbid) && (
                 <div className="border-t border-border-divider pt-8 mb-20">
-                    {showInSection && hasGenres && (
-                        <div className="mb-6">
-                            {/* T6: GenrePills avec bouton vote communautaire */}
-                            <div className="flex items-center gap-2 flex-wrap mb-4">
-                                <span className="text-[12px] text-text-tertiary">Genres</span>
-                                <GenrePills
-                                    genres={genres}
-                                    albumId={album.id}
-                                    userId={genres.length < 3 ? user?.id : undefined}
-                                    genreWeights={genreWeights}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Streaming links — lazy loaded client-side if not in DB */}
-                    {showInSection && !showInHero && (
-                        <div className="mb-6">
-                            <StreamingLinks albumId={album.id} initial={streamingLinks} />
-                        </div>
-                    )}
-
-                    {isAdmin && !streamingLinks.spotify && (
+                    {!streamingLinks.spotify && (
                         <div className="mb-4">
                             <AdminSpotifyEdit albumId={album.id} />
                         </div>
                     )}
-                    {description && <DescriptionCollapse text={description} />}
-                </div>
-            )}
-
-            {/* Streaming links outside section — for albums with MBID but no other metadata */}
-            {!showInHero && !showInSection && !!(album.mbid && artist?.name) && (
-                <div className="mb-6">
-                    <StreamingLinks albumId={album.id} initial={streamingLinks} />
+                    {album.mbid && (
+                        <div className="mb-4">
+                            <AdminRefreshCover albumId={album.id} />
+                        </div>
+                    )}
                 </div>
             )}
 

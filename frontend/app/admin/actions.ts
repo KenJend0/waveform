@@ -2,6 +2,7 @@
 
 import { createSupabaseAdmin, getAuthUser } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { fetchCoverUrl } from '@/app/actions/musicbrainz';
 
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -34,6 +35,41 @@ export async function setAlbumSpotifyUrl(albumId: string, spotifyUrl: string): P
 
   revalidatePath('/admin');
   return true;
+}
+
+/** Rafraîchit la cover d'un album depuis CoverArt Archive.
+ *  Essaie d'abord l'endpoint release-group (mbid actuel), puis release en fallback
+ *  car les vieux albums peuvent avoir un release MBID stocké au lieu du release-group MBID.
+ */
+export async function refreshAlbumCover(albumId: string): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser();
+  if (!user || !ADMIN_IDS.includes(user.id)) return { success: false, error: 'Non autorisé' };
+
+  const supabase = createSupabaseAdmin();
+  const { data: album } = await supabase
+    .from('albums')
+    .select('mbid')
+    .eq('id', albumId)
+    .maybeSingle();
+
+  if (!album?.mbid) return { success: false, error: 'Pas de MBID pour cet album' };
+
+  // Essai 1 : release-group (cas nominal pour les imports récents)
+  let coverUrl = await fetchCoverUrl(album.mbid, 'release-group');
+  // Essai 2 : release (cas des vieux imports où le MBID stocké est celui d'une release)
+  if (!coverUrl) coverUrl = await fetchCoverUrl(album.mbid, 'release');
+
+  if (!coverUrl) return { success: false, error: 'Cover introuvable sur CoverArt Archive' };
+
+  const { error } = await supabase
+    .from('albums')
+    .update({ cover_url: coverUrl })
+    .eq('id', albumId);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath(`/albums/${albumId}`);
+  return { success: true };
 }
 
 /** Enregistre manuellement les liens de streaming (Spotify, Apple Music, Deezer). */

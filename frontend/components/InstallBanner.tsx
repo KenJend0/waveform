@@ -12,11 +12,13 @@ const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
 
 function isIosSafari(): boolean {
   const ua = navigator.userAgent
+  // iPhone ou iPad, pas Chrome iOS, pas Firefox iOS, pas Instagram (géré par InstagramBanner),
+  // pas déjà en mode standalone (PWA installée)
   return (
     /iPhone|iPad/.test(ua) &&
-    navigator.vendor === 'Apple Computer, Inc.' &&
     !ua.includes('CriOS') &&
     !ua.includes('FxiOS') &&
+    !ua.includes('Instagram') &&
     !(navigator as Navigator & { standalone?: boolean }).standalone
   )
 }

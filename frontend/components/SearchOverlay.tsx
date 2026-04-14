@@ -490,24 +490,22 @@ export default function SearchOverlay() {
                 )}
               </div>
 
-              {/* Tabs — visibles uniquement quand il y a une requête */}
-              {q.trim() && (
-                <div className="flex gap-5">
-                  {(["all", "albums", "artists", "users"] as SearchTab[]).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`text-[13px] font-medium pb-3 border-b-2 transition-colors duration-150 ${
-                        activeTab === tab
-                          ? "text-text-primary border-[#8E6F5E]"
-                          : "text-text-tertiary border-transparent hover:text-text-secondary"
-                      }`}
-                    >
-                      {tabLabels[tab]}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Tabs — toujours visibles dès l'ouverture */}
+              <div className="flex gap-5">
+                {(["all", "albums", "artists", "users"] as SearchTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`text-[13px] font-medium pb-3 border-b-2 transition-colors duration-150 ${
+                      activeTab === tab
+                        ? "text-text-primary border-[#8E6F5E]"
+                        : "text-text-tertiary border-transparent hover:text-text-secondary"
+                    }`}
+                  >
+                    {tabLabels[tab]}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Body */}

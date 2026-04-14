@@ -141,6 +141,19 @@ const NOISE_TAGS = new Set([
   'radiohead', 'sade', 'stevie wonder', 'buena vista social club',
   'johnny hallyday', 'ennio morricone', 'michael jackson', 'common',
   'mf doom', 'j dilla', 'ofwgkta', 'lauryn hill',
+  // Artistes souvent taguéz sur albums d'autres (featured, similaires)
+  'lana del rey', 'kanye west', 'kendrick lamar', 'frank ocean', 'jay-z',
+  'pharrell williams', 'travis scott', 'post malone', 'drake', 'eminem',
+  'rihanna', 'beyonce', 'beyoncé', 'ariana grande', 'billie eilish',
+  'tyler the creator', 'chance the rapper', 'j. cole', 'j cole',
+  'the weeknd', 'juice wrld', 'xxxtentacion', 'playboi carti', 'asap rocky',
+  'a$ap rocky', 'future', 'young thug', 'lil wayne', 'nicki minaj',
+  'childish gambino', 'daniel caesar', 'brockhampton', 'earl sweatshirt',
+  'solange', 'sza', 'doja cat', 'dua lipa', 'harry styles',
+  'bad bunny', 'j balvin', 'rosalia', 'rosalía',
+  'daft punk', 'gorillaz', 'arcade fire', 'tame impala',
+  'bon iver', 'sufjan stevens', 'lcd soundsystem',
+  'jay z',
 ]);
 
 function isValidTag(name: string): boolean {
@@ -148,6 +161,8 @@ function isValidTag(name: string): boolean {
   if (NOISE_TAGS.has(name)) return false;
   // Années spécifiques (2025, 1966) et décennies (70s, 80s)
   if (/^\d{4}s?$/.test(name) || /^\d{2}s$/.test(name)) return false;
+  // Phrases de 5 mots ou plus — clairement pas un genre musical
+  if (name.split(/\s+/).length >= 5) return false;
   return true;
 }
 

@@ -97,6 +97,7 @@ interface MBReleaseDetail {
       position: number;
       length?: number;
       'track_or_recording_length'?: number;
+      recording?: { length?: number };
     }>;
   }>;
 }
@@ -692,10 +693,13 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
         return { success: false, error: 'Album not found' };
       }
       const rgData: any = await rgResponse.json();
-      const firstReleaseId: string | undefined = rgData.releases?.[0]?.id;
-      if (!firstReleaseId) {
+      const releases: any[] = rgData.releases ?? [];
+      if (releases.length === 0) {
         return { success: false, error: 'No releases found for this release group' };
       }
+      // Préfère une release "Official" — la première de la liste peut être un promo/bootleg sans tracklist
+      const officialRelease = releases.find((r: any) => r.status === 'Official') ?? releases[0];
+      const firstReleaseId: string = officialRelease.id;
       releaseResponse = await fetch(
         `${MUSICBRAINZ_API}/release/${encodeURIComponent(firstReleaseId)}?inc=artist-credits+recordings+release-groups&fmt=json`,
         { headers: { 'User-Agent': USER_AGENT } }
@@ -779,7 +783,7 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
           title: t.title,
           position: t.position,
           discNo: t._discNo ?? 1,
-          duration: t.length ?? t['track_or_recording_length'] ?? null,
+          duration: t.length ?? t['track_or_recording_length'] ?? t.recording?.length ?? null,
         })),
       },
     };

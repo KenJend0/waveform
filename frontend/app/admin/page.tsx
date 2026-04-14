@@ -8,6 +8,7 @@ import ReEnrichButton from './ReEnrichButton';
 import StreamingLinksEditor from './StreamingLinksEditor';
 import DeleteReportedContentButton from './DeleteReportedContentButton';
 import AnalyzeReportButton from './AnalyzeReportButton';
+import DeleteAlbumButton from './DeleteAlbumButton';
 
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -525,6 +526,37 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
               })}
             </div>
           )}
+        </section>
+
+        {/* ── Catalogue albums ─────────────────────────────────────────── */}
+        <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-[20px] font-medium text-text-primary tracking-[-0.01em]">Catalogue albums</h2>
+            <Tag tone="neutral">{albums.length}</Tag>
+          </div>
+          <div className="space-y-2">
+            {albums.map((album) => (
+              <div key={album.id} className="rounded-[14px] border border-border bg-background px-4 py-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Link href={`/albums/${album.id}`} className="truncate text-[14px] font-medium text-text-primary transition-colors hover:text-text-secondary">
+                        {album.title}
+                      </Link>
+                      <span className="text-[12px] text-text-secondary">
+                        {album.artist_name}
+                        {album.release_date ? ` · ${new Date(album.release_date).getFullYear()}` : ''}
+                      </span>
+                    </div>
+                    {album.mbid && (
+                      <span className="text-[11px] font-mono text-text-tertiary">{album.mbid.slice(0, 8)}…</span>
+                    )}
+                  </div>
+                  <DeleteAlbumButton albumId={album.id} albumTitle={album.title} />
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
       </div>

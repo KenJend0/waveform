@@ -72,6 +72,33 @@ export async function refreshAlbumCover(albumId: string): Promise<{ success: boo
   return { success: true };
 }
 
+/** Supprime un album et toutes ses données associées (tracks, metadata, genres, external_ids). */
+export async function deleteAlbum(albumId: string): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser();
+  if (!user || !ADMIN_IDS.includes(user.id)) return { success: false, error: 'Non autorisé' };
+
+  const supabase = createSupabaseAdmin();
+
+  // Récupère les IDs des tracks pour nettoyer leurs external_ids
+  const { data: tracks } = await supabase.from('tracks').select('id').eq('album_id', albumId);
+  const trackIds = (tracks ?? []).map((t: { id: string }) => t.id);
+
+  await Promise.all([
+    trackIds.length > 0 ? supabase.from('external_ids').delete().in('entity_id', trackIds) : Promise.resolve(),
+    supabase.from('album_genres').delete().eq('album_id', albumId),
+    supabase.from('album_metadata').delete().eq('album_id', albumId),
+    supabase.from('external_ids').delete().eq('entity_id', albumId),
+  ]);
+
+  await supabase.from('tracks').delete().eq('album_id', albumId);
+
+  const { error } = await supabase.from('albums').delete().eq('id', albumId);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
 /** Enregistre manuellement les liens de streaming (Spotify, Apple Music, Deezer). */
 export async function setAlbumStreamingUrls(
   albumId: string,

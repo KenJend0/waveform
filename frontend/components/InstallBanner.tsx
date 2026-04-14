@@ -12,8 +12,6 @@ const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
 
 function isIosSafari(): boolean {
   const ua = navigator.userAgent
-  // iPhone ou iPad, pas Chrome iOS, pas Firefox iOS, pas Instagram (géré par InstagramBanner),
-  // pas déjà en mode standalone (PWA installée)
   return (
     /iPhone|iPad/.test(ua) &&
     !ua.includes('CriOS') &&
@@ -37,7 +35,6 @@ export default function InstallBanner() {
   const [mode, setMode] = useState<'android' | 'ios' | null>(null)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [visible, setVisible] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<Record<string, unknown> | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -48,28 +45,6 @@ export default function InstallBanner() {
       params.delete('reset-install')
       const clean = [location.pathname, params.toString()].filter(Boolean).join('?')
       location.replace(clean)
-      return
-    }
-
-    const forceDebug = params.has('debug-install')
-    const ua = navigator.userAgent
-
-    const info = {
-      isIos: /iPhone|iPad/.test(ua),
-      isCriOS: ua.includes('CriOS'),
-      isFxiOS: ua.includes('FxiOS'),
-      isInstagram: isInstagramContext(),
-      standalone: (navigator as Navigator & { standalone?: boolean }).standalone ?? false,
-      installed: localStorage.getItem(INSTALLED_KEY),
-      dismissed: localStorage.getItem(DISMISSED_KEY),
-      isIosSafari: isIosSafari(),
-      ua: ua.slice(0, 80),
-    }
-
-    if (forceDebug) {
-      setDebugInfo(info)
-      setMode('ios')
-      setVisible(true)
       return
     }
 
@@ -130,17 +105,6 @@ export default function InstallBanner() {
   if (!visible) return null
 
   return (
-    <>
-    {debugInfo && (
-      <div style={{
-        position: 'fixed', top: 40, left: 0, right: 0, zIndex: 99999,
-        background: '#000', color: '#0f0', fontSize: '11px',
-        padding: '10px', fontFamily: 'monospace', whiteSpace: 'pre-wrap',
-        maxHeight: '50vh', overflowY: 'auto',
-      }}>
-        {Object.entries(debugInfo).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}
-      </div>
-    )}
     <div
       role="banner"
       style={{
@@ -160,7 +124,7 @@ export default function InstallBanner() {
     >
       <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.3', flex: 1 }}>
         {mode === 'ios'
-          ? <>Tape <strong>Partager</strong> en bas, puis <strong>Sur l&apos;écran d&apos;accueil</strong>.</>
+          ? <>Tape <strong>•••</strong> en bas à droite, puis <strong>Partager</strong>, puis <strong>Sur l&apos;écran d&apos;accueil</strong>.</>
           : <>Installe Waveform — accès rapide depuis ton écran d&apos;accueil.</>
         }
       </p>
@@ -202,6 +166,5 @@ export default function InstallBanner() {
         ✕
       </button>
     </div>
-    </>
   )
 }

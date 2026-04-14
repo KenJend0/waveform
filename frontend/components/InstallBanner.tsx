@@ -40,7 +40,18 @@ export default function InstallBanner() {
   const [debugInfo, setDebugInfo] = useState<Record<string, unknown> | null>(null)
 
   useEffect(() => {
-    const forceDebug = new URLSearchParams(location.search).has('debug-install')
+    const params = new URLSearchParams(location.search)
+
+    if (params.has('reset-install')) {
+      localStorage.removeItem(DISMISSED_KEY)
+      localStorage.removeItem(INSTALLED_KEY)
+      params.delete('reset-install')
+      const clean = [location.pathname, params.toString()].filter(Boolean).join('?')
+      location.replace(clean)
+      return
+    }
+
+    const forceDebug = params.has('debug-install')
     const ua = navigator.userAgent
 
     const info = {

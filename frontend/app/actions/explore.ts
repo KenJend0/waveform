@@ -252,9 +252,10 @@ export async function getSimilarUsers(limit = 4): Promise<SimilarUser[]> {
     if (!profiles) return [];
 
     return profiles
+        .filter((p) => p.username)
         .map((p) => ({
             user_id: p.id,
-            username: p.username,
+            username: p.username!,
             avatar_url: p.avatar_url ?? null,
             taste_match: Math.round((scoreMap.get(p.id) ?? 0) * 100),
         }))

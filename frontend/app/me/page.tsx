@@ -54,6 +54,8 @@ export default async function MyProfilePage() {
         followersResult,
         followingResult,
         diaryEntries,
+        diaryTotalResult,
+        reviewsTotalResult,
         savedAlbums,
         favoriteAlbumsResult,
     ] = await Promise.all([
@@ -66,6 +68,15 @@ export default async function MyProfilePage() {
             .select("*", { count: "exact" })
             .eq("follower_id", user.id),
         getUserDiary(user.id),
+        supabase
+            .from("diary_entries")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id),
+        supabase
+            .from("diary_entries")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .not("review_body", "is", null),
         getUserSavedAlbums(user.id),
         supabase
             .from("user_favorite_albums")
@@ -86,9 +97,9 @@ export default async function MyProfilePage() {
     const followersCount = followersResult.count || 0;
     const followingCount = followingResult.count || 0;
 
-    // Compute stats from fetched data
-    const albumsCount = diaryEntries.length;
-    const reviewsCount = diaryEntries.filter(e => e.review_body).length;
+    // Compute stats from exact counts (not from paginated entries)
+    const albumsCount = diaryTotalResult.count ?? 0;
+    const reviewsCount = reviewsTotalResult.count ?? 0;
 
     const username = profile?.username || user.email?.split("@")[0] || "user";
     const isAdmin = ADMIN_IDS.includes(user.id);
@@ -123,6 +134,7 @@ export default async function MyProfilePage() {
             <div className="lg:flex-1 lg:min-w-0 mt-8 lg:mt-0">
                 <ProfileTabs
                     isMe={true}
+                    userId={user.id}
                     diaryEntries={diaryEntries}
                     savedAlbums={savedAlbums}
                 />

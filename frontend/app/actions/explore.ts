@@ -16,22 +16,46 @@ export type ForYouAlbum = {
     cover_url: string;
 };
 
+export type SimilarUser = {
+    user_id: string;
+    username: string;
+    avatar_url: string | null;
+    taste_match: number; // 0-100
+};
+
 /**
- * Suggestions personnalisées — collaborative filtering Jaccard simplifié.
- *
- * Logique :
- *  1. Prend les albums que l'utilisateur a notés >= 8 (son profil de goût)
- *  2. Trouve les utilisateurs qui ont noté >= 3 de ces mêmes albums >= 8
- *     → ce sont ses "voisins de goût" (peu importe s'il les suit)
- *  3. Parmi leurs albums notés >= 8, propose ceux que l'utilisateur n'a pas encore
- *  4. Tri : nombre de voisins ayant aimé l'album, puis note moyenne
- *  5. Retourne rien si pas assez de voisins (plutôt que du bruit)
+ * Suggestions personnalisées — lit les recommandations pré-calculées par le
+ * pipeline ML batch (cosine CF). Fallback sur le Jaccard simplifié si la table
+ * est vide (avant le premier run du batch ou pour les nouveaux utilisateurs).
  */
 export async function getForYouSuggestions(): Promise<ForYouAlbum[]> {
     const user = await getAuthUser();
     if (!user) return [];
 
     const supabase = await createSupabaseServer();
+
+    // Priorité : recommandations pré-calculées par le pipeline ML
+    const { data: precomputed } = await supabase
+        .from('user_recommendations')
+        .select('album_id, rank, albums(id, title, cover_url, artists(name))')
+        .eq('user_id', user.id)
+        .eq('method', 'cosine_cf')
+        .order('rank')
+        .limit(4);
+
+    if (precomputed && precomputed.length > 0) {
+        return precomputed.map((row) => {
+            const album = row.albums as any;
+            return {
+                album_id: row.album_id,
+                title: album?.title || 'Unknown',
+                artist: album?.artists?.name || 'Unknown',
+                cover_url: album?.cover_url || '',
+            };
+        });
+    }
+
+    // Fallback Jaccard — actif tant que le batch n'a pas tourné pour cet user
 
     // Étape 1 : profil de goût (>= 8) + tous les albums du journal (pour exclusion)
     const [{ data: myEntries }, { data: myAllEntries }] = await Promise.all([
@@ -146,7 +170,7 @@ export async function getDiscoveryAlbums(): Promise<DiscoveryAlbum[]> {
 
     // Albums bien notés depuis la vue album_stats
     const { data: stats } = await supabase
-        .from('album_stats')
+        .from('album_stats_mat')
         .select('album_id, avg_rating, listeners_count')
         .gte('avg_rating', 7)
         .gte('listeners_count', 2)
@@ -181,4 +205,78 @@ export async function getDiscoveryAlbums(): Promise<DiscoveryAlbum[]> {
             artist: (a.artists as any)?.name || 'Unknown',
             cover_url: a.cover_url || '',
         }));
+}
+
+/**
+ * Utilisateurs avec des goûts similaires, calculés par le pipeline ML batch.
+ * Retourne les top-N voisins cosine du user connecté avec leur score (0-100).
+ */
+export async function getSimilarUsers(limit = 4): Promise<SimilarUser[]> {
+    const user = await getAuthUser();
+    if (!user) return [];
+
+    const supabase = await createSupabaseServer();
+
+    // Fetch more than needed to account for filtering out already-followed users
+    const [{ data: similarities }, { data: following }] = await Promise.all([
+        supabase
+            .from('user_similarity')
+            .select('user_b, score')
+            .eq('user_a', user.id)
+            .order('score', { ascending: false })
+            .limit(50),
+        supabase
+            .from('follows')
+            .select('followee_id')
+            .eq('follower_id', user.id),
+    ]);
+
+    if (!similarities || similarities.length === 0) return [];
+
+    const followedIds = new Set((following || []).map((f) => f.followee_id));
+    const scoreMap = new Map(similarities.map((s) => [s.user_b, s.score]));
+
+    const unfollowedSimilar = similarities
+        .filter((s) => !followedIds.has(s.user_b))
+        .slice(0, limit);
+
+    if (unfollowedSimilar.length === 0) return [];
+
+    const userIds = unfollowedSimilar.map((s) => s.user_b);
+
+    const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+
+    if (!profiles) return [];
+
+    return profiles
+        .map((p) => ({
+            user_id: p.id,
+            username: p.username,
+            avatar_url: p.avatar_url ?? null,
+            taste_match: Math.round((scoreMap.get(p.id) ?? 0) * 100),
+        }))
+        .sort((a, b) => b.taste_match - a.taste_match);
+}
+
+/**
+ * Score de compatibilité de goût entre l'utilisateur connecté et un profil cible.
+ * Retourne un entier 0-100, ou null si pas de données.
+ */
+export async function getTasteMatchScore(targetUserId: string): Promise<number | null> {
+    const user = await getAuthUser();
+    if (!user || user.id === targetUserId) return null;
+
+    const supabase = await createSupabaseServer();
+
+    // user_similarity est directionnel (user_a → user_b) — on vérifie les deux sens
+    const [{ data: forward }, { data: reverse }] = await Promise.all([
+        supabase.from('user_similarity').select('score').eq('user_a', user.id).eq('user_b', targetUserId).maybeSingle(),
+        supabase.from('user_similarity').select('score').eq('user_a', targetUserId).eq('user_b', user.id).maybeSingle(),
+    ]);
+
+    const score = forward?.score ?? reverse?.score ?? null;
+    return score !== null ? Math.round(score * 100) : null;
 }

@@ -1,9 +1,10 @@
 ﻿import { createSupabaseAnon } from "@/lib/supabase/server";
-import { getForYouSuggestions, getDiscoveryAlbums, type ForYouAlbum, type DiscoveryAlbum } from "@/app/actions/explore";
+import { getForYouSuggestions, getDiscoveryAlbums, getSimilarUsers, type ForYouAlbum, type DiscoveryAlbum, type SimilarUser } from "@/app/actions/explore";
 import DiscoverCard from "@/components/DiscoverCard";
 import SearchOverlay from "@/components/SearchOverlay";
 import PourToiSection from "@/components/PourToiSection";
 import DiscoverySection from "@/components/DiscoverySection";
+import SimilarUsersSection from "@/components/SimilarUsersSection";
 
 type DiscoverItem = {
     id: string;
@@ -97,12 +98,14 @@ export default async function ExplorePage() {
     let trending: DiscoverItem[] = [];
     let forYou: ForYouAlbum[] = [];
     let discovery: DiscoveryAlbum[] = [];
+    let similarUsers: SimilarUser[] = [];
 
     try {
-        [trending, forYou, discovery] = await Promise.all([
+        [trending, forYou, discovery, similarUsers] = await Promise.all([
             getTrendingThisWeek(),
             getForYouSuggestions(),
             getDiscoveryAlbums(),
+            getSimilarUsers(4),
         ]);
     } catch (err) {
         console.error("Explore data fetch failed:", err);
@@ -148,6 +151,9 @@ export default async function ExplorePage() {
                     <div className="space-y-12">
                         {/* Pour toi — suggestions personnalisées */}
                         <PourToiSection albums={forYou} />
+
+                        {/* Goûts similaires */}
+                        <SimilarUsersSection users={similarUsers} />
 
                         {/* Trending this week */}
                         <section>

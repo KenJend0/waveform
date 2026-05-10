@@ -159,15 +159,14 @@ export async function getArtistImagesByMbids(
         }
       }
 
-      // Persist via admin client (bypasses RLS on artists table)
+      // Persist via admin client (bypasses RLS on artists table) — single upsert batch
       if (toSave.length > 0) {
-        Promise.all(
-          toSave.map(({ mbid, imageUrl }) =>
-            (supabaseAdmin
-              .from('artists')
-              .update({ image_url: imageUrl } as any) as any)
-              .eq('mbid', mbid)
-          )
+        (supabaseAdmin
+          .from('artists')
+          .upsert(
+            toSave.map(({ mbid, imageUrl }) => ({ mbid, image_url: imageUrl } as any)),
+            { onConflict: 'mbid' }
+          ) as any
         ).catch(() => {/* ignore write errors */});
       }
     }

@@ -110,6 +110,8 @@ export default async function FeedPage() {
   const events = feedResult.events;
   const state = computeFeedState(events.length);
 
+  const publicEntries = state !== 'normal' ? await getPublicFeed(8) : [];
+
   const SuggestedUsersSection = () => (
     <div className="divide-y divide-border-divider">
       {suggestedUsers.map((p: SuggestedUser) => (
@@ -167,6 +169,18 @@ export default async function FeedPage() {
                 <span className="text-[18px] leading-none ml-4 text-text-tertiary">→</span>
               </Link>
             </div>
+            {publicEntries.length > 0 && (
+              <div>
+                <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
+                  Ce qui se passe sur Waveform
+                </p>
+                <div className="flex flex-col gap-3">
+                  {publicEntries.map((entry) => (
+                    <PublicFeedCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {suggestedUsers.length > 0 && (
             <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
@@ -188,6 +202,18 @@ export default async function FeedPage() {
               initialCursor={feedResult.nextCursor ?? null}
               currentUserId={user.id}
             />
+            {publicEntries.length > 0 && (
+              <div className="mt-8">
+                <p className="text-[12px] text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
+                  Découvrir sur Waveform
+                </p>
+                <div className="flex flex-col gap-3">
+                  {publicEntries.map((entry) => (
+                    <PublicFeedCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {suggestedUsers.length > 0 && (
             <aside className="mt-12 lg:mt-0 lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">

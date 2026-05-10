@@ -80,10 +80,14 @@ def fetch_users_by_email(client: Client) -> Dict[str, str]:
     per_page = 200
 
     while True:
-        response = client.auth.admin.list_users({"page": page, "per_page": per_page})
-        users = getattr(response, "users", None)
-        if users is None and isinstance(response, dict):
-            users = response.get("users", [])
+        response = client.auth.admin.list_users(page=page, per_page=per_page)
+        # Newer supabase-py versions return a list directly
+        if isinstance(response, list):
+            users = response
+        else:
+            users = getattr(response, "users", None)
+            if users is None and isinstance(response, dict):
+                users = response.get("users", [])
         if not users:
             break
 
@@ -473,7 +477,7 @@ def insert_diary_entries(
         )
 
     if rows:
-        client.table("diary_entries").insert(rows).execute()
+        client.table("diary_entries").upsert(rows, on_conflict="user_id,album_id,listened_at").execute()
     return len(rows)
 
 

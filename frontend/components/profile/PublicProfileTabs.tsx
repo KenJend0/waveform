@@ -7,8 +7,10 @@ import Link from "next/link";
 import { Heart, MessageCircle } from "lucide-react";
 import Top3Albums, { type FavoriteAlbum } from "./Top3Albums";
 import type { DiaryEntryUI } from "@/app/actions/diary";
-import { toggleDiaryLike } from "@/app/actions/diary";
+import { toggleDiaryLike, getUserDiary } from "@/app/actions/diary";
 import type { SavedAlbumUI } from "@/app/actions/saved-albums";
+
+const PAGE_SIZE = 50;
 
 type Tab = "journal" | "revues" | "ecouter";
 type ListenFilter = "all" | "listened" | "undiscovered";
@@ -125,6 +127,9 @@ export default function PublicProfileTabs({
   };
 
   const [tab, setTab] = useState<Tab>(() => resolveTab(searchParams.get("tab")));
+  const [allEntries, setAllEntries] = useState<DiaryEntryUI[]>(diaryEntries);
+  const [hasMore, setHasMore] = useState(diaryEntries.length === PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const handleTabChange = (t: Tab) => {
     setTab(t);
@@ -145,6 +150,18 @@ export default function PublicProfileTabs({
     Object.fromEntries(diaryEntries.map((e) => [e.id, { liked: e.is_liked, count: e.likes_count }]))
   );
 
+  const loadMore = async () => {
+    setLoadingMore(true);
+    const more = await getUserDiary(profileUserId, allEntries.length, PAGE_SIZE);
+    setAllEntries((prev) => [...prev, ...more]);
+    setLikeState((prev) => ({
+      ...prev,
+      ...Object.fromEntries(more.map((e) => [e.id, { liked: e.is_liked, count: e.likes_count }])),
+    }));
+    setHasMore(more.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
+
   const handleLike = async (entryId: string) => {
     if (!isLoggedIn) return;
     setLikeState((prev) => {
@@ -158,11 +175,11 @@ export default function PublicProfileTabs({
 
   // Deduplicate diary by album (keep latest)
   const uniqueDiary = Array.from(
-    new Map(diaryEntries.map((e) => [e.album_id, e])).values()
+    new Map(allEntries.map((e) => [e.album_id, e])).values()
   );
   const reviews = Array.from(
     new Map(
-      diaryEntries.filter((e) => e.review_body).map((e) => [e.album_id, e])
+      allEntries.filter((e) => e.review_body).map((e) => [e.album_id, e])
     ).values()
   );
 
@@ -299,49 +316,62 @@ export default function PublicProfileTabs({
                   : "Aucune écoute pour l'instant"}
               </p>
             ) : (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
-                {filteredDiary.map((entry) => {
-                  const myRating = myListenedAlbums[entry.album_id];
-                  return (
-                    <div key={entry.id}>
-                      <Link
-                        href={`/diary/${entry.id}`}
-                        className="group relative block aspect-square rounded-[10px] overflow-hidden"
-                      >
-                        {entry.cover_url ? (
-                          <Image
-                            src={entry.cover_url}
-                            alt={entry.album_title}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-background-tertiary" />
-                        )}
-                      </Link>
-                      <div className="mt-2">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-medium text-text-primary truncate">
-                              {entry.album_title}
-                            </p>
-                            <p className="text-[10px] text-text-tertiary truncate">
-                              {entry.artist_name}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-0.5 ml-1.5 flex-shrink-0">
-                            {entry.rating != null && (
-                              <span className="text-[10px] font-medium text-[#8E6F5E]">
-                                {entry.rating}/10
-                              </span>
-                            )}
+              <>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+                  {filteredDiary.map((entry) => {
+                    const myRating = myListenedAlbums[entry.album_id];
+                    return (
+                      <div key={entry.id}>
+                        <Link
+                          href={`/diary/${entry.id}`}
+                          className="group relative block aspect-square rounded-[10px] overflow-hidden"
+                        >
+                          {entry.cover_url ? (
+                            <Image
+                              src={entry.cover_url}
+                              alt={entry.album_title}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-background-tertiary" />
+                          )}
+                        </Link>
+                        <div className="mt-2">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-medium text-text-primary truncate">
+                                {entry.album_title}
+                              </p>
+                              <p className="text-[10px] text-text-tertiary truncate">
+                                {entry.artist_name}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5 ml-1.5 flex-shrink-0">
+                              {entry.rating != null && (
+                                <span className="text-[10px] font-medium text-[#8E6F5E]">
+                                  {entry.rating}/10
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {hasMore && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="text-[13px] text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
+                    >
+                      {loadingMore ? "Chargement…" : "Charger plus"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -375,6 +405,7 @@ export default function PublicProfileTabs({
                   : "Aucune revue pour l'instant"}
               </p>
             ) : (
+              <>
               <div className="space-y-6">
                 {filteredReviews.map((review) => {
                   const myRating = myListenedAlbums[review.album_id];
@@ -443,6 +474,18 @@ export default function PublicProfileTabs({
                   );
                 })}
               </div>
+              {hasMore && (
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="text-[13px] text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
+                  >
+                    {loadingMore ? "Chargement…" : "Charger plus"}
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
         )}

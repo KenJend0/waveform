@@ -31,6 +31,7 @@ import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import PublicProfileTabs from "@/components/profile/PublicProfileTabs";
 import { getUserDiary } from "@/app/actions/diary";
 import { getUserSavedAlbums } from "@/app/actions/saved-albums";
+import { getTasteMatchScore } from "@/app/actions/explore";
 
 export default async function PublicProfilePage({
   params,
@@ -100,6 +101,7 @@ export default async function PublicProfilePage({
   let isBlocking = false;
   let myListenedAlbums: Record<string, number | null> = {};
   let mySavedAlbumIds: string[] = [];
+  let tasteMatch: number | null = null;
 
   if (authUser) {
     // Run follow/block checks and current user lookups in parallel (single roundtrip)
@@ -109,13 +111,16 @@ export default async function PublicProfilePage({
       { data: blockStatus },
       myDiaryRes,
       mySavedRes,
+      tasteMatchScore,
     ] = await Promise.all([
       supabase.from("follows").select("follower_id").eq("follower_id", authUser.id).eq("followee_id", profile.id).maybeSingle(),
       supabase.from("follows").select("follower_id").eq("follower_id", profile.id).eq("followee_id", authUser.id).maybeSingle(),
       (supabase as any).from("user_blocks").select("blocked_id").eq("blocker_id", authUser.id).eq("blocked_id", profile.id).maybeSingle(),
-      supabase.from("diary_entries").select("album_id, rating").eq("user_id", authUser.id),
+      supabase.from("diary_entries").select("album_id, rating").eq("user_id", authUser.id).limit(2000),
       supabase.from("saved_albums").select("album_id").eq("user_id", authUser.id),
+      getTasteMatchScore(profile.id),
     ]);
+    tasteMatch = tasteMatchScore;
 
     isFollowing = !!followStatus;
     isFollowingYou = !!followBackStatus;
@@ -183,10 +188,15 @@ export default async function PublicProfilePage({
               <p className="text-[12px] text-text-tertiary mt-0.5">@{username}</p>
 
               {authUser && authUser.id !== profile.id && (
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
                   <FollowButton userId={profile.id} initialIsFollowing={isFollowing} />
                   {isFollowingYou && (
                     <span className="text-[12px] text-text-tertiary">Vous suit</span>
+                  )}
+                  {tasteMatch !== null && tasteMatch > 0 && (
+                    <span className="text-[12px] text-text-tertiary bg-background-secondary px-2 py-0.5 rounded-full border border-border">
+                      {tasteMatch}% match
+                    </span>
                   )}
                   <ProfileActionsMenu userId={profile.id} initialIsBlocking={false} />
                 </div>

@@ -129,17 +129,21 @@ def score_albums(
 def build_rec_rows(
     user_id: str, scored: list[dict], method: str, now: str
 ) -> list[dict]:
-    return [
-        {
+    rows = []
+    rank = 1
+    for i, item in enumerate(scored):
+        # Increment rank only when score changes (no duplicate ranks on ties)
+        if i > 0 and item["score"] != scored[i - 1]["score"]:
+            rank = i + 1
+        rows.append({
             "user_id": user_id,
             "album_id": item["album_id"],
             "score": round(item["score"], 6),
             "method": method,
-            "rank": rank + 1,
+            "rank": rank,
             "computed_at": now,
-        }
-        for rank, item in enumerate(scored)
-    ]
+        })
+    return rows
 
 
 def upsert_in_batches(rows: list[dict], dry_run: bool) -> None:

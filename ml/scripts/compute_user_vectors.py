@@ -143,7 +143,7 @@ def compute_similarities(
         for v_idx in top_indices:
             score = float(scores[v_idx])
             if score <= 0.0:
-                break  # no positive similarity, stop
+                continue  # skip non-positive pairs but don't stop — other neighbours may be positive
             rows.append(
                 {
                     "user_a": user_a,

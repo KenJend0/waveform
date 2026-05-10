@@ -345,8 +345,8 @@ export async function addComment(entryId: string, body: string, parentCommentId?
   } else {
     // Top-level comment: fanout to entry owner + previous commenters + actor's followers
     const [{ data: previousCommenters }, { data: actorFollowers }] = await Promise.all([
-      supabase.from('diary_comments').select('user_id').eq('entry_id', entryId).neq('user_id', user.id),
-      supabase.from('follows').select('follower_id').eq('followee_id', user.id),
+      supabase.from('diary_comments').select('user_id').eq('entry_id', entryId).neq('user_id', user.id).limit(500),
+      supabase.from('follows').select('follower_id').eq('followee_id', user.id).limit(1000),
     ]);
 
     try {
@@ -645,7 +645,11 @@ export type DiaryEntryUI = {
 /**
  * Get user diary entries with album info
  */
-export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
+export async function getUserDiary(
+  userId: string,
+  offset = 0,
+  limit = 50
+): Promise<DiaryEntryUI[]> {
   const supabase = await createSupabaseServer();
   const currentUser = await getAuthUser();
 
@@ -673,7 +677,7 @@ export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
     .eq('user_id', userId)
     .order('listened_at', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(100);
+    .range(offset, offset + limit - 1);
 
   // Get likes count from the stats view
   const entryIds = (entries || []).map(e => e.id);
@@ -690,13 +694,14 @@ export async function getUserDiary(userId: string): Promise<DiaryEntryUI[]> {
     return [];
   }
 
-  // Get user's likes if authenticated
+  // Get user's likes if authenticated — filtered to visible entries only
   let likedEntryIds = new Set<string>();
-  if (currentUser) {
+  if (currentUser && entryIds.length > 0) {
     const { data: likes } = await supabase
       .from('diary_likes')
       .select('entry_id')
-      .eq('user_id', currentUser.id);
+      .eq('user_id', currentUser.id)
+      .in('entry_id', entryIds);
     likedEntryIds = new Set((likes || []).map(l => l.entry_id));
   }
 
@@ -771,13 +776,14 @@ export async function getUserReviews(userId: string): Promise<DiaryEntryUI[]> {
   const likesMap = new Map((statsData || []).map(s => [s.entry_id, s.likes_count || 0]));
   const commentsMap = new Map((statsData || []).map(s => [s.entry_id, s.comments_count || 0]));
 
-  // Get user's likes if authenticated
+  // Get user's likes if authenticated — filtered to visible entries only
   let likedEntryIds = new Set<string>();
-  if (currentUser) {
+  if (currentUser && entryIds.length > 0) {
     const { data: likes } = await supabase
       .from('diary_likes')
       .select('entry_id')
-      .eq('user_id', currentUser.id);
+      .eq('user_id', currentUser.id)
+      .in('entry_id', entryIds);
     likedEntryIds = new Set((likes || []).map(l => l.entry_id));
   }
 

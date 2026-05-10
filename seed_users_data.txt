@@ -1,4 +1,3 @@
-﻿[ { "username": "ruefroide", "bio": "je note surtout le rap fr qui traine pas partout", "style": "rap_fr_underground", "created_at": "2025-01-12", "logs": [ {"title":"Bitume Caviar, Vol. 01","artist":"Prince Waly","rating":9,"created_at":"2025-02-01","review":"no skip, tres solide"}, {"title":"Moussa","artist":"Prince Waly","rating":8,"created_at":"2025-02-03"}, {"title":"ERRR","artist":"La Feve","rating":8,"created_at":"2025-02-05"}, {"title":"Akimbo","artist":"Ziak","rating":7,"created_at":"2025-02-06"}, {"title":"LMF","artist":"Freeze Corleone","rating":7,"created_at":"2025-02-08"}, {"title":"KH-22","artist":"Ashe 22","rating":7,"created_at":"2025-02-09"}, {"title":"Melancholia","artist":"Green Montana","rating":8,"created_at":"2025-02-11"}, {"title":"Meteo","artist":"Jade","rating":7,"created_at":"2025-02-12"}, {"title":"Trinity","artist":"Laylow","rating":9,"created_at":"2025-02-15","review":"gros univers, encore fresh"}, {"title":"Ipseite","artist":"Damso","rating":9,"created_at":"2025-02-18"}, {"title":"Feu","artist":"Nekfeu","rating":8,"created_at":"2025-02-21"}, {"title":"Cyborg","artist":"Nekfeu","rating":8,"created_at":"2025-03-02"}, {"title":"QALF","artist":"Damso","rating":7,"created_at":"2025-03-08"}, {"title":"RIPRO","artist":"Lomepal","rating":7,"created_at":"2025-03-14"}, {"title":"JVLIVS","artist":"SCH","rating":8,"created_at":"2025-03-20"} ] }, { "username": "lucas_music", "bio": "j'ecoute un peu de tout", "style": "mainstream", "created_at": "2025-01-20", "logs": [ {"title":"Astroworld","artist":"Travis Scott","rating":8,"created_at":"2025-02-02"}, {"title":"After Hours","artist":"The Weeknd","rating":9,"created_at":"2025-02-04","review":"propre de bout en bout"}, {"title":"SOS","artist":"SZA","rating":8,"created_at":"2025-02-05"}, {"title":"UTOPIA","artist":"Travis Scott","rating":7,"created_at":"2025-02-07"}, {"title":"Take Care","artist":"Drake","rating":8,"created_at":"2025-02-08"}, {"title":"Nothing Was the Same","artist":"Drake","rating":8,"created_at":"2025-02-10"}, {"title":"Future Nostalgia","artist":"Dua Lipa","rating":8,"created_at":"2025-02-12"}, {"title":"Starboy","artist":"The Weeknd","rating":8,"created_at":"2025-02-14"}, {"title":"1989","artist":"Taylor Swift","rating":7,"created_at":"2025-02-16"}, {"title":"Scorpion","artist":"Drake","rating":6,"created_at":"2025-02-20"}, {"title":"DAMN.","artist":"Kendrick Lamar","rating":9,"created_at":"2025-03-01","review":"super efficace"}, {"title":"beerbongs and bentleys","artist":"Post Malone","rating":7,"created_at":"2025-03-06"}, {"title":"Hollywood's Bleeding","artist":"Post Malone","rating":7,"created_at":"2025-03-10"}, {"title":"Midnights","artist":"Taylor Swift","rating":7,"created_at":"2025-03-15"}, {"title":"Justice","artist":"Justin Bieber","rating":6,"created_at":"2025-03-22"} ] }, { "username": "lostinaudio", "bio": "je cherche des trucs un peu partout", "style": "global_digger", "created_at": "2025-01-05", "logs": [ {"title":"Untrue","artist":"Burial","rating":9,"created_at":"2025-02-01","review":"atmosphere incroyable"}, {"title":"Clube da Esquina","artist":"Milton Nascimento","rating":9,"created_at":"2025-02-03"}, {"title":"El Mal Querer","artist":"Rosalia","rating":8,"created_at":"2025-02-06"}, {"title":"African Giant","artist":"Burna Boy","rating":8,"created_at":"2025-02-08"}, {"title":"YHLQMDLG","artist":"Bad Bunny","rating":8,"created_at":"2025-02-09"}, {"title":"Rave and Roses","artist":"Rema","rating":7,"created_at":"2025-02-11"}, {"title":"Motomami","artist":"Rosalia","rating":8,"created_at":"2025-02-13"}, {"title":"MM..FOOD","artist":"MF DOOM","rating":9,"created_at":"2025-02-16"}, {"title":"To Pimp a Butterfly","artist":"Kendrick Lamar","rating":10,"created_at":"2025-02-19"}, {"title":"Arular","artist":"MIA","rating":8,"created_at":"2025-02-22"}, {"title":"Getz/Gilberto","artist":"Stan Getz","rating":9,"created_at":"2025-03-03"}, {"title":"Discovery","artist":"Daft Punk","rating":9,"created_at":"2025-03-08"}, {"title":"Kala","artist":"MIA","rating":8,"created_at":"2025-03-11","review":"plein d'idees partout"}, {"title":"A Seat at the Table","artist":"Solange","rating":8,"created_at":"2025-03-16"}, {"title":"Saturn","artist":"Nao","rating":7,"created_at":"2025-03-21"} ] }, { "username": "nightvibes", "bio": "musique pour le soir", "style": "rnb_chill", "created_at": "2025-01-18", "logs": [ {"title":"WASTELAND","artist":"Brent Faiyaz","rating":9,"created_at":"2025-02-02"}, {"title":"Gemini Rights","artist":"Steve Lacy","rating":8,"created_at":"2025-02-04"}, {"title":"Ctrl","artist":"SZA","rating":8,"created_at":"2025-02-06"}, {"title":"Isolation","artist":"Kali Uchis","rating":8,"created_at":"2025-02-08"}, {"title":"Freudian","artist":"Daniel Caesar","rating":9,"created_at":"2025-02-10","review":"parfait en fin de soiree"}, {"title":"Sonder Son","artist":"Brent Faiyaz","rating":8,"created_at":"2025-02-12"}, {"title":"Over It","artist":"Summer Walker","rating":8,"created_at":"2025-02-14"}, {"title":"Take Me Apart","artist":"Kelela","rating":9,"created_at":"2025-02-17"}, {"title":"Blonde","artist":"Frank Ocean","rating":10,"created_at":"2025-02-20"}, {"title":"Channel Orange","artist":"Frank Ocean","rating":9,"created_at":"2025-02-24"}, {"title":"Heaux Tales","artist":"Jazmine Sullivan","rating":8,"created_at":"2025-03-03"}, {"title":"A Muse In Her Feelings","artist":"Dvsn","rating":7,"created_at":"2025-03-07"}, {"title":"CAPRISONGS","artist":"FKA twigs","rating":7,"created_at":"2025-03-12"}, {"title":"Awaken, My Love!","artist":"Childish Gambino","rating":8,"created_at":"2025-03-18"}, {"title":"Renaissance","artist":"Beyonce","rating":8,"created_at":"2025-03-24"} ] }, { "username": "filmsonics", "bio": "les bandes originales c'est la vie", "style": "soundtracks", "created_at": "2025-01-10", "logs": [ {"title":"La La Land","artist":"Justin Hurwitz","rating":10,"created_at":"2025-02-01","review":"impossible de s'en lasser"}, {"title":"Babylon","artist":"Justin Hurwitz","rating":9,"created_at":"2025-02-03"}, {"title":"Interstellar","artist":"Hans Zimmer","rating":9,"created_at":"2025-02-05"}, {"title":"Inception","artist":"Hans Zimmer","rating":8,"created_at":"2025-02-07"}, {"title":"The Social Network","artist":"Trent Reznor and Atticus Ross","rating":9,"created_at":"2025-02-10"}, {"title":"Blade Runner 2049","artist":"Hans Zimmer and Benjamin Wallfisch","rating":8,"created_at":"2025-02-12"}, {"title":"Whiplash","artist":"Justin Hurwitz","rating":9,"created_at":"2025-02-14"}, {"title":"Dune","artist":"Hans Zimmer","rating":8,"created_at":"2025-02-17"}, {"title":"Oppenheimer","artist":"Ludwig Goransson","rating":9,"created_at":"2025-02-20"}, {"title":"Her","artist":"Arcade Fire and Owen Pallett","rating":8,"created_at":"2025-02-24"}, {"title":"The Grand Budapest Hotel","artist":"Alexandre Desplat","rating":8,"created_at":"2025-03-02"}, {"title":"The Batman","artist":"Michael Giacchino","rating":7,"created_at":"2025-03-06"}, {"title":"Drive","artist":"Cliff Martinez","rating":8,"created_at":"2025-03-11","review":"ambiance nocturne parfaite"}, {"title":"Tenet","artist":"Ludwig Goransson","rating":7,"created_at":"2025-03-16"}, {"title":"First Man","artist":"Justin Hurwitz","rating":8,"created_at":"2025-03-23"} ] }, { "username": "ldnflow", "bio": "uk rap and grime", "style": "uk", "created_at": "2025-01-08", "logs": [ {"title":"Psychodrama","artist":"Dave","rating":9,"created_at":"2025-02-02","review":"storytelling top niveau"}, {"title":"Konnichiwa","artist":"Skepta","rating":8,"created_at":"2025-02-05"}, {"title":"We're All Alone in This Together","artist":"Dave","rating":8,"created_at":"2025-02-07"}, {"title":"23","artist":"Central Cee","rating":7,"created_at":"2025-02-09"}, {"title":"Common Sense","artist":"J Hus","rating":8,"created_at":"2025-02-11"}, {"title":"Big Conspiracy","artist":"J Hus","rating":8,"created_at":"2025-02-13"}, {"title":"Heavy Is the Head","artist":"Stormzy","rating":7,"created_at":"2025-02-15"}, {"title":"Gang Signs and Prayer","artist":"Stormzy","rating":7,"created_at":"2025-02-17"}, {"title":"Nothing Great About Britain","artist":"slowthai","rating":8,"created_at":"2025-02-20"}, {"title":"Sometimes I Might Be Introvert","artist":"Little Simz","rating":9,"created_at":"2025-02-24"}, {"title":"No Thank You","artist":"Little Simz","rating":8,"created_at":"2025-03-02"}, {"title":"F U C K C L U B","artist":"Nines","rating":7,"created_at":"2025-03-06"}, {"title":"Home Alone 2","artist":"D Block Europe","rating":6,"created_at":"2025-03-12"}, {"title":"Crop Circle","artist":"Nines","rating":7,"created_at":"2025-03-17"}, {"title":"Split Decision","artist":"Central Cee and Dave","rating":8,"created_at":"2025-03-22"} ] }, { "username": "indienight", "bio": "indie alt vibes", "style": "indie", "created_at": "2025-01-15", "logs": [ {"title":"AM","artist":"Arctic Monkeys","rating":8,"created_at":"2025-02-01"}, {"title":"Favourite Worst Nightmare","artist":"Arctic Monkeys","rating":7,"created_at":"2025-02-03"}, {"title":"Currents","artist":"Tame Impala","rating":9,"created_at":"2025-02-06","review":"ultra coherent"}, {"title":"Is This It","artist":"The Strokes","rating":8,"created_at":"2025-02-08"}, {"title":"The New Abnormal","artist":"The Strokes","rating":8,"created_at":"2025-02-10"}, {"title":"In Rainbows","artist":"Radiohead","rating":10,"created_at":"2025-02-13"}, {"title":"The Bends","artist":"Radiohead","rating":8,"created_at":"2025-02-15"}, {"title":"Punisher","artist":"Phoebe Bridgers","rating":8,"created_at":"2025-02-18"}, {"title":"Twin Fantasy","artist":"Car Seat Headrest","rating":8,"created_at":"2025-02-21"}, {"title":"Turn On the Bright Lights","artist":"Interpol","rating":9,"created_at":"2025-02-25"}, {"title":"Ants From Up There","artist":"Black Country, New Road","rating":9,"created_at":"2025-03-03"}, {"title":"Yankee Hotel Foxtrot","artist":"Wilco","rating":8,"created_at":"2025-03-08"}, {"title":"Melodrama","artist":"Lorde","rating":8,"created_at":"2025-03-13"}, {"title":"Visions of a Life","artist":"Wolf Alice","rating":7,"created_at":"2025-03-18"}, {"title":"Heaven to a Tortured Mind","artist":"Yves Tumor","rating":7,"created_at":"2025-03-24"} ] }, { "username": "emma", "bio": "j'ecoute surtout en voiture", "style": "casual", "created_at": "2025-01-25", "logs": [ {"title":"Starboy","artist":"The Weeknd","rating":8,"created_at":"2025-02-04"}, {"title":"Future Nostalgia","artist":"Dua Lipa","rating":7,"created_at":"2025-02-06"}, {"title":"1989","artist":"Taylor Swift","rating":7,"created_at":"2025-02-08"}, {"title":"Midnights","artist":"Taylor Swift","rating":7,"created_at":"2025-02-10"}, {"title":"After Hours","artist":"The Weeknd","rating":8,"created_at":"2025-02-12"}, {"title":"SOUR","artist":"Olivia Rodrigo","rating":7,"created_at":"2025-02-14"}, {"title":"30","artist":"Adele","rating":8,"created_at":"2025-02-16","review":"voix incroyable"}, {"title":"Fine Line","artist":"Harry Styles","rating":7,"created_at":"2025-02-19"}, {"title":"Harry's House","artist":"Harry Styles","rating":7,"created_at":"2025-02-22"}, {"title":"Planet Her","artist":"Doja Cat","rating":7,"created_at":"2025-02-26"}, {"title":"Emails I Can't Send","artist":"Sabrina Carpenter","rating":7,"created_at":"2025-03-03"}, {"title":"Happier Than Ever","artist":"Billie Eilish","rating":8,"created_at":"2025-03-09"}, {"title":"When We All Fall Asleep, Where Do We Go?","artist":"Billie Eilish","rating":8,"created_at":"2025-03-14"}, {"title":"FutureSex/LoveSounds","artist":"Justin Timberlake","rating":7,"created_at":"2025-03-19"}, {"title":"Confessions","artist":"Usher","rating":8,"created_at":"2025-03-25"} ] }, { "username": "caliente", "bio": "reggaeton latino", "style": "latino", "created_at": "2025-01-10", "logs": [ {"title":"YHLQMDLG","artist":"Bad Bunny","rating":9,"created_at":"2025-02-02","review":"ca tourne en boucle"}, {"title":"Un Verano Sin Ti","artist":"Bad Bunny","rating":8,"created_at":"2025-02-05"}, {"title":"Motomami","artist":"Rosalia","rating":8,"created_at":"2025-02-07"}, {"title":"VICE VERSA","artist":"Rauw Alejandro","rating":8,"created_at":"2025-02-09"}, {"title":"Saturno","artist":"Rauw Alejandro","rating":7,"created_at":"2025-02-11"}, {"title":"Afrodisiaco","artist":"Rauw Alejandro","rating":7,"created_at":"2025-02-13"}, {"title":"Oasis","artist":"J Balvin and Bad Bunny","rating":8,"created_at":"2025-02-15"}, {"title":"Vibras","artist":"J Balvin","rating":7,"created_at":"2025-02-18"}, {"title":"Colores","artist":"J Balvin","rating":7,"created_at":"2025-02-21"}, {"title":"DATA","artist":"Tainy","rating":8,"created_at":"2025-02-25"}, {"title":"FERXXO VOL X","artist":"Feid","rating":7,"created_at":"2025-03-02"}, {"title":"Feliz Cumpleanos Ferxxo Te Pirateamos el Album","artist":"Feid","rating":7,"created_at":"2025-03-06"}, {"title":"Mala Mia","artist":"Maluma","rating":6,"created_at":"2025-03-11"}, {"title":"Vida","artist":"Luis Fonsi","rating":6,"created_at":"2025-03-17"}, {"title":"11:11","artist":"Maluma","rating":6,"created_at":"2025-03-23"} ] }, { "username": "popdiary", "bio": "pop lover", "style": "pop", "created_at": "2025-01-18", "logs": [ {"title":"Midnights","artist":"Taylor Swift","rating":8,"created_at":"2025-02-03"}, {"title":"Future Nostalgia","artist":"Dua Lipa","rating":9,"created_at":"2025-02-05","review":"aucun temps mort"}, {"title":"Born This Way","artist":"Lady Gaga","rating":8,"created_at":"2025-02-07"}, {"title":"Chromatica","artist":"Lady Gaga","rating":8,"created_at":"2025-02-10"}, {"title":"Teenage Dream","artist":"Katy Perry","rating":8,"created_at":"2025-02-12"}, {"title":"1989","artist":"Taylor Swift","rating":8,"created_at":"2025-02-14"}, {"title":"Lemonade","artist":"Beyonce","rating":9,"created_at":"2025-02-17"}, {"title":"Renaissance","artist":"Beyonce","rating":8,"created_at":"2025-02-20"}, {"title":"Emotion","artist":"Carly Rae Jepsen","rating":9,"created_at":"2025-02-23"}, {"title":"FutureSex/LoveSounds","artist":"Justin Timberlake","rating":8,"created_at":"2025-02-27"}, {"title":"25","artist":"Adele","rating":7,"created_at":"2025-03-04"}, {"title":"SOUR","artist":"Olivia Rodrigo","rating":8,"created_at":"2025-03-09"}, {"title":"GUTS","artist":"Olivia Rodrigo","rating":8,"created_at":"2025-03-14"}, {"title":"Rare","artist":"Selena Gomez","rating":6,"created_at":"2025-03-19"}, {"title":"Sweetener","artist":"Ariana Grande","rating":7,"created_at":"2025-03-24"} ] }, { "username": "hardears", "bio": "note severe", "style": "critic", "created_at": "2025-01-05", "logs": [ {"title":"Astroworld","artist":"Travis Scott","rating":6,"created_at":"2025-02-02"}, {"title":"UTOPIA","artist":"Travis Scott","rating":5,"created_at":"2025-02-05","review":"des idees, execution inegale"}, {"title":"After Hours","artist":"The Weeknd","rating":7,"created_at":"2025-02-07"}, {"title":"Scorpion","artist":"Drake","rating":5,"created_at":"2025-02-09"}, {"title":"Certified Lover Boy","artist":"Drake","rating":5,"created_at":"2025-02-11"}, {"title":"Mr. Morale and the Big Steppers","artist":"Kendrick Lamar","rating":7,"created_at":"2025-02-13"}, {"title":"DAMN.","artist":"Kendrick Lamar","rating":8,"created_at":"2025-02-16"}, {"title":"Heroes and Villains","artist":"Metro Boomin","rating":6,"created_at":"2025-02-19"}, {"title":"Her Loss","artist":"Drake and 21 Savage","rating":6,"created_at":"2025-02-22"}, {"title":"Take Care","artist":"Drake","rating":7,"created_at":"2025-02-26"}, {"title":"SOS","artist":"SZA","rating":6,"created_at":"2025-03-03"}, {"title":"Ctrl","artist":"SZA","rating":7,"created_at":"2025-03-08"}, {"title":"Starboy","artist":"The Weeknd","rating":6,"created_at":"2025-03-13"}, {"title":"Nothing Was the Same","artist":"Drake","rating":7,"created_at":"2025-03-18","review":"au-dessus de sa moyenne"}, {"title":"Heroes and Villains (Deluxe)","artist":"Metro Boomin","rating":6,"created_at":"2025-03-24"} ] }, { "username": "nightpulse", "bio": "electronic only", "style": "electro", "created_at": "2025-01-12", "logs": [ {"title":"Discovery","artist":"Daft Punk","rating":9,"created_at":"2025-02-01"}, {"title":"Random Access Memories","artist":"Daft Punk","rating":8,"created_at":"2025-02-03"}, {"title":"Untrue","artist":"Burial","rating":9,"created_at":"2025-02-06"}, {"title":"Cross","artist":"Justice","rating":9,"created_at":"2025-02-08","review":"brut et efficace"}, {"title":"Woman Worldwide","artist":"Justice","rating":8,"created_at":"2025-02-10"}, {"title":"Immunity","artist":"Jon Hopkins","rating":8,"created_at":"2025-02-12"}, {"title":"Singularity","artist":"Jon Hopkins","rating":8,"created_at":"2025-02-15"}, {"title":"Syro","artist":"Aphex Twin","rating":7,"created_at":"2025-02-18"}, {"title":"Selected Ambient Works 85-92","artist":"Aphex Twin","rating":9,"created_at":"2025-02-21"}, {"title":"In Colour","artist":"Jamie xx","rating":9,"created_at":"2025-02-24"}, {"title":"We're New Here","artist":"Jamie xx and Gil Scott-Heron","rating":8,"created_at":"2025-03-02"}, {"title":"LP5","artist":"Autechre","rating":7,"created_at":"2025-03-07"}, {"title":"Play","artist":"Moby","rating":8,"created_at":"2025-03-12"}, {"title":"Energy","artist":"Disclosure","rating":7,"created_at":"2025-03-18"}, {"title":"Settle","artist":"Disclosure","rating":8,"created_at":"2025-03-23"} ] }, { "username": "oldrecords", "bio": "jazz and classics", "style": "classic", "created_at": "2025-01-07", "logs": [ {"title":"Kind of Blue","artist":"Miles Davis","rating":10,"created_at":"2025-02-02","review":"intemporel"}, {"title":"A Love Supreme","artist":"John Coltrane","rating":9,"created_at":"2025-02-05"}, {"title":"Blue Train","artist":"John Coltrane","rating":9,"created_at":"2025-02-07"}, {"title":"Time Out","artist":"The Dave Brubeck Quartet","rating":9,"created_at":"2025-02-09"}, {"title":"Mingus Ah Um","artist":"Charles Mingus","rating":9,"created_at":"2025-02-11"}, {"title":"The Shape of Jazz to Come","artist":"Ornette Coleman","rating":8,"created_at":"2025-02-13"}, {"title":"Giant Steps","artist":"John Coltrane","rating":8,"created_at":"2025-02-15"}, {"title":"Head Hunters","artist":"Herbie Hancock","rating":8,"created_at":"2025-02-18"}, {"title":"Journey in Satchidananda","artist":"Alice Coltrane","rating":9,"created_at":"2025-02-21"}, {"title":"Moanin'","artist":"Art Blakey and The Jazz Messengers","rating":8,"created_at":"2025-02-25"}, {"title":"The KÃ¶ln Concert","artist":"Keith Jarrett","rating":9,"created_at":"2025-03-03"}, {"title":"Bitches Brew","artist":"Miles Davis","rating":8,"created_at":"2025-03-08"}, {"title":"Getz/Gilberto","artist":"Stan Getz and Joao Gilberto","rating":9,"created_at":"2025-03-12"}, {"title":"Ella and Louis","artist":"Ella Fitzgerald and Louis Armstrong","rating":9,"created_at":"2025-03-18"}, {"title":"Undercurrent","artist":"Bill Evans and Jim Hall","rating":8,"created_at":"2025-03-24"} ] }, { "username": "sunwave", "bio": "afrobeats lover", "style": "afro", "created_at": "2025-01-20", "logs": [ {"title":"African Giant","artist":"Burna Boy","rating":9,"created_at":"2025-02-03"}, {"title":"Made in Lagos","artist":"Wizkid","rating":8,"created_at":"2025-02-06"}, {"title":"Twice As Tall","artist":"Burna Boy","rating":8,"created_at":"2025-02-08"}, {"title":"Boy Alone","artist":"Omah Lay","rating":7,"created_at":"2025-02-10"}, {"title":"Rave and Roses","artist":"Rema","rating":8,"created_at":"2025-02-12","review":"tres catchy"}, {"title":"Love, Damini","artist":"Burna Boy","rating":8,"created_at":"2025-02-14"}, {"title":"Get Layd","artist":"Oxlade","rating":7,"created_at":"2025-02-16"}, {"title":"Outside","artist":"Burna Boy","rating":7,"created_at":"2025-02-18"}, {"title":"Sounds from the Other Side","artist":"Wizkid","rating":7,"created_at":"2025-02-21"}, {"title":"Carpe Diem","artist":"Olamide","rating":7,"created_at":"2025-02-25"}, {"title":"19 and Dangerous","artist":"Ayra Starr","rating":8,"created_at":"2025-03-02"}, {"title":"Young Preacher","artist":"Blaqbonez","rating":7,"created_at":"2025-03-07"}, {"title":"Work of Art","artist":"Asake","rating":8,"created_at":"2025-03-12"}, {"title":"Lungu Boy","artist":"Asake","rating":7,"created_at":"2025-03-18"}, {"title":"Mr. Money With The Vibe","artist":"Asake","rating":8,"created_at":"2025-03-23"} ] }, { "username": "antoine", "bio": "rap fr plus un peu de tout", "style": "fr_casual", "created_at": "2025-01-22", "logs": [ {"title":"Feu","artist":"Nekfeu","rating":8,"created_at":"2025-02-02"}, {"title":"Trinity","artist":"Laylow","rating":9,"created_at":"2025-02-05","review":"toujours aussi fort"}, {"title":"Ipseite","artist":"Damso","rating":9,"created_at":"2025-02-07"}, {"title":"QALF","artist":"Damso","rating":7,"created_at":"2025-02-09"}, {"title":"JVLIVS","artist":"SCH","rating":8,"created_at":"2025-02-11"}, {"title":"A7","artist":"SCH","rating":7,"created_at":"2025-02-13"}, {"title":"Les etoiles vagabondes","artist":"Nekfeu","rating":8,"created_at":"2025-02-16"}, {"title":"Mauvais Ordre","artist":"Lomepal","rating":7,"created_at":"2025-02-19"}, {"title":"RIPRO","artist":"Lomepal","rating":7,"created_at":"2025-02-22"}, {"title":"Brol","artist":"Angele","rating":7,"created_at":"2025-02-26"}, {"title":"Etoile flippante","artist":"PLK","rating":6,"created_at":"2025-03-03"}, {"title":"Inacheve","artist":"Luidji","rating":8,"created_at":"2025-03-08"}, {"title":"Melo","artist":"Tiakola","rating":7,"created_at":"2025-03-13"}, {"title":"Cure","artist":"Eddy de Pretto","rating":6,"created_at":"2025-03-18"}, {"title":"Ame fauve","artist":"Columbine","rating":7,"created_at":"2025-03-24"} ] }, { "username": "soundtracklife", "bio": "film music only", "style": "soundtrack", "created_at": "2025-01-09", "logs": [ {"title":"Interstellar","artist":"Hans Zimmer","rating":10,"created_at":"2025-02-02","review":"grandiose"}, {"title":"Inception","artist":"Hans Zimmer","rating":9,"created_at":"2025-02-04"}, {"title":"Dune","artist":"Hans Zimmer","rating":8,"created_at":"2025-02-06"}, {"title":"The Dark Knight","artist":"Hans Zimmer and James Newton Howard","rating":9,"created_at":"2025-02-08"}, {"title":"Gladiator","artist":"Hans Zimmer and Lisa Gerrard","rating":9,"created_at":"2025-02-10"}, {"title":"La La Land","artist":"Justin Hurwitz","rating":9,"created_at":"2025-02-13"}, {"title":"Whiplash","artist":"Justin Hurwitz","rating":9,"created_at":"2025-02-16"}, {"title":"Babylon","artist":"Justin Hurwitz","rating":8,"created_at":"2025-02-19"}, {"title":"Oppenheimer","artist":"Ludwig Goransson","rating":8,"created_at":"2025-02-22"}, {"title":"Tenet","artist":"Ludwig Goransson","rating":7,"created_at":"2025-02-26"}, {"title":"The Social Network","artist":"Trent Reznor and Atticus Ross","rating":9,"created_at":"2025-03-03"}, {"title":"Gone Girl","artist":"Trent Reznor and Atticus Ross","rating":8,"created_at":"2025-03-07"}, {"title":"The Grand Budapest Hotel","artist":"Alexandre Desplat","rating":8,"created_at":"2025-03-12"}, {"title":"The Shape of Water","artist":"Alexandre Desplat","rating":8,"created_at":"2025-03-18"}, {"title":"First Man","artist":"Justin Hurwitz","rating":8,"created_at":"2025-03-24"} ] }, { "username": "guitars", "bio": "rock only", "style": "rock", "created_at": "2025-01-06", "logs": [ {"title":"Nevermind","artist":"Nirvana","rating":9,"created_at":"2025-02-02"}, {"title":"Back in Black","artist":"AC/DC","rating":8,"created_at":"2025-02-04"}, {"title":"The Dark Side of the Moon","artist":"Pink Floyd","rating":10,"created_at":"2025-02-06","review":"masterclass"}, {"title":"Led Zeppelin IV","artist":"Led Zeppelin","rating":9,"created_at":"2025-02-08"}, {"title":"Rumours","artist":"Fleetwood Mac","rating":9,"created_at":"2025-02-10"}, {"title":"The Wall","artist":"Pink Floyd","rating":8,"created_at":"2025-02-12"}, {"title":"Appetite for Destruction","artist":"Guns N' Roses","rating":8,"created_at":"2025-02-14"}, {"title":"OK Computer","artist":"Radiohead","rating":9,"created_at":"2025-02-17"}, {"title":"Absolution","artist":"Muse","rating":8,"created_at":"2025-02-20"}, {"title":"Origin of Symmetry","artist":"Muse","rating":8,"created_at":"2025-02-24"}, {"title":"AM","artist":"Arctic Monkeys","rating":7,"created_at":"2025-03-03"}, {"title":"Is This It","artist":"The Strokes","rating":8,"created_at":"2025-03-08"}, {"title":"Whatever People Say I Am, That's What I'm Not","artist":"Arctic Monkeys","rating":8,"created_at":"2025-03-12"}, {"title":"Dookie","artist":"Green Day","rating":7,"created_at":"2025-03-18"}, {"title":"Californication","artist":"Red Hot Chili Peppers","rating":8,"created_at":"2025-03-24"} ] }, { "username": "softvoice", "bio": "rnb feminin", "style": "rnb", "created_at": "2025-01-14", "logs": [ {"title":"Ctrl","artist":"SZA","rating":9,"created_at":"2025-02-02"}, {"title":"SOS","artist":"SZA","rating":8,"created_at":"2025-02-05"}, {"title":"Over It","artist":"Summer Walker","rating":8,"created_at":"2025-02-07"}, {"title":"Still Over It","artist":"Summer Walker","rating":7,"created_at":"2025-02-09"}, {"title":"Heaux Tales","artist":"Jazmine Sullivan","rating":8,"created_at":"2025-02-11","review":"super ecriture"}, {"title":"A Seat at the Table","artist":"Solange","rating":9,"created_at":"2025-02-13"}, {"title":"When I Get Home","artist":"Solange","rating":8,"created_at":"2025-02-15"}, {"title":"Isolation","artist":"Kali Uchis","rating":8,"created_at":"2025-02-18"}, {"title":"Sin Miedo","artist":"Kali Uchis","rating":8,"created_at":"2025-02-21"}, {"title":"Ungodly Hour","artist":"Chloe x Halle","rating":8,"created_at":"2025-02-25"}, {"title":"333","artist":"Tinashe","rating":7,"created_at":"2025-03-02"}, {"title":"Songs for You","artist":"Tinashe","rating":8,"created_at":"2025-03-07"}, {"title":"Renaissance","artist":"Beyonce","rating":8,"created_at":"2025-03-12"}, {"title":"Lemonade","artist":"Beyonce","rating":9,"created_at":"2025-03-18"}, {"title":"Good News","artist":"Megan Thee Stallion","rating":6,"created_at":"2025-03-23"} ] }, { "username": "leo", "bio": "", "style": "random", "created_at": "2025-01-28", "logs": [ {"title":"AM","artist":"Arctic Monkeys","rating":7,"created_at":"2025-02-03"}, {"title":"After Hours","artist":"The Weeknd","rating":8,"created_at":"2025-02-06"}, {"title":"Discovery","artist":"Daft Punk","rating":8,"created_at":"2025-02-08"}, {"title":"DAMN.","artist":"Kendrick Lamar","rating":8,"created_at":"2025-02-10"}, {"title":"Future Nostalgia","artist":"Dua Lipa","rating":7,"created_at":"2025-02-12"}, {"title":"Currents","artist":"Tame Impala","rating":8,"created_at":"2025-02-14"}, {"title":"Ctrl","artist":"SZA","rating":8,"created_at":"2025-02-16"}, {"title":"Untrue","artist":"Burial","rating":7,"created_at":"2025-02-19"}, {"title":"Take Care","artist":"Drake","rating":7,"created_at":"2025-02-22"}, {"title":"In Rainbows","artist":"Radiohead","rating":9,"created_at":"2025-02-26","review":"pas mal de details a chaque ecoute"}, {"title":"Starboy","artist":"The Weeknd","rating":7,"created_at":"2025-03-03"}, {"title":"Midnights","artist":"Taylor Swift","rating":6,"created_at":"2025-03-08"}, {"title":"The Dark Side of the Moon","artist":"Pink Floyd","rating":9,"created_at":"2025-03-13"}, {"title":"Interstellar","artist":"Hans Zimmer","rating":8,"created_at":"2025-03-18"}, {"title":"Astroworld","artist":"Travis Scott","rating":7,"created_at":"2025-03-24"} ] }, { "username": "noah", "bio": "", "style": "minimal", "created_at": "2025-01-30", "logs": [ {"title":"Thriller","artist":"Michael Jackson","rating":9,"created_at":"2025-02-02"}, {"title":"Bad","artist":"Michael Jackson","rating":8,"created_at":"2025-02-05"}, {"title":"Off the Wall","artist":"Michael Jackson","rating":9,"created_at":"2025-02-07"}, {"title":"Purple Rain","artist":"Prince","rating":8,"created_at":"2025-02-10"}, {"title":"Back to Black","artist":"Amy Winehouse","rating":9,"created_at":"2025-02-12","review":"court, efficace"}, {"title":"21","artist":"Adele","rating":8,"created_at":"2025-02-14"}, {"title":"Future Nostalgia","artist":"Dua Lipa","rating":7,"created_at":"2025-02-17"}, {"title":"Starboy","artist":"The Weeknd","rating":7,"created_at":"2025-02-20"}, {"title":"1989","artist":"Taylor Swift","rating":7,"created_at":"2025-02-24"}, {"title":"Random Access Memories","artist":"Daft Punk","rating":8,"created_at":"2025-02-27"}, {"title":"Good Kid, M.A.A.D City","artist":"Kendrick Lamar","rating":8,"created_at":"2025-03-04"}, {"title":"Take Care","artist":"Drake","rating":7,"created_at":"2025-03-09"}, {"title":"AM","artist":"Arctic Monkeys","rating":7,"created_at":"2025-03-13"}, {"title":"Nevermind","artist":"Nirvana","rating":8,"created_at":"2025-03-19"}, {"title":"Kind of Blue","artist":"Miles Davis","rating":8,"created_at":"2025-03-24"} ] }, { "username": "vinylmood", "bio": "soul funk old school", "style": "soul_funk", "created_at": "2025-01-11", "logs": [ {"title":"Songs in the Key of Life","artist":"Stevie Wonder","rating":10,"created_at":"2025-02-01"}, {"title":"Innervisions","artist":"Stevie Wonder","rating":9,"created_at":"2025-02-03"}, {"title":"What's Going On","artist":"Marvin Gaye","rating":10,"created_at":"2025-02-05","review":"chef d'oeuvre"}, {"title":"Let's Get It On","artist":"Marvin Gaye","rating":8,"created_at":"2025-02-07"}, {"title":"The Miseducation of Lauryn Hill","artist":"Lauryn Hill","rating":9,"created_at":"2025-02-10"}, {"title":"Voodoo","artist":"D'Angelo","rating":9,"created_at":"2025-02-12"}, {"title":"Black Messiah","artist":"D'Angelo and The Vanguard","rating":8,"created_at":"2025-02-14"}, {"title":"Mothership Connection","artist":"Parliament","rating":8,"created_at":"2025-02-17"}, {"title":"Off the Wall","artist":"Michael Jackson","rating":9,"created_at":"2025-02-20"}, {"title":"Back to Black","artist":"Amy Winehouse","rating":9,"created_at":"2025-02-24"}, {"title":"An Evening with Silk Sonic","artist":"Silk Sonic","rating":8,"created_at":"2025-03-03"}, {"title":"Apollo XXI","artist":"Steve Lacy","rating":7,"created_at":"2025-03-08"}, {"title":"Awaken, My Love!","artist":"Childish Gambino","rating":8,"created_at":"2025-03-13"}, {"title":"Ctrl","artist":"SZA","rating":8,"created_at":"2025-03-18"}, {"title":"Renaissance","artist":"Beyonce","rating":8,"created_at":"2025-03-24"} ] }, { "username": "metalmath", "bio": "metal prog et technique", "style": "metal_prog", "created_at": "2025-01-13", "logs": [{"title":"Master of Puppets","artist":"Metallica","rating":9,"created_at":"2025-02-02"}, {"title":"Ride the Lightning","artist":"Metallica","rating":9,"created_at":"2025-02-04"}, {"title":"Rust in Peace","artist":"Megadeth","rating":9,"created_at":"2025-02-06"}, {"title":"Paranoid","artist":"Black Sabbath","rating":8,"created_at":"2025-02-08"}, {"title":"Lateralus","artist":"Tool","rating":10,"created_at":"2025-02-10","review":"construction parfaite"}, {"title":"Fear Inoculum","artist":"Tool","rating":8,"created_at":"2025-02-12"}, {"title":"From Mars to Sirius","artist":"Gojira","rating":9,"created_at":"2025-02-15"}, {"title":"Magma","artist":"Gojira","rating":8,"created_at":"2025-02-18"}, {"title":"
 [
 {
 "username": "ruefroide",
@@ -6,18 +5,18 @@
 "style": "rap_fr_underground",
 "created_at": "2025-01-12",
 "logs": [
-{"title": "Bitume Caviar, Vol. 01", "artist": "Prince Waly", "rating": 9, "created_at": "2025-02-01", "review": "no skip, super cohÃ©rent"},
+{"title": "Bitume Caviar, Vol. 01", "artist": "Prince Waly", "rating": 9, "created_at": "2025-02-01", "review": "no skip, super cohérent"},
 {"title": "Moussa", "artist": "Prince Waly", "rating": 8, "created_at": "2025-02-03"},
-{"title": "ERRR", "artist": "La FÃ¨ve", "rating": 8, "created_at": "2025-02-05"},
+{"title": "ERRR", "artist": "La Fève", "rating": 8, "created_at": "2025-02-05"},
 {"title": "Akimbo", "artist": "Ziak", "rating": 7, "created_at": "2025-02-06"},
 {"title": "LMF", "artist": "Freeze Corleone", "rating": 7, "created_at": "2025-02-08"},
 {"title": "KH-22", "artist": "Ashe 22", "rating": 7, "created_at": "2025-02-09"},
-{"title": "MÃ©lancholia", "artist": "Green Montana", "rating": 8, "created_at": "2025-02-11"},
-{"title": "MÃ©tÃ©o", "artist": "JÃ¤de", "rating": 7, "created_at": "2025-02-12"},
+{"title": "Mélancholia", "artist": "Green Montana", "rating": 8, "created_at": "2025-02-11"},
+{"title": "Météo", "artist": "Jäde", "rating": 7, "created_at": "2025-02-12"},
 {"title": "Trinity", "artist": "Laylow", "rating": 9, "created_at": "2025-02-15", "review": "grosse ambiance futuriste"},
-{"title": "IpsÃ©itÃ©", "artist": "Damso", "rating": 9, "created_at": "2025-02-18"},
+{"title": "Ipséité", "artist": "Damso", "rating": 9, "created_at": "2025-02-18"},
 {"title": "JVLIVS II", "artist": "SCH", "rating": 8, "created_at": "2025-02-22"},
-{"title": "ROUGE", "artist": "Kaaris", "rating": 6, "created_at": "2025-02-26"},
+{"title": "OR NOIR", "artist": "Kaaris", "rating": 6, "created_at": "2025-02-26"},
 {"title": "Taciturne", "artist": "Dinos", "rating": 8, "created_at": "2025-03-02"},
 {"title": "NQNT 2", "artist": "Vald", "rating": 8, "created_at": "2025-03-08"},
 {"title": "Mauvais Ordre", "artist": "Lomepal", "rating": 7, "created_at": "2025-03-14"}
@@ -25,12 +24,12 @@
 },
 {
 "username": "lucas_music",
-"bio": "jâ€™Ã©coute un peu de tout",
+"bio": "j’écoute un peu de tout",
 "style": "mainstream",
 "created_at": "2025-01-20",
 "logs": [
 {"title": "Astroworld", "artist": "Travis Scott", "rating": 8, "created_at": "2025-02-02"},
-{"title": "After Hours", "artist": "The Weeknd", "rating": 9, "created_at": "2025-02-04", "review": "hyper clean du dÃ©but Ã  la fin"},
+{"title": "After Hours", "artist": "The Weeknd", "rating": 9, "created_at": "2025-02-04", "review": "hyper clean du début à la fin"},
 {"title": "SOS", "artist": "SZA", "rating": 8, "created_at": "2025-02-05"},
 {"title": "UTOPIA", "artist": "Travis Scott", "rating": 7, "created_at": "2025-02-07"},
 {"title": "Take Care", "artist": "Drake", "rating": 8, "created_at": "2025-02-08"},
@@ -54,7 +53,7 @@
 "logs": [
 {"title": "Untrue", "artist": "Burial", "rating": 9, "created_at": "2025-02-01"},
 {"title": "Clube da Esquina", "artist": "Milton Nascimento", "rating": 9, "created_at": "2025-02-03", "review": "immense classique"},
-{"title": "El Mal Querer", "artist": "RosalÃ­a", "rating": 8, "created_at": "2025-02-06"},
+{"title": "El Mal Querer", "artist": "Rosalía", "rating": 8, "created_at": "2025-02-06"},
 {"title": "African Giant", "artist": "Burna Boy", "rating": 8, "created_at": "2025-02-08"},
 {"title": "YHLQMDLG", "artist": "Bad Bunny", "rating": 8, "created_at": "2025-02-09"},
 {"title": "Rave & Roses", "artist": "Rema", "rating": 7, "created_at": "2025-02-11"},
@@ -63,10 +62,10 @@
 {"title": "Souvlaki", "artist": "Slowdive", "rating": 8, "created_at": "2025-02-18"},
 {"title": "Lonerism", "artist": "Tame Impala", "rating": 8, "created_at": "2025-02-21"},
 {"title": "Dragon New Warm Mountain I Believe In You", "artist": "Big Thief", "rating": 8, "created_at": "2025-02-25"},
-{"title": "Renaissance", "artist": "BeyoncÃ©", "rating": 7, "created_at": "2025-03-01"},
+{"title": "Renaissance", "artist": "Beyoncé", "rating": 7, "created_at": "2025-03-01"},
 {"title": "MM..FOOD", "artist": "MF DOOM", "rating": 9, "created_at": "2025-03-05"},
 {"title": "Heligoland", "artist": "Massive Attack", "rating": 7, "created_at": "2025-03-10"},
-{"title": "Por CesÃ¡rea", "artist": "Dillom", "rating": 8, "created_at": "2025-03-16", "review": "bonne surprise"}
+{"title": "Por Cesárea", "artist": "Dillom", "rating": 8, "created_at": "2025-03-16", "review": "bonne surprise"}
 ]
 },
 {
@@ -87,32 +86,32 @@
 {"title": "Over It", "artist": "Summer Walker", "rating": 7, "created_at": "2025-02-22"},
 {"title": "A Seat at the Table", "artist": "Solange", "rating": 8, "created_at": "2025-02-25"},
 {"title": "SweetSexySavage", "artist": "Kehlani", "rating": 7, "created_at": "2025-03-01"},
-{"title": "Trip", "artist": "JhenÃ© Aiko", "rating": 8, "created_at": "2025-03-06"},
+{"title": "Trip", "artist": "Jhené Aiko", "rating": 8, "created_at": "2025-03-06"},
 {"title": "Saturn", "artist": "Nao", "rating": 8, "created_at": "2025-03-10"},
 {"title": "SOS", "artist": "SZA", "rating": 8, "created_at": "2025-03-15", "review": "parfait la nuit"}
 ]
 },
 {
 "username": "filmsonics",
-"bio": "les bandes originales câ€™est la vie",
+"bio": "les bandes originales c’est la vie",
 "style": "soundtracks",
 "created_at": "2025-01-10",
 "logs": [
-{"title": "La La Land", "artist": "Justin Hurwitz", "rating": 10, "created_at": "2025-02-01", "review": "incroyable du dÃ©but Ã  la fin"},
+{"title": "La La Land", "artist": "Justin Hurwitz", "rating": 10, "created_at": "2025-02-01", "review": "incroyable du début à la fin"},
 {"title": "Babylon", "artist": "Justin Hurwitz", "rating": 9, "created_at": "2025-02-03"},
 {"title": "Interstellar", "artist": "Hans Zimmer", "rating": 9, "created_at": "2025-02-05"},
 {"title": "Inception", "artist": "Hans Zimmer", "rating": 8, "created_at": "2025-02-07"},
 {"title": "Dune", "artist": "Hans Zimmer", "rating": 8, "created_at": "2025-02-09"},
-{"title": "Oppenheimer", "artist": "Ludwig GÃ¶ransson", "rating": 9, "created_at": "2025-02-12"},
+{"title": "Oppenheimer", "artist": "Ludwig Göransson", "rating": 9, "created_at": "2025-02-12"},
 {"title": "The Social Network", "artist": "Trent Reznor & Atticus Ross", "rating": 8, "created_at": "2025-02-15"},
 {"title": "Blade Runner 2049", "artist": "Hans Zimmer & Benjamin Wallfisch", "rating": 8, "created_at": "2025-02-18"},
 {"title": "Whiplash", "artist": "Justin Hurwitz", "rating": 9, "created_at": "2025-02-20"},
-{"title": "Tenet", "artist": "Ludwig GÃ¶ransson", "rating": 7, "created_at": "2025-02-23"},
+{"title": "Tenet", "artist": "Ludwig Göransson", "rating": 7, "created_at": "2025-02-23"},
 {"title": "The Batman", "artist": "Michael Giacchino", "rating": 8, "created_at": "2025-02-27"},
 {"title": "How to Train Your Dragon", "artist": "John Powell", "rating": 9, "created_at": "2025-03-03"},
 {"title": "The Grand Budapest Hotel", "artist": "Alexandre Desplat", "rating": 8, "created_at": "2025-03-08"},
-{"title": "Spirited Away", "artist": "Joe Hisaishi", "rating": 10, "created_at": "2025-03-12", "review": "chef-dâ€™oeuvre"},
-{"title": "Arrival", "artist": "JÃ³hann JÃ³hannsson", "rating": 8, "created_at": "2025-03-16"}
+{"title": "Spirited Away", "artist": "Joe Hisaishi", "rating": 10, "created_at": "2025-03-12", "review": "chef-d’oeuvre"},
+{"title": "Arrival", "artist": "Jóhann Jóhannsson", "rating": 8, "created_at": "2025-03-16"}
 ]
 },
 {
@@ -135,7 +134,7 @@
 {"title": "Unknown T", "artist": "Rise Above Hate", "rating": 7, "created_at": "2025-03-03"},
 {"title": "Alpha Place", "artist": "Knucks", "rating": 8, "created_at": "2025-03-07"},
 {"title": "Home Alone 2", "artist": "D Block Europe", "rating": 6, "created_at": "2025-03-11"},
-{"title": "Ignorance Is Bliss", "artist": "Skepta", "rating": 8, "created_at": "2025-03-15", "review": "Ã§a vieillit bien"}
+{"title": "Ignorance Is Bliss", "artist": "Skepta", "rating": 8, "created_at": "2025-03-15", "review": "ça vieillit bien"}
 ]
 },
 {
@@ -150,7 +149,7 @@
 {"title": "Is This It", "artist": "The Strokes", "rating": 8, "created_at": "2025-02-08"},
 {"title": "The New Abnormal", "artist": "The Strokes", "rating": 8, "created_at": "2025-02-10"},
 {"title": "Melodrama", "artist": "Lorde", "rating": 9, "created_at": "2025-02-13"},
-{"title": "Punisher", "artist": "Phoebe Bridgers", "rating": 8, "created_at": "2025-02-15", "review": "parfait en fin de soirÃ©e"},
+{"title": "Punisher", "artist": "Phoebe Bridgers", "rating": 8, "created_at": "2025-02-15", "review": "parfait en fin de soirée"},
 {"title": "A Moon Shaped Pool", "artist": "Radiohead", "rating": 9, "created_at": "2025-02-18"},
 {"title": "Wolfgang Amadeus Phoenix", "artist": "Phoenix", "rating": 7, "created_at": "2025-02-21"},
 {"title": "Tranquility Base Hotel & Casino", "artist": "Arctic Monkeys", "rating": 7, "created_at": "2025-02-24"},
@@ -163,7 +162,7 @@
 },
 {
 "username": "emma",
-"bio": "jâ€™Ã©coute surtout en voiture",
+"bio": "j’écoute surtout en voiture",
 "style": "casual",
 "created_at": "2025-01-25",
 "logs": [
@@ -172,7 +171,7 @@
 {"title": "1989", "artist": "Taylor Swift", "rating": 7, "created_at": "2025-02-08"},
 {"title": "Divide", "artist": "Ed Sheeran", "rating": 7, "created_at": "2025-02-10"},
 {"title": "Fine Line", "artist": "Harry Styles", "rating": 8, "created_at": "2025-02-12"},
-{"title": "SOUR", "artist": "Olivia Rodrigo", "rating": 8, "created_at": "2025-02-14", "review": "Ã§a passe tout seul"},
+{"title": "SOUR", "artist": "Olivia Rodrigo", "rating": 8, "created_at": "2025-02-14", "review": "ça passe tout seul"},
 {"title": "Planet Her", "artist": "Doja Cat", "rating": 7, "created_at": "2025-02-17"},
 {"title": "After Hours", "artist": "The Weeknd", "rating": 8, "created_at": "2025-02-19"},
 {"title": "Midnights", "artist": "Taylor Swift", "rating": 7, "created_at": "2025-02-22"},
@@ -192,18 +191,18 @@
 "logs": [
 {"title": "YHLQMDLG", "artist": "Bad Bunny", "rating": 9, "created_at": "2025-02-02"},
 {"title": "Un Verano Sin Ti", "artist": "Bad Bunny", "rating": 8, "created_at": "2025-02-05"},
-{"title": "Motomami", "artist": "RosalÃ­a", "rating": 8, "created_at": "2025-02-07"},
+{"title": "Motomami", "artist": "Rosalía", "rating": 8, "created_at": "2025-02-07"},
 {"title": "DATA", "artist": "Tainy", "rating": 8, "created_at": "2025-02-09"},
 {"title": "SATURNO", "artist": "Rauw Alejandro", "rating": 7, "created_at": "2025-02-11"},
 {"title": "OASIS", "artist": "J Balvin & Bad Bunny", "rating": 8, "created_at": "2025-02-14"},
-{"title": "MaÃ±ana SerÃ¡ Bonito", "artist": "KAROL G", "rating": 8, "created_at": "2025-02-16", "review": "trÃ¨s solide"},
+{"title": "Mañana Será Bonito", "artist": "KAROL G", "rating": 8, "created_at": "2025-02-16", "review": "très solide"},
 {"title": "VICE VERSA", "artist": "Rauw Alejandro", "rating": 7, "created_at": "2025-02-19"},
 {"title": "Colores", "artist": "J Balvin", "rating": 7, "created_at": "2025-02-22"},
-{"title": "FÃ³rmula, Vol. 3", "artist": "Romeo Santos", "rating": 7, "created_at": "2025-02-25"},
-{"title": "AfrodisÃ­aco", "artist": "Rauw Alejandro", "rating": 6, "created_at": "2025-02-27"},
+{"title": "Fórmula, Vol. 3", "artist": "Romeo Santos", "rating": 7, "created_at": "2025-02-25"},
+{"title": "Afrodisíaco", "artist": "Rauw Alejandro", "rating": 6, "created_at": "2025-02-27"},
 {"title": "Vibras", "artist": "J Balvin", "rating": 8, "created_at": "2025-03-03"},
 {"title": "KG0516", "artist": "KAROL G", "rating": 7, "created_at": "2025-03-08"},
-{"title": "Feliz CumpleaÃ±os Ferxxo Te Pirateamos el Ãlbum", "artist": "Feid", "rating": 8, "created_at": "2025-03-12"},
+{"title": "Feliz Cumpleaños Ferxxo Te Pirateamos el Álbum", "artist": "Feid", "rating": 8, "created_at": "2025-03-12"},
 {"title": "x100PRE", "artist": "Bad Bunny", "rating": 8, "created_at": "2025-03-16", "review": "toujours efficace"}
 ]
 },
@@ -232,7 +231,7 @@
 },
 {
 "username": "hardears",
-"bio": "note sÃ©vÃ¨re",
+"bio": "note sévère",
 "style": "critic",
 "created_at": "2025-01-05",
 "logs": [
@@ -249,7 +248,7 @@
 {"title": "Heroes & Villains", "artist": "Metro Boomin", "rating": 6, "created_at": "2025-03-01"},
 {"title": "Mr. Morale & The Big Steppers", "artist": "Kendrick Lamar", "rating": 8, "created_at": "2025-03-05"},
 {"title": "Views", "artist": "Drake", "rating": 5, "created_at": "2025-03-09"},
-{"title": "Renaissance", "artist": "BeyoncÃ©", "rating": 7, "created_at": "2025-03-12"},
+{"title": "Renaissance", "artist": "Beyoncé", "rating": 7, "created_at": "2025-03-12"},
 {"title": "For All the Dogs", "artist": "Drake", "rating": 5, "created_at": "2025-03-16", "review": "trop long"}
 ]
 },
@@ -272,7 +271,7 @@
 {"title": "Singularity", "artist": "Jon Hopkins", "rating": 8, "created_at": "2025-02-25"},
 {"title": "Crush", "artist": "Floating Points", "rating": 8, "created_at": "2025-03-01"},
 {"title": "Before Today", "artist": "Ariel Pink's Haunted Graffiti", "rating": 6, "created_at": "2025-03-06"},
-{"title": "Alive 2007", "artist": "Daft Punk", "rating": 10, "created_at": "2025-03-10", "review": "Ã©nergie folle"},
+{"title": "Alive 2007", "artist": "Daft Punk", "rating": 10, "created_at": "2025-03-10", "review": "énergie folle"},
 {"title": "LP5", "artist": "Autechre", "rating": 7, "created_at": "2025-03-16"}
 ]
 },
@@ -287,7 +286,7 @@
 {"title": "Blue Train", "artist": "John Coltrane", "rating": 9, "created_at": "2025-02-07"},
 {"title": "Mingus Ah Um", "artist": "Charles Mingus", "rating": 9, "created_at": "2025-02-10"},
 {"title": "Time Out", "artist": "The Dave Brubeck Quartet", "rating": 8, "created_at": "2025-02-12"},
-{"title": "Getz/Gilberto", "artist": "Stan Getz & JoÃ£o Gilberto", "rating": 9, "created_at": "2025-02-14"},
+{"title": "Getz/Gilberto", "artist": "Stan Getz & João Gilberto", "rating": 9, "created_at": "2025-02-14"},
 {"title": "Ella and Louis", "artist": "Ella Fitzgerald & Louis Armstrong", "rating": 9, "created_at": "2025-02-17", "review": "intemporel"},
 {"title": "The Shape of Jazz to Come", "artist": "Ornette Coleman", "rating": 8, "created_at": "2025-02-20"},
 {"title": "Head Hunters", "artist": "Herbie Hancock", "rating": 8, "created_at": "2025-02-23"},
@@ -295,7 +294,7 @@
 {"title": "The Black Saint and the Sinner Lady", "artist": "Charles Mingus", "rating": 9, "created_at": "2025-03-02"},
 {"title": "Maiden Voyage", "artist": "Herbie Hancock", "rating": 9, "created_at": "2025-03-06"},
 {"title": "Speak No Evil", "artist": "Wayne Shorter", "rating": 8, "created_at": "2025-03-10"},
-{"title": "The KÃ¶ln Concert", "artist": "Keith Jarrett", "rating": 8, "created_at": "2025-03-13"},
+{"title": "The Köln Concert", "artist": "Keith Jarrett", "rating": 8, "created_at": "2025-03-13"},
 {"title": "Sketches of Spain", "artist": "Miles Davis", "rating": 9, "created_at": "2025-03-16", "review": "magnifique"}
 ]
 },
@@ -330,19 +329,19 @@
 "logs": [
 {"title": "Feu", "artist": "Nekfeu", "rating": 8, "created_at": "2025-02-02"},
 {"title": "Trinity", "artist": "Laylow", "rating": 9, "created_at": "2025-02-05"},
-{"title": "IpsÃ©itÃ©", "artist": "Damso", "rating": 9, "created_at": "2025-02-07"},
-{"title": "Racine CarrÃ©e", "artist": "Stromae", "rating": 8, "created_at": "2025-02-09"},
+{"title": "Ipséité", "artist": "Damso", "rating": 9, "created_at": "2025-02-07"},
+{"title": "Racine Carrée", "artist": "Stromae", "rating": 8, "created_at": "2025-02-09"},
 {"title": "Mauvais Ordre", "artist": "Lomepal", "rating": 7, "created_at": "2025-02-11"},
 {"title": "Civilisation", "artist": "Orelsan", "rating": 8, "created_at": "2025-02-13"},
-{"title": "JVLIVS II", "artist": "SCH", "rating": 8, "created_at": "2025-02-15", "review": "trÃ¨s propre"},
+{"title": "JVLIVS II", "artist": "SCH", "rating": 8, "created_at": "2025-02-15", "review": "très propre"},
 {"title": "NQNT 2", "artist": "Vald", "rating": 8, "created_at": "2025-02-18"},
 {"title": "A7", "artist": "SCH", "rating": 7, "created_at": "2025-02-21"},
-{"title": "L'Ã©cole du micro d'argent", "artist": "IAM", "rating": 9, "created_at": "2025-02-24"},
+{"title": "L'école du micro d'argent", "artist": "IAM", "rating": 9, "created_at": "2025-02-24"},
 {"title": "Pyramide", "artist": "Werenoi", "rating": 7, "created_at": "2025-02-27"},
-{"title": "Deux frÃ¨res", "artist": "PNL", "rating": 8, "created_at": "2025-03-03"},
+{"title": "Deux frères", "artist": "PNL", "rating": 8, "created_at": "2025-03-03"},
 {"title": "QALF Infinity", "artist": "Damso", "rating": 7, "created_at": "2025-03-07"},
-{"title": "Ceinture noire", "artist": "MaÃ®tre Gims", "rating": 6, "created_at": "2025-03-11"},
-{"title": "1989", "artist": "Taylor Swift", "rating": 7, "created_at": "2025-03-16", "review": "oui jâ€™Ã©coute aussi Ã§a"}
+{"title": "Ceinture noire", "artist": "Maître Gims", "rating": 6, "created_at": "2025-03-11"},
+{"title": "1989", "artist": "Taylor Swift", "rating": 7, "created_at": "2025-03-16", "review": "oui j’écoute aussi ça"}
 ]
 },
 {
@@ -355,16 +354,16 @@
 {"title": "Inception", "artist": "Hans Zimmer", "rating": 9, "created_at": "2025-02-04"},
 {"title": "Dune", "artist": "Hans Zimmer", "rating": 8, "created_at": "2025-02-07"},
 {"title": "The Dark Knight", "artist": "Hans Zimmer & James Newton Howard", "rating": 9, "created_at": "2025-02-10"},
-{"title": "Oppenheimer", "artist": "Ludwig GÃ¶ransson", "rating": 9, "created_at": "2025-02-12"},
-{"title": "Black Panther", "artist": "Ludwig GÃ¶ransson", "rating": 8, "created_at": "2025-02-15"},
+{"title": "Oppenheimer", "artist": "Ludwig Göransson", "rating": 9, "created_at": "2025-02-12"},
+{"title": "Black Panther", "artist": "Ludwig Göransson", "rating": 8, "created_at": "2025-02-15"},
 {"title": "The Batman", "artist": "Michael Giacchino", "rating": 8, "created_at": "2025-02-17"},
-{"title": "Up", "artist": "Michael Giacchino", "rating": 9, "created_at": "2025-02-20", "review": "Ã©motion directe"},
+{"title": "Up", "artist": "Michael Giacchino", "rating": 9, "created_at": "2025-02-20", "review": "émotion directe"},
 {"title": "How to Train Your Dragon", "artist": "John Powell", "rating": 9, "created_at": "2025-02-23"},
 {"title": "Spider-Man: Across the Spider-Verse", "artist": "Daniel Pemberton", "rating": 8, "created_at": "2025-02-26"},
 {"title": "The Social Network", "artist": "Trent Reznor & Atticus Ross", "rating": 8, "created_at": "2025-03-01"},
 {"title": "Gone Girl", "artist": "Trent Reznor & Atticus Ross", "rating": 7, "created_at": "2025-03-06"},
 {"title": "The Last of the Mohicans", "artist": "Trevor Jones & Randy Edelman", "rating": 8, "created_at": "2025-03-10"},
-{"title": "Arrival", "artist": "JÃ³hann JÃ³hannsson", "rating": 8, "created_at": "2025-03-13"},
+{"title": "Arrival", "artist": "Jóhann Jóhannsson", "rating": 8, "created_at": "2025-03-13"},
 {"title": "Spirited Away", "artist": "Joe Hisaishi", "rating": 10, "created_at": "2025-03-16", "review": "intouchable"}
 ]
 },
@@ -381,7 +380,7 @@
 {"title": "Rumours", "artist": "Fleetwood Mac", "rating": 8, "created_at": "2025-02-10"},
 {"title": "American Idiot", "artist": "Green Day", "rating": 8, "created_at": "2025-02-12"},
 {"title": "The Black Parade", "artist": "My Chemical Romance", "rating": 8, "created_at": "2025-02-14"},
-{"title": "OK Computer", "artist": "Radiohead", "rating": 9, "created_at": "2025-02-17", "review": "Ã©norme"},
+{"title": "OK Computer", "artist": "Radiohead", "rating": 9, "created_at": "2025-02-17", "review": "énorme"},
 {"title": "Is This It", "artist": "The Strokes", "rating": 8, "created_at": "2025-02-20"},
 {"title": "Toxicity", "artist": "System of a Down", "rating": 8, "created_at": "2025-02-23"},
 {"title": "Californication", "artist": "Red Hot Chili Peppers", "rating": 8, "created_at": "2025-02-26"},
@@ -393,7 +392,7 @@
 },
 {
 "username": "softvoice",
-"bio": "rnb fÃ©minin",
+"bio": "rnb féminin",
 "style": "rnb",
 "created_at": "2025-01-14",
 "logs": [
@@ -401,10 +400,10 @@
 {"title": "SOS", "artist": "SZA", "rating": 8, "created_at": "2025-02-05"},
 {"title": "Heaux Tales", "artist": "Jazmine Sullivan", "rating": 9, "created_at": "2025-02-07"},
 {"title": "Over It", "artist": "Summer Walker", "rating": 8, "created_at": "2025-02-09"},
-{"title": "The Age of Pleasure", "artist": "Janelle MonÃ¡e", "rating": 8, "created_at": "2025-02-11"},
+{"title": "The Age of Pleasure", "artist": "Janelle Monáe", "rating": 8, "created_at": "2025-02-11"},
 {"title": "Take Me Apart", "artist": "Kelela", "rating": 8, "created_at": "2025-02-13"},
-{"title": "A Seat at the Table", "artist": "Solange", "rating": 9, "created_at": "2025-02-16", "review": "trÃ¨s classe"},
-{"title": "Trip", "artist": "JhenÃ© Aiko", "rating": 8, "created_at": "2025-02-19"},
+{"title": "A Seat at the Table", "artist": "Solange", "rating": 9, "created_at": "2025-02-16", "review": "très classe"},
+{"title": "Trip", "artist": "Jhené Aiko", "rating": 8, "created_at": "2025-02-19"},
 {"title": "Isolation", "artist": "Kali Uchis", "rating": 8, "created_at": "2025-02-21"},
 {"title": "The Miseducation of Lauryn Hill", "artist": "Lauryn Hill", "rating": 10, "created_at": "2025-02-24"},
 {"title": "Good to Know", "artist": "JoJo", "rating": 7, "created_at": "2025-02-27"},
@@ -428,7 +427,7 @@
 {"title": "Nevermind", "artist": "Nirvana", "rating": 8, "created_at": "2025-02-14"},
 {"title": "Ctrl", "artist": "SZA", "rating": 8, "created_at": "2025-02-17"},
 {"title": "Un Verano Sin Ti", "artist": "Bad Bunny", "rating": 7, "created_at": "2025-02-19"},
-{"title": "Kind of Blue", "artist": "Miles Davis", "rating": 9, "created_at": "2025-02-22", "review": "Ã§a dÃ©tend de fou"},
+{"title": "Kind of Blue", "artist": "Miles Davis", "rating": 9, "created_at": "2025-02-22", "review": "ça détend de fou"},
 {"title": "Astroworld", "artist": "Travis Scott", "rating": 7, "created_at": "2025-02-24"},
 {"title": "Midnights", "artist": "Taylor Swift", "rating": 7, "created_at": "2025-02-27"},
 {"title": "Psychodrama", "artist": "Dave", "rating": 8, "created_at": "2025-03-02"},
@@ -457,7 +456,7 @@
 {"title": "YHLQMDLG", "artist": "Bad Bunny", "rating": 7, "created_at": "2025-03-03"},
 {"title": "Kind of Blue", "artist": "Miles Davis", "rating": 9, "created_at": "2025-03-07"},
 {"title": "Psychodrama", "artist": "Dave", "rating": 8, "created_at": "2025-03-11"},
-{"title": "La La Land", "artist": "Justin Hurwitz", "rating": 9, "created_at": "2025-03-16", "review": "hyper agrÃ©able"}
+{"title": "La La Land", "artist": "Justin Hurwitz", "rating": 9, "created_at": "2025-03-16", "review": "hyper agréable"}
 ]
 },
 {
@@ -495,7 +494,7 @@
 {"title": "The Way It Ends", "artist": "Currents", "rating": 8, "created_at": "2025-02-09"},
 {"title": "Alien", "artist": "Northlane", "rating": 8, "created_at": "2025-02-11"},
 {"title": "Atonement", "artist": "Killswitch Engage", "rating": 7, "created_at": "2025-02-13"},
-{"title": "All Our Gods Have Abandoned Us", "artist": "Architects", "rating": 9, "created_at": "2025-02-16", "review": "Ã©norme impact"},
+{"title": "All Our Gods Have Abandoned Us", "artist": "Architects", "rating": 9, "created_at": "2025-02-16", "review": "énorme impact"},
 {"title": "I Let It In and It Took Everything", "artist": "Loathe", "rating": 9, "created_at": "2025-02-19"},
 {"title": "You Are We", "artist": "While She Sleeps", "rating": 7, "created_at": "2025-02-22"},
 {"title": "The Poison", "artist": "Bullet for My Valentine", "rating": 8, "created_at": "2025-02-25"},
@@ -530,4 +529,3 @@
 ]
 }
 ]
-

@@ -331,8 +331,13 @@ export async function deleteAccount(): Promise<{ ok: boolean; error?: string }> 
         .remove([`${user.id}.jpg`]);
     }
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id);
-    if (error) return { ok: false, error: 'An error occurred' };
+    const { error } = await supabaseAdmin.rpc('delete_user_account', {
+      target_user_id: user.id,
+    });
+    if (error) {
+      console.error('deleteUser error:', JSON.stringify(error));
+      return { ok: false, error: 'An error occurred' };
+    }
 
     return { ok: true };
   } catch (err) {

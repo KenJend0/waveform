@@ -22,7 +22,8 @@ export async function getFollowingList(username: string) {
     const { data: follows, error: followsError } = await supabase
       .from("follows")
       .select("followee_id")
-      .eq("follower_id", profile.id);
+      .eq("follower_id", profile.id)
+      .limit(2000);
 
     if (followsError) {
       return { success: false, error: followsError.message };

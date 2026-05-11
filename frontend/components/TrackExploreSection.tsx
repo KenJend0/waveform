@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { CoverImage } from "@/components/CoverImage";
-import type { TrackWithStats } from "@/app/actions/track-diary";
+type TrackWithStats = {
+    track_id: string;
+    track_title: string;
+    artist_name: string;
+    album_title: string;
+    cover_url: string | null;
+    avg_rating: number | null;
+};
 
 type Props = {
     trendingTracks: TrackWithStats[];

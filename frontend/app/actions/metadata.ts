@@ -562,7 +562,6 @@ export async function enrichAlbumMetadata(
     const hasDescription = !!description;
 
     // Upsert album_metadata — fetched_at uniquement si on a trouvé quelque chose
-    const hasData = validTags.length > 0 || hasDescription;
     const descSrc = description
       ? (lfmResult.description ? 'lastfm' : mbData.wikipediaUrl ? 'wikipedia' : 'musicbrainz')
       : null;
@@ -576,8 +575,8 @@ export async function enrichAlbumMetadata(
       spotify_url: mbData.streamingLinks.spotify ?? null,
       apple_music_url: mbData.streamingLinks.appleMusic ?? null,
       deezer_url: mbData.streamingLinks.deezer ?? null,
+      fetched_at: new Date().toISOString(), // toujours positionné — signal de fin pour EnrichmentPoller
     };
-    if (hasData) metaRow.fetched_at = new Date().toISOString();
 
     await supabase
       .from('album_metadata')

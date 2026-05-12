@@ -30,8 +30,7 @@ export async function uploadCoverToSupabase(
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') ?? 'image/jpeg';
-    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
-    const filename = `${albumMbid}.${ext}`;
+    const filename = `${albumMbid}.jpg`;
 
     const buffer = await response.arrayBuffer();
 

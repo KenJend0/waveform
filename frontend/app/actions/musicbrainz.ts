@@ -723,51 +723,10 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
     // Get release-group ID for consistent cover lookup
     const releaseGroupId = (data as any)['release-group']?.id || mbid;
 
-    // Fetch cover art from CoverArt Archive using release-group (consistent with search)
-    let coverUrl: string | null = null;
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      try {
-        // Use release-group for cover (more consistent, same as search)
-        const coverArchiveUrl = `https://coverartarchive.org/release-group/${encodeURIComponent(releaseGroupId)}/front`;
-        const coverResponse = await fetch(coverArchiveUrl, {
-          headers: { 'User-Agent': USER_AGENT },
-          redirect: 'manual',
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        // CoverArt Archive returns 307 redirect to the actual image
-        if (
-          coverResponse.status === 307 ||
-          coverResponse.status === 301 ||
-          coverResponse.status === 302
-        ) {
-          const location = coverResponse.headers.get('location');
-          if (location) {
-            coverUrl = location;
-          }
-        } else if (coverResponse.ok) {
-          coverUrl = coverResponse.url;
-        } else {
-          console.warn(`⚠️ Cover not found (${coverResponse.status})`);
-        }
-      } catch (fetchErr: any) {
-        clearTimeout(timeoutId);
-        if (fetchErr.name === 'AbortError') {
-          console.warn(`⏱️ Cover fetch timeout (5s)`);
-        } else {
-          console.warn(`⚠️ Cover fetch failed:`, fetchErr.message);
-        }
-        // Continue without cover
-      }
-    } catch (err) {
-      console.error('❌ Cover art error:', err);
-      // Continue without cover
-    }
+    // Fetch cover art from CoverArt Archive — uses fetchCoverUrl (2 retries, consistent with refreshAlbumCover)
+    const coverUrl = releaseGroupId
+      ? await fetchCoverUrl(releaseGroupId, 'release-group', 2).catch(() => null)
+      : null;
 
     return {
       success: true,
@@ -1011,7 +970,6 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       return { success: false, error: externalError.message };
     }
 
-    // Enrichissement découplé — déclenché côté client via /api/enrich pour éviter le timeout Vercel
     return { success: true, albumId: newAlbumId, imported: true, title: preview.title, artist: preview.artist, mbid };
   } catch (err) {
     console.error('[importAlbumFromMusicBrainz] catch:', err);

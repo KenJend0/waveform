@@ -16,6 +16,7 @@ import GenrePills from "@/components/GenrePills";
 import StreamingLinks from "@/components/StreamingLinks";
 import AdminSpotifyEdit from "@/components/AdminSpotifyEdit";
 import AdminRefreshCover from "@/components/AdminRefreshCover";
+import EnrichmentPoller from "@/components/EnrichmentPoller";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -107,14 +108,14 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             .limit(3),
         supabase
             .from("album_metadata")
-            .select("spotify_url, apple_music_url, deezer_url")
+            .select("spotify_url, apple_music_url, deezer_url, fetched_at")
             .eq("album_id", id)
             .maybeSingle(),
         getSimilarAlbums(album.id),
         album.artist_id
             ? supabase
                 .from("albums")
-                .select("id, title, cover_url, release_date, album_stats(listeners_count)")
+                .select("id, title, cover_url, mbid, release_date, album_stats(listeners_count)")
                 .eq("artist_id", album.artist_id)
                 .neq("id", album.id)
                 .order("listeners_count", { ascending: false, referencedTable: "album_stats" })
@@ -282,8 +283,12 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     const showOnlyPillsInHero = hasPills && !hasSomeLinks;
     const showOnlyLinksInHero = hasSomeLinks && !hasPills;
 
+    // Poll for enrichment completion when genres/streaming not yet fetched
+    const enrichmentPending = !albumMeta.data?.fetched_at;
+
     return (
         <main className="max-w-page mx-auto px-4 py-8 pb-24 overflow-x-hidden">
+            {enrichmentPending && <EnrichmentPoller albumId={album.id} />}
             <BackButton />
 
             {/* ========== 1. THE ALBUM ========== */}

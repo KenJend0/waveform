@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import time
@@ -28,7 +29,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 from urllib.request import Request, urlopen
-import json
+
+from postgrest.exceptions import APIError
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.supabase_client import get_client
@@ -60,15 +62,38 @@ def mb_fetch(path: str) -> dict | None:
         return None
 
 
+def resolve_release_group_mbid(mbid: str) -> str:
+    """
+    If mbid is a release MBID, resolve it to its release-group MBID.
+    Returns the original mbid if it's already a release-group or resolution fails.
+    """
+    time.sleep(RATE_LIMIT_S)
+    data = mb_fetch(f"release/{quote(mbid)}?fmt=json&inc=release-groups")
+    if data and "release-group" in data:
+        rg_id = data["release-group"].get("id")
+        if rg_id:
+            return rg_id
+    return mbid
+
+
 def fetch_mb_genres(mbid: str) -> list[dict[str, Any]]:
     """
-    Fetch genres + tags for a release-group MBID.
+    Fetch genres + tags for a MBID (release or release-group).
+    Resolves release MBIDs to their release-group automatically.
     Returns list of { name, count } dicts, max MAX_TAGS entries.
     """
     time.sleep(RATE_LIMIT_S)
     data = mb_fetch(f"release-group/{quote(mbid)}?fmt=json&inc=genres+tags")
+
+    # 404 → likely a release MBID, resolve to release-group and retry
     if not data:
-        return []
+        rg_mbid = resolve_release_group_mbid(mbid)
+        if rg_mbid == mbid:
+            return []  # resolution failed too
+        time.sleep(RATE_LIMIT_S)
+        data = mb_fetch(f"release-group/{quote(rg_mbid)}?fmt=json&inc=genres+tags")
+        if not data:
+            return []
 
     genres = [
         {"name": g["name"].lower().strip(), "count": g.get("count", 1)}
@@ -165,8 +190,14 @@ def upsert_genres_and_link(
     if dry_run:
         return len(tags)
 
-    # Upsert genres (ignore duplicates)
-    client.table("genres").upsert(genre_rows, on_conflict="slug").execute()
+    # Insert genres idempotently. A name conflict is expected when the row was
+    # created by a previous run or concurrent worker.
+    for row in genre_rows:
+        try:
+            client.table("genres").insert(row).execute()
+        except APIError as error:
+            if error.code != "23505":
+                raise
 
     # Fetch the genre IDs we just upserted
     slugs = [r["slug"] for r in genre_rows]

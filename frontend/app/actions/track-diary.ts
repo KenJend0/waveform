@@ -289,7 +289,7 @@ export async function getTrackReviewsPreview(
 
   if (error || !rows) return [];
 
-  const userIds = [...new Set(rows.map((r: any) => r.user_id))];
+  const userIds = [...new Set(rows.map((r: any) => r.user_id))] as string[];
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')

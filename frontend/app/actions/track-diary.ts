@@ -367,7 +367,7 @@ export async function getTrackReviewsPage(input: {
   const hasMore = rows.length > limit;
   const sliced = rows.slice(0, limit);
 
-  const userIds = [...new Set(sliced.map((r: any) => r.user_id))];
+  const userIds = [...new Set(sliced.map((r: any) => r.user_id))] as string[];
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')

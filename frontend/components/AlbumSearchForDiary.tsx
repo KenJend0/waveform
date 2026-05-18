@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchInternal } from "@/app/actions/search";
+import { searchInternal, type SearchResultUI } from "@/app/actions/search";
 import { searchMusicBrainzAlbums, importAlbumFromMusicBrainz } from "@/app/actions/musicbrainz";
+import { mergeAndRank } from "@/lib/searchRanking";
 import { showToast } from "@/components/Toast";
 import { CoverImage } from "@/components/CoverImage";
+import { Disc3 } from "lucide-react";
 
-type AlbumUI = {
+const LIMIT = 6;
+
+export type AlbumUI = {
     id: string;
     title: string;
     artist_name: string;
@@ -14,238 +18,200 @@ type AlbumUI = {
     year?: number | null;
 };
 
-type MbAlbumUI = {
-    mbid: string;      // release MBID (for import)
-    rgMbid: string;    // release-group MBID (for cover + dedup)
-    title: string;
-    artist_name: string;
-    coverUrl?: string | null;
-};
-
-type AlbumSearchForDiaryProps = {
+type Props = {
     onSelectAlbum: (album: AlbumUI) => void;
 };
 
-export default function AlbumSearchForDiary({ onSelectAlbum }: AlbumSearchForDiaryProps) {
+export default function AlbumSearchForDiary({ onSelectAlbum }: Props) {
     const [q, setQ] = useState("");
-    const [suggestions, setSuggestions] = useState<AlbumUI[]>([]);
-    const [mbSuggestions, setMbSuggestions] = useState<MbAlbumUI[]>([]);
+    const [results, setResults] = useState<SearchResultUI[]>([]);
     const [loading, setLoading] = useState(false);
-    const [loadingMB, setLoadingMB] = useState(false);
-    const [importingMbid, setImportingMbid] = useState<string | null>(null);
-    const [isOpen, setIsOpen] = useState(false);
+    const [loadingExtended, setLoadingExtended] = useState(false);
+    const [importingId, setImportingId] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!q.trim()) {
-            setSuggestions([]);
-            setMbSuggestions([]);
-            setIsOpen(false);
+            setResults([]);
+            setLoading(false);
+            setLoadingExtended(false);
             return;
         }
 
-        const t = setTimeout(async () => {
+        let aborted = false;
+
+        const run = async () => {
+            await new Promise((r) => setTimeout(r, 300));
+            if (aborted) return;
+
+            setLoading(true);
+            setResults([]);
+
+            // Phase 2 — MB en parallèle (démarre avant d'attendre l'interne)
+            const mbPromise = searchMusicBrainzAlbums(q, 20).catch(() => null);
+            setLoadingExtended(true);
+
+            // Phase 1 — interne (rapide, premier paint)
+            let internal: SearchResultUI[] = [];
             try {
-                setLoading(true);
-                setLoadingMB(true);
-                setMbSuggestions([]);
+                internal = await searchInternal(q, "albums");
+            } catch {}
+            if (aborted) return;
 
-                // Run both searches in parallel
-                const [internalResults, mbResult] = await Promise.all([
-                    searchInternal(q, "albums"),
-                    q.trim().length >= 2
-                        ? searchMusicBrainzAlbums(q, 5).catch(() => null)
-                        : Promise.resolve(null),
-                ]);
+            const phase1 = mergeAndRank(internal, [], q, LIMIT);
+            setResults(phase1);
+            setLoading(false);
 
-                const albums = internalResults
-                    .filter(r => r.kind === "album")
-                    .map((item) => ({
-                        id: item.id,
-                        title: item.title,
-                        artist_name: item.subtitle || "Unknown Artist",
-                        coverUrl: item.coverUrl || null,
-                        year: item.releaseDate
-                            ? new Date(item.releaseDate).getFullYear()
-                            : undefined,
-                    }));
+            // Phase 2 — merge MB
+            try {
+                const mbRes = await mbPromise;
+                if (aborted) return;
 
-                setSuggestions(albums);
-                setIsOpen(true);
-
-                if (mbResult?.success && mbResult.results) {
-                    const internalTitles = new Set(albums.map(a => a.title.toLowerCase()));
-                    const mbAlbums: MbAlbumUI[] = mbResult.results
-                        .filter(r => !internalTitles.has(r.title.toLowerCase()))
-                        .slice(0, 5)
-                        .map(r => ({
-                            mbid: r.releaseId || r.id, // release MBID for import (fallback to rg MBID)
-                            rgMbid: r.id,              // release-group MBID for cover
-                            title: r.title,
-                            artist_name: r.artistName || "Unknown Artist",
-                            coverUrl: r.coverUrl || null,
-                        }));
-                    setMbSuggestions(mbAlbums);
+                const mbList: SearchResultUI[] = [];
+                if (mbRes?.success && mbRes.results) {
+                    mbRes.results.forEach((album) =>
+                        mbList.push({
+                            id: album.id,
+                            releaseId: album.releaseId,
+                            title: album.title,
+                            subtitle: album.artistName,
+                            kind: "album",
+                            coverUrl: album.coverUrl || null,
+                            releaseDate: album.releaseDate,
+                            source: "musicbrainz",
+                            score: album.score,
+                            releaseCount: album.releaseCount,
+                        })
+                    );
                 }
-            } catch (error) {
-                console.error("Search error:", error);
-                showToast("Erreur lors de la recherche", "error");
-                setSuggestions([]);
-                setIsOpen(false);
-            } finally {
-                setLoading(false);
-                setLoadingMB(false);
-            }
-        }, 300);
 
-        return () => clearTimeout(t);
+                setResults(mergeAndRank(internal, mbList, q, LIMIT));
+            } catch {
+            } finally {
+                if (!aborted) setLoadingExtended(false);
+            }
+        };
+
+        run();
+        return () => { aborted = true; };
     }, [q]);
 
-    const handleSelectAlbum = (album: AlbumUI) => {
-        onSelectAlbum(album);
-        setQ("");
-        setSuggestions([]);
-        setMbSuggestions([]);
-        setIsOpen(false);
-    };
+    const handleSelect = async (item: SearchResultUI) => {
+        if (importingId) return;
 
-    const handleSelectMbAlbum = async (mb: MbAlbumUI) => {
-        setImportingMbid(mb.mbid);
-        try {
-            const result = await importAlbumFromMusicBrainz(mb.mbid);
-            if (result.success && 'albumId' in result && result.albumId) {
-                if ('mbid' in result && result.mbid && 'title' in result && 'artist' in result) {
-                    fetch('/api/enrich', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ albumId: result.albumId, mbid: result.mbid, title: result.title, artist: result.artist }),
-                    }).catch(() => {});
+        if (item.source === "musicbrainz") {
+            setImportingId(item.id);
+            try {
+                const result = await importAlbumFromMusicBrainz(item.releaseId || item.id);
+                if (result.success && "albumId" in result && result.albumId) {
+                    if ("mbid" in result && result.mbid && "title" in result && "artist" in result) {
+                        fetch("/api/enrich", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ albumId: result.albumId, mbid: result.mbid, title: result.title, artist: result.artist }),
+                        }).catch(() => {});
+                    }
+                    onSelectAlbum({
+                        id: result.albumId,
+                        title: item.title,
+                        artist_name: item.subtitle || "Unknown Artist",
+                        coverUrl: item.coverUrl,
+                        year: item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined,
+                    });
+                    setQ("");
+                    setResults([]);
+                } else {
+                    showToast("Erreur lors de l'import", "error");
                 }
-                onSelectAlbum({
-                    id: result.albumId,
-                    title: mb.title,
-                    artist_name: mb.artist_name,
-                    coverUrl: mb.coverUrl,
-                });
-                setQ("");
-                setSuggestions([]);
-                setMbSuggestions([]);
-                setIsOpen(false);
-            } else {
+            } catch {
                 showToast("Erreur lors de l'import", "error");
+            } finally {
+                setImportingId(null);
             }
-        } catch {
-            showToast("Erreur lors de l'import", "error");
-        } finally {
-            setImportingMbid(null);
+        } else {
+            onSelectAlbum({
+                id: item.id,
+                title: item.title,
+                artist_name: item.subtitle || "Unknown Artist",
+                coverUrl: item.coverUrl,
+                year: item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined,
+            });
+            setQ("");
+            setResults([]);
         }
     };
 
-    const hasResults = suggestions.length > 0 || mbSuggestions.length > 0 || loadingMB;
+    const showDropdown = q.trim() !== "" && (loading || results.length > 0 || loadingExtended);
 
     return (
-        <div ref={containerRef} className="relative w-full">
+        <div className="relative w-full">
             <input
                 ref={inputRef}
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onFocus={() => q.trim() && setIsOpen(true)}
                 placeholder="Rechercher un album..."
                 className="w-full px-4 py-3 bg-background-secondary border border-border rounded-[10px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E] focus:ring-0"
             />
 
-            {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-[12px] z-50 max-h-96 overflow-y-auto">
-                    {loading && <div className="p-4 text-center text-[14px] text-text-tertiary">Chargement...</div>}
-
-                    {!loading && !hasResults && q.trim() && (
-                        <div className="p-4 text-center text-[14px] text-text-tertiary">
-                            Aucun résultat
-                        </div>
-                    )}
-
-                    {/* Résultats internes */}
-                    {!loading && suggestions.length > 0 && (
+            {showDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-[12px] z-50 overflow-hidden shadow-lg">
+                    {loading ? (
+                        <div className="p-4 text-center text-[14px] text-text-tertiary">Chargement…</div>
+                    ) : results.length === 0 && !loadingExtended ? (
+                        <div className="p-4 text-center text-[14px] text-text-tertiary">Aucun résultat</div>
+                    ) : (
                         <div>
-                            {suggestions.map((album) => (
+                            {results.map((item) => (
                                 <button
-                                    key={album.id}
-                                    onClick={() => handleSelectAlbum(album)}
-                                    className="w-full flex items-center gap-3 p-3 hover:bg-background-secondary transition-colors duration-150 border-b border-border-divider last:border-b-0 text-left"
+                                    key={`${item.source}-${item.id}`}
+                                    onClick={() => handleSelect(item)}
+                                    disabled={!!importingId}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-b-0 text-left transition-colors duration-150 ${
+                                        importingId === item.id
+                                            ? "cursor-wait bg-background-secondary"
+                                            : importingId
+                                            ? "opacity-40 cursor-default"
+                                            : "hover:bg-background-secondary cursor-pointer"
+                                    }`}
                                 >
-                                    <div className="w-12 h-12 rounded-[8px] overflow-hidden relative flex-shrink-0 bg-background-tertiary flex items-center justify-center">
-                                        {album.coverUrl && (
+                                    <div className="w-10 h-10 rounded-[6px] overflow-hidden flex-shrink-0 bg-background-tertiary flex items-center justify-center">
+                                        {importingId === item.id ? (
+                                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#8E6F5E]" />
+                                        ) : item.coverUrl ? (
                                             <CoverImage
-                                                src={album.coverUrl}
-                                                alt={album.title}
-                                                fill
-                                                className="object-cover"
-                                                placeholder={<span className="text-[10px] text-text-disabled">♪</span>}
+                                                src={item.coverUrl}
+                                                alt={item.title}
+                                                width={40}
+                                                height={40}
+                                                className="w-full h-full object-cover"
+                                                placeholder={<Disc3 size={14} className="text-text-disabled" />}
                                             />
+                                        ) : (
+                                            <Disc3 size={14} className="text-text-disabled" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-[14px] text-text-primary truncate">{album.title}</div>
-                                        <div className="text-[12px] text-text-secondary truncate">{album.artist_name}</div>
+                                        <p className="font-medium text-[14px] text-text-primary truncate leading-snug">
+                                            {importingId === item.id ? "Import en cours…" : item.title}
+                                        </p>
+                                        {importingId !== item.id && (
+                                            <p className="text-[12px] text-text-secondary truncate mt-0.5 leading-snug">
+                                                {item.subtitle}
+                                                {item.releaseDate && (
+                                                    <span className="text-text-disabled"> · {item.releaseDate.substring(0, 4)}</span>
+                                                )}
+                                            </p>
+                                        )}
                                     </div>
                                 </button>
                             ))}
-                        </div>
-                    )}
-
-                    {/* Résultats MusicBrainz */}
-                    {!loading && (mbSuggestions.length > 0 || loadingMB) && (
-                        <div>
-                            <p className="px-3 pt-3 pb-1 text-[11px] text-text-tertiary font-medium uppercase tracking-[0.08em]">
-                                Résultats étendus
-                            </p>
-
-                            {loadingMB && (
-                                <div className="px-3 py-2 text-[13px] text-text-tertiary">Recherche en cours…</div>
+                            {loadingExtended && (
+                                <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#8E6F5E] opacity-50" />
+                                    <span className="text-[11px] text-text-disabled">Recherche étendue…</span>
+                                </div>
                             )}
-
-                            {mbSuggestions.map((mb) => (
-                                <button
-                                    key={mb.mbid}
-                                    onClick={() => !importingMbid && handleSelectMbAlbum(mb)}
-                                    disabled={!!importingMbid}
-                                    className={`w-full flex items-center gap-3 p-3 border-b border-border-divider last:border-b-0 text-left transition-colors duration-150 ${
-                                        importingMbid === mb.mbid
-                                            ? 'cursor-wait bg-background-secondary'
-                                            : importingMbid
-                                            ? 'opacity-50 cursor-default'
-                                            : 'hover:bg-background-secondary'
-                                    }`}
-                                >
-                                    {importingMbid === mb.mbid ? (
-                                        <div className="flex items-center gap-2 py-1">
-                                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#8E6F5E] flex-shrink-0" />
-                                            <span className="text-[14px] text-text-secondary">Import en cours…</span>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="w-12 h-12 rounded-[8px] overflow-hidden relative flex-shrink-0 bg-background-tertiary flex items-center justify-center">
-                                                {mb.coverUrl && (
-                                                    <CoverImage
-                                                        src={mb.coverUrl}
-                                                        fallback={`https://coverartarchive.org/release/${mb.mbid}/front`}
-                                                        alt={mb.title}
-                                                        fill
-                                                        className="object-cover"
-                                                        placeholder={<span className="text-[10px] text-text-disabled">♪</span>}
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-[14px] text-text-primary truncate">{mb.title}</div>
-                                                <div className="text-[12px] text-text-secondary truncate">{mb.artist_name}</div>
-                                            </div>
-                                        </>
-                                    )}
-                                </button>
-                            ))}
                         </div>
                     )}
                 </div>

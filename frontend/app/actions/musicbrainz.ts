@@ -477,7 +477,7 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     mbUrl.searchParams.set('query', luceneQuery);
     mbUrl.searchParams.set('limit', '100'); // Always max — popularity-agnostic API
     mbUrl.searchParams.set('fmt', 'json');
-    mbUrl.searchParams.set('inc', 'releases'); // Include releases array → rg.releases.length = release count for popularity ranking
+    // Don't use inc=releases — rg['release-count'] already gives the count without bloating the payload
 
     // No retry — fail fast for search, rely on cache/internal if MB is slow
     const response = await fetchWithRetry(mbUrl.toString(), {
@@ -525,11 +525,11 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     // MB doesn't rank by popularity; this re-sorts its arbitrary ordering so canonical
     // albums (MJ's Thriller, Pink Floyd's DSOTM…) surface before obscure homonyms.
     // Requires inc=releases in the search URL to get the releases array per release-group.
-    const releaseCountOf = (rg: any): number => (rg.releases as any[] | undefined)?.length ?? 0;
+    const releaseCountOf = (rg: any): number => rg['release-count'] ?? 0;
     console.log(`[searchMusicBrainzAlbums] "${query}" → ${studioAlbums.length}/${preFilterCount} passed filter`);
     if (process.env.NODE_ENV === 'development') {
       studioAlbums.slice(0, 5).forEach(rg => {
-        console.log(`[MB] "${rg.title}" score=${rg.score} releases=${releaseCountOf(rg)} type=${rg['primary-type']}`);
+        console.log(`[MB] "${rg.title}" score=${rg.score} release-count=${releaseCountOf(rg)} type=${rg['primary-type']}`);
       });
     }
     studioAlbums.sort((a, b) => releaseCountOf(b) - releaseCountOf(a));
@@ -541,7 +541,8 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
         const artists = rg['artist-credit'] || [];
         const artistName = artists.map((a: any) => a.name || a.artist?.name).join(', ');
         // releases[0] gives us a release MBID for import & cover fallback
-        const releaseId = (rg.releases as Array<{ id: string }> | undefined)?.[0]?.id;
+        // releases array absent (inc=releases removed) — use release-count for popularity, releaseId unavailable
+        const releaseId: string | undefined = undefined;
 
         return {
           id: rg.id,        // release-group MBID — canonical identifier
@@ -553,7 +554,7 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
           coverUrl: `https://coverartarchive.org/release-group/${rg.id}/front`,
           hasCover: true,   // assume true; AlbumCoverImage handles 404s gracefully
           score: rg.score || 0,
-          releaseCount: (rg.releases as any[] | undefined)?.length || rg['release-count'] || 0,
+          releaseCount: rg['release-count'] || 0,
         };
       });
 
@@ -608,13 +609,22 @@ export async function searchMusicBrainzArtists(query: string, limit = 30): Promi
   if (!authUser) return { success: false, error: 'not_authenticated' };
 
   try {
-    // Build term-by-term with wildcard on the last word: "marvin ga" → artist:marvin AND artist:ga*
+    // Build term-by-term query:
+    //   - last term: wildcard for prefix ("marvin ga" → artist:ga*)
+    //   - all terms: fuzzy ~1 clause as OR fallback ("radiohed" → artist:radiohed~1 finds "Radiohead")
     const terms = query.trim().split(/\s+/).filter(Boolean);
     const luceneParts = terms.map((t, i) => {
       const esc = t.replace(/[+\-&|!(){}\[\]^"~?:\\\/]/g, '\\$&');
       return i === terms.length - 1 ? `artist:${esc}*` : `artist:${esc}`;
     });
-    const luceneQuery = luceneParts.join(' AND ');
+    const exactClause = luceneParts.join(' AND ');
+    // Fuzzy fallback: each term with edit-distance 1 — catches typos like "radiohed" → "Radiohead"
+    const fuzzyParts = terms.map((t) => {
+      const esc = t.replace(/[+\-&|!(){}\[\]^"~?:\\\/]/g, '\\$&');
+      return `artist:${esc}~1`;
+    });
+    const fuzzyClause = fuzzyParts.join(' AND ');
+    const luceneQuery = `(${exactClause}) OR (${fuzzyClause})`;
     // No retry — fail fast for search, rely on cache/internal if MB is slow
     const response = await fetchWithRetry(
       `${MUSICBRAINZ_API}/artist?query=${encodeURIComponent(luceneQuery)}&fmt=json&limit=${limit}`,
@@ -1421,7 +1431,14 @@ export async function searchMusicBrainzRecordings(
   if (cached) return { success: true, results: cached };
 
   try {
-    const encoded = encodeURIComponent(`"${query.trim()}"`);
+    const trimmed = query.trim().replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g, ' ').trim();
+    // Phrase with slop-2 for tolerance ("bohemian rhapsodie" finds "Bohemian Rhapsody")
+    // OR per-term fallback so partial queries also match
+    const terms = trimmed.split(/\s+/).filter(Boolean);
+    const phraseClause = `"${trimmed}"~2`;
+    const termClause = terms.map((t) => `recording:${t}`).join(' AND ');
+    const lucene = terms.length > 1 ? `(${phraseClause}) OR (${termClause})` : phraseClause;
+    const encoded = encodeURIComponent(lucene);
     const url = `${MUSICBRAINZ_API}/recording?query=${encoded}&limit=${limit}&fmt=json&inc=releases`;
     const response = await fetchWithRetry(
       url,

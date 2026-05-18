@@ -37,6 +37,9 @@ export async function searchInternal(
 
   const supabase = await createSupabaseServer();
   const trimmed = q.trim();
+  // Remove accents for FTS so "cafe" matches stored "café" (and vice-versa).
+  // The stored tsvector uses immutable_unaccent(), so both sides must be normalized.
+  const trimmedUnaccented = trimmed.normalize("NFD").replace(/[̀-ͯ]/g, "");
   const escapedQuery = escapeILike(trimmed);
 
   // Use full-text search for 3+ character queries (handles accents, apostrophes, multi-word)
@@ -50,7 +53,7 @@ export async function searchInternal(
       const r = await supabase
         .from("albums")
         .select("id, title, cover_url, release_date, artists(name)")
-        .textSearch("search_vector", trimmed, { type: "websearch", config: "english" })
+        .textSearch("search_vector", trimmedUnaccented, { type: "websearch", config: "simple" })
         .limit(5);
       if (!r.error) return r;
       // search_vector column doesn't exist yet — fall back to ILIKE
@@ -69,7 +72,7 @@ export async function searchInternal(
       const r = await (supabase
         .from("artists")
         .select("id, name, image_url, albums(id)") as any)
-        .textSearch("search_vector", trimmed, { type: "websearch", config: "english" })
+        .textSearch("search_vector", trimmedUnaccented, { type: "websearch", config: "simple" })
         .limit(5);
       if (!r.error) return r;
       // search_vector column doesn't exist yet — fall back to ILIKE
@@ -163,6 +166,67 @@ export async function searchInternal(
       trackArtistId: artist?.id || '',
     });
   });
+
+  // ── Fuzzy fallback via pg_trgm (only when primary queries return nothing) ──
+  // Handles typos like "Nirvarna" → "Nirvana", "Radiohed" → "Radiohead".
+  // Requires supabase_migration_trgm.sql to be applied.
+  const needsAlbumFuzzy = (kind === "all" || kind === "albums") && !results.some((r) => r.kind === "album");
+  const needsArtistFuzzy = (kind === "all" || kind === "artists") && !results.some((r) => r.kind === "artist");
+  const needsTrackFuzzy = kind === "tracks" && !results.some((r) => r.kind === "track");
+
+  if (needsAlbumFuzzy || needsArtistFuzzy || needsTrackFuzzy) {
+    const fuzzyPromises = await Promise.all([
+      needsAlbumFuzzy
+        ? (supabase as any).rpc("fuzzy_search_albums", { query_text: trimmed, result_limit: 5 })
+        : Promise.resolve({ data: null, error: null }),
+      needsArtistFuzzy
+        ? (supabase as any).rpc("fuzzy_search_artists", { query_text: trimmed, result_limit: 5 })
+        : Promise.resolve({ data: null, error: null }),
+      needsTrackFuzzy
+        ? (supabase as any).rpc("fuzzy_search_tracks", { query_text: trimmed, result_limit: 10 })
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    const [fuzzyAlbums, fuzzyArtists, fuzzyTracks] = fuzzyPromises;
+
+    (fuzzyAlbums.data || []).forEach((a: any) =>
+      results.push({
+        id: a.id,
+        title: a.title,
+        subtitle: a.artist_name || "Unknown Artist",
+        kind: "album",
+        coverUrl: a.cover_url || null,
+        releaseDate: a.release_date || null,
+        source: "internal",
+      })
+    );
+
+    (fuzzyArtists.data || []).forEach((a: any) =>
+      results.push({
+        id: a.id,
+        title: a.name,
+        kind: "artist",
+        coverUrl: a.image_url || null,
+        source: "internal",
+      })
+    );
+
+    (fuzzyTracks.data || []).forEach((t: any) => {
+      const dedupeKey = `${t.title.toLowerCase().trim()}|||${(t.artist_name || '').toLowerCase().trim()}`;
+      if (seenTrackKeys.has(dedupeKey)) return;
+      seenTrackKeys.add(dedupeKey);
+      results.push({
+        id: t.id,
+        title: t.title,
+        subtitle: `${t.artist_name || 'Unknown'} · ${t.album_title || 'Unknown'}`,
+        kind: "track",
+        coverUrl: t.album_cover || null,
+        source: "internal",
+        trackAlbumId: t.album_id || '',
+        trackArtistId: t.artist_id || '',
+      });
+    });
+  }
 
   // Client-side similarity ranking: exact > starts-with > contains
   const qLower = trimmed.toLowerCase();

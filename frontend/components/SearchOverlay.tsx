@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -13,127 +13,9 @@ import {
   saveRecentSearch,
   removeRecentSearch,
 } from '@/lib/recentSearches';
+import { computeRank, mergeAndRank } from '@/lib/searchRanking';
 
-type SearchTab = "all" | "albums" | "artists" | "tracks" | "users";
-
-// ---------------------------------------------------------------------------
-// Ranking helpers
-// ---------------------------------------------------------------------------
-
-/** Strip accents, punctuation, extra spaces for resilient comparison */
-function normalize(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")  // accents
-    .replace(/[^\w\s]/g, "")           // punctuation (apostrophes, hyphens…)
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Remove leading articles so "The Dark Side…" matches query "dark side…" */
-function stripArticle(s: string): string {
-  return s.replace(/^(the|a|an) /, "");
-}
-
-// Keywords that indicate tribute/cover/karaoke artists — penalised heavily
-const TRIBUTE_KEYWORDS = ["tribute", "karaoke", "backing track", "made famous", "originally performed"];
-
-/** Score a result for ordering — higher = more relevant */
-function computeRank(item: SearchResultUI, query: string): number {
-  const t = stripArticle(normalize(item.title));
-  const q = stripArticle(normalize(query));
-  const artistStr = normalize(item.subtitle || "");
-  let rank = 0;
-
-  // Tribute / karaoke penalty: these are almost never what the user wants.
-  // Check both title and artist fields to catch "Kanye West Tribute Band" style names.
-  if (TRIBUTE_KEYWORDS.some((k) => t.includes(k) || artistStr.includes(k))) rank -= 150;
-
-  // Live / remix version penalty: targets suffixes like "(live)", "(remix)", "(acoustic)"
-  // in parentheses or after a dash — avoids penalising "Live Through This", "Remix" (artist).
-  // Only fires when the query doesn't explicitly ask for a live/remix version.
-  const versionSuffix = /[\(\[]\s*(?:live|remix|acoustic|session|demo|version)\s*[\)\]]/i;
-  if (versionSuffix.test(item.title) && !versionSuffix.test(query)) rank -= 120;
-
-  // Artist match bonus: if the query contains the artist's name, the result is almost
-  // certainly the intended one — "thriller michael jackson" → bonus for MJ, not Augustus Pablo.
-  if (artistStr && q.includes(artistStr)) rank += 80;
-  else if (artistStr && artistStr.includes(q)) rank += 20;
-
-  // Text similarity — scored BEFORE MB to cap MB's contribution proportionally.
-  // Exact match (t === q): MB score barely matters — text quality already proves relevance.
-  // Starts-with: MB score capped at 40 to avoid titles like "Ziggy Stardust (Live)" by
-  // an obscure band beating Bowie's canonical album purely via a high MB title-match score.
-  let textScore = 0;
-  if (t === q) { textScore = 300; rank += Math.min((item.score ?? 0) * 0.8, 20); }
-  else if (t.startsWith(q)) { textScore = 150; rank += Math.min((item.score ?? 0) * 0.8, 40); }
-  else if (t.includes(q) || q.includes(t)) { textScore = 50; rank += (item.score ?? 0) * 0.8; }
-  else { rank += (item.score ?? 0) * 0.8; }
-  rank += textScore;
-
-  // Imported albums take clear priority: the user has already decided they're relevant.
-  if (item.source === "internal") rank += 120;
-
-  // Popularity: use actual releaseCount for MB results; default 50 for internal albums
-  // (internal = curated quality, should be competitive with popular MB results).
-  const effectiveReleaseCount = item.releaseCount ?? (item.source === "internal" ? 50 : 0);
-  if (effectiveReleaseCount > 0) rank += Math.min(Math.log2(effectiveReleaseCount + 1) * 12, 80);
-
-  return rank;
-}
-
-/** Merge internal + MB results, deduplicate, rank, limit */
-function mergeAndRank(
-  internal: SearchResultUI[],
-  external: SearchResultUI[],
-  query: string,
-  limit: number
-): SearchResultUI[] {
-  const internalIds = new Set(internal.map((r) => r.id));
-
-  // Deduplicate MB vs internal: albums by title+artist, artists by name, tracks by title+artist
-  const internalAlbumKeys = new Set(
-    internal
-      .filter((r) => r.kind === "album")
-      .map((r) => `${r.title.toLowerCase()}|||${(r.subtitle || "").toLowerCase()}`)
-  );
-  const internalArtistNames = new Set(
-    internal
-      .filter((r) => r.kind === "artist")
-      .map((r) => r.title.toLowerCase().trim())
-  );
-  // For tracks: dedup key = title ||| artist (first part of subtitle before " · ")
-  const internalTrackKeys = new Set(
-    internal
-      .filter((r) => r.kind === "track")
-      .map((r) => {
-        const artist = (r.subtitle || "").split(" · ")[0].toLowerCase().trim();
-        return `${r.title.toLowerCase().trim()}|||${artist}`;
-      })
-  );
-
-  const dedupedExternal = external.filter((ext) => {
-    if (internalIds.has(ext.id)) return false;
-    if (ext.kind === "album") {
-      const key = `${ext.title.toLowerCase()}|||${(ext.subtitle || "").toLowerCase()}`;
-      if (internalAlbumKeys.has(key)) return false;
-    }
-    if (ext.kind === "artist") {
-      if (internalArtistNames.has(ext.title.toLowerCase().trim())) return false;
-    }
-    if (ext.kind === "track") {
-      const artist = (ext.subtitle || "").split(" · ")[0].toLowerCase().trim();
-      const key = `${ext.title.toLowerCase().trim()}|||${artist}`;
-      if (internalTrackKeys.has(key)) return false;
-    }
-    return true;
-  });
-
-  return [...internal, ...dedupedExternal]
-    .sort((a, b) => computeRank(b, query) - computeRank(a, query))
-    .slice(0, limit);
-}
+type SearchTab = "albums" | "artists" | "tracks" | "users";
 
 // ---------------------------------------------------------------------------
 // ResultRow
@@ -223,12 +105,13 @@ export default function SearchOverlay() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [activeTab, setActiveTab] = useState<SearchTab>("all");
+  const [activeTab, setActiveTab] = useState<SearchTab>("albums");
   const [results, setResults] = useState<SearchResultUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingExtended, setLoadingExtended] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [importingId, setImportingId] = useState<string | null>(null);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -255,13 +138,14 @@ export default function SearchOverlay() {
   useEffect(() => {
     if (!q.trim()) {
       setResults([]);
+      setHasMoreResults(false);
       setLoading(false);
       setLoadingExtended(false);
       return;
     }
 
     let aborted = false;
-    const limit = activeTab === "all" ? 8 : 6;
+    const limit = 6;
 
     const run = async () => {
       // Debounce — 300ms prevents MB spam on fast typing
@@ -279,10 +163,10 @@ export default function SearchOverlay() {
       // ────────────────────────────────────────────────────────────────────────
       const mbPromise = activeTab !== "users"
         ? Promise.all([
-            activeTab === "all" || activeTab === "albums"
+            activeTab === "albums"
               ? searchMusicBrainzAlbums(q, 20)
               : Promise.resolve(null),
-            activeTab === "all" || activeTab === "artists"
+            activeTab === "artists"
               ? searchMusicBrainzArtists(q, 5)
               : Promise.resolve(null),
             activeTab === "tracks"
@@ -306,7 +190,9 @@ export default function SearchOverlay() {
       }
       if (aborted) return;
 
-      setResults(mergeAndRank(internal, [], q, limit)); // ← first paint
+      const phase1 = mergeAndRank(internal, [], q, limit + 1);
+      setHasMoreResults(phase1.length > limit);
+      setResults(phase1.slice(0, limit)); // ← first paint
       setLoading(false);
 
       // ── PHASE 2 — merge MB results (non-blocking update) ────────────────────
@@ -348,10 +234,7 @@ export default function SearchOverlay() {
           }
 
           if (mbRecordingsRes?.success && mbRecordingsRes.results) {
-            const recordingsToShow = activeTab === "all"
-              ? mbRecordingsRes.results.slice(0, 2)
-              : mbRecordingsRes.results;
-            recordingsToShow.forEach((rec) =>
+            mbRecordingsRes.results.forEach((rec) =>
               mbList.push({
                 id: rec.mbid,
                 recordingMbid: rec.mbid,
@@ -366,8 +249,9 @@ export default function SearchOverlay() {
             );
           }
 
-          const merged = mergeAndRank(internal, mbList, q, limit);
-          setResults(merged);
+          const merged = mergeAndRank(internal, mbList, q, limit + 1);
+          setHasMoreResults(merged.length > limit);
+          setResults(merged.slice(0, limit));
 
           // Load images for MB artists (Wikidata lookup, runs after results shown)
           const mbArtistMbids = mbList
@@ -484,14 +368,12 @@ export default function SearchOverlay() {
   );
 
   const handleSeeAll = () => {
-    const filterParam = activeTab === "users" ? "users" : activeTab;
     setIsOpen(false);
     setQ("");
-    router.push(`/search?q=${encodeURIComponent(q)}&filter=${filterParam}`);
+    router.push(`/search?q=${encodeURIComponent(q)}&filter=${activeTab}`);
   };
 
   const tabLabels: Record<SearchTab, string> = {
-    all: "Tout",
     albums: "Albums",
     artists: "Artistes",
     tracks: "Titres",
@@ -557,7 +439,7 @@ export default function SearchOverlay() {
 
               {/* Tabs — toujours visibles dès l'ouverture */}
               <div className="flex gap-5">
-                {(["all", "albums", "tracks", "artists", "users"] as SearchTab[]).map((tab) => (
+                {(["albums", "tracks", "artists", "users"] as SearchTab[]).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -647,13 +529,17 @@ export default function SearchOverlay() {
                   )}
 
                   {/* See all results */}
-                  {q.trim() && activeTab !== "users" && activeTab !== "tracks" && (
+                  {q.trim() && activeTab !== "users" && (
                     <button
                       onClick={handleSeeAll}
                       className="flex items-center gap-1.5 px-3 py-2.5 mt-2 w-full text-[13px] text-text-tertiary hover:text-[#8E6F5E] transition-colors duration-150 group"
                     >
                       <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                      Voir tous les résultats pour{" "}
+                      {hasMoreResults ? (
+                        <>Plus de résultats disponibles — voir tout pour{" "}</>
+                      ) : (
+                        <>Voir tous les résultats pour{" "}</>
+                      )}
                       <span className="font-medium text-text-secondary ml-1">« {q} »</span>
                     </button>
                   )}

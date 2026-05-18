@@ -241,7 +241,7 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
                 </div>
             </div>
 
-            <main className="p-6 lg:px-8 pb-20 lg:pb-12">
+            <main className="p-6 lg:px-8 pb-28 lg:pb-12">
                 <div>
                     {!isLoading && (
                         <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">

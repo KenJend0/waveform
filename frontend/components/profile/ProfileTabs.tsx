@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import ReviewsList from "./ReviewsList";
 import DiaryList from "./DiaryList";
 import ListsTab from "./ListsTab";
@@ -30,7 +30,6 @@ function resolveInitialTab(tab: string | null, isMe: boolean): TabId {
 
 export default function ProfileTabs({ isMe, userId, diaryEntries, userLists, trackEntries = [], unifiedReviews = [] }: Props) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const initialTab = resolveInitialTab(searchParams.get("tab"), isMe);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
@@ -51,7 +50,7 @@ export default function ProfileTabs({ isMe, userId, diaryEntries, userLists, tra
       params.set("tab", tab);
     }
     const query = params.toString();
-    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}${query ? `?${query}` : ""}`);
   };
 
   const tabs: { id: TabId; label: string }[] = [

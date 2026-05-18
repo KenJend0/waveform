@@ -137,7 +137,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-[14px] text-text-secondary leading-relaxed max-w-lg mt-5">
+          <p className="text-[14px] text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">
             {user.bio}
           </p>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { type FavoriteAlbum } from "./Top3Albums";
@@ -89,7 +89,6 @@ export default function PublicProfileTabs({
   unifiedReviews = [],
 }: Props) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
 
   const resolveTab = (raw: string | null): Tab => {
@@ -121,7 +120,7 @@ export default function PublicProfileTabs({
     if (t === "journal") params.delete("tab");
     else params.set("tab", t);
     const query = params.toString();
-    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}${query ? `?${query}` : ""}`);
   };
 
   const loadMoreAlbums = async () => {

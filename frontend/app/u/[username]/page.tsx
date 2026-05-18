@@ -188,7 +188,7 @@ export default async function PublicProfilePage({
               </div>
 
               {bio && (
-                <p className="text-[14px] text-text-secondary leading-relaxed mt-5">{bio}</p>
+                <p className="text-[14px] text-text-secondary leading-relaxed mt-5 whitespace-pre-line">{bio}</p>
               )}
 
               {/* Stats empilées */}

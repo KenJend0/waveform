@@ -71,7 +71,7 @@ export default async function MyProfilePage() {
             .from("follows")
             .select("*", { count: "exact" })
             .eq("follower_id", user.id),
-        getUserDiary(user.id),
+        getUserDiary(user.id, 0, 51),
         supabase
             .from("diary_entries")
             .select("*", { count: "exact", head: true })

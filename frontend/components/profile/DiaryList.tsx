@@ -24,7 +24,7 @@ const TRACK_SORT_LABELS: Record<TrackSort, string> = {
   personal_rating: "Ma note",
 };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 51;
 
 type Props = {
   entries: DiaryEntryUI[];

@@ -1,6 +1,6 @@
 # Waveform
 
-Une application de journal musical. Suivis tes écoutes, note tes albums, lis les avis de tes amis.
+Journal musical social. Suis tes écoutes, note tes albums et titres, découvre ce qu'écoutent tes amis.
 
 ---
 
@@ -23,12 +23,12 @@ Pas de backend custom. Tout passe par des **Server Actions** Next.js et le clien
 ### Prérequis
 
 - Node.js 20+
-- Un projet Supabase (gratuit suffisant pour dev)
+- Un projet Supabase (plan gratuit suffisant pour le dev)
 
 ### Installation
 
 ```bash
-git clone https://github.com/ton-user/waveform.git
+git clone https://github.com/KenJend0/waveform.git
 cd waveform/frontend
 npm install
 ```
@@ -40,12 +40,12 @@ cp .env.example .env.local
 # Remplis les variables dans .env.local
 ```
 
-Variables requises (voir [frontend/.env.example](frontend/.env.example)) :
+Variables requises :
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_KEY=eyJ...      # serveur uniquement
+SUPABASE_SERVICE_KEY=eyJ...      # serveur uniquement — ne jamais préfixer NEXT_PUBLIC_
 ```
 
 Variables optionnelles :
@@ -55,7 +55,7 @@ UPSTASH_REDIS_REST_URL=https://...
 UPSTASH_REDIS_REST_TOKEN=...
 ```
 
-Elles activent le rate limiting serveur. Sans elles, l'app reste en mode fail-open: les routes et actions passent sans limitation.
+Sans elles, le rate limiting est désactivé (mode fail-open).
 
 ### Lancer en dev
 
@@ -75,17 +75,19 @@ waveform/
 │   ├── app/
 │   │   ├── actions/            # Server Actions (logique métier)
 │   │   ├── api/                # Route Handlers Next.js
+│   │   ├── add/                # Ajouter une écoute (album ou titre)
 │   │   ├── albums/[id]/        # Page album
 │   │   ├── artists/[id]/       # Page artiste
 │   │   ├── auth/               # Login / Signup
 │   │   ├── diary/              # Journal + entrée détaillée
-│   │   ├── explore/            # Découverte
+│   │   ├── explore/            # Découverte (tendances, listes, suggestions)
 │   │   ├── feed/               # Fil d'activité
-│   │   ├── import/             # Import depuis MusicBrainz
+│   │   ├── lists/              # Listes d'albums
 │   │   ├── me/                 # Profil personnel
-│   │   ├── search/             # Recherche
+│   │   ├── search/             # Page résultats de recherche
 │   │   ├── settings/           # Paramètres & favoris
-│   │   └── u/[username]/       # Profil public
+│   │   ├── tracks/[id]/        # Page titre
+│   │   └── u/[username]/       # Profil public + followers/following
 │   ├── components/             # Composants React
 │   │   ├── avatars/            # 12 avatars SVG générés
 │   │   ├── feed/cards/         # Cartes du feed par type
@@ -94,6 +96,8 @@ waveform/
 │   │   └── social/             # Follow button
 │   ├── lib/
 │   │   ├── supabase/           # Clients Supabase (client + server)
+│   │   ├── searchRanking.ts    # computeRank + mergeAndRank (partagé overlay/page)
+│   │   ├── recentSearches.ts   # localStorage recent searches
 │   │   ├── AuthContext.tsx     # Contexte auth global
 │   │   └── ...
 │   ├── types/
@@ -101,12 +105,16 @@ waveform/
 │   └── public/
 │       ├── robots.txt
 │       └── sitemap.xml
+├── supabase_migrations/        # Migrations SQL à appliquer via le dashboard Supabase
+│   ├── supabase_schema.sql     # Schéma de référence complet + RLS
+│   ├── supabase_migration_fulltext_search.sql   # Colonnes tsvector (simple + unaccent)
+│   ├── supabase_migration_trgm.sql              # pg_trgm + RPCs fuzzy search
+│   ├── supabase_migration_search_cache.sql      # Cache MB 24h
+│   └── ...                     # Autres migrations par feature
 ├── scripts/
-│   ├── generate-supabase-types.sh   # Régénère frontend/types/database.ts
-│   ├── generate-supabase-types.ps1  # (Windows)
-│   ├── refresh_discover.sh          # Rafraîchit les items Discover
-│   └── refresh_discover.ps1         # (Windows)
-├── supabase_schema.sql         # Schéma Postgres de référence + RLS
+│   ├── generate-supabase-types.sh / .ps1   # Régénère frontend/types/database.ts
+│   └── refresh_discover.sh / .ps1          # Rafraîchit les items Discover
+├── ml/                         # Scripts Python (recommandations, ML)
 ├── .gitignore
 └── README.md
 ```
@@ -115,7 +123,7 @@ waveform/
 
 ## Base de données
 
-Le schéma complet est dans [`supabase_schema.sql`](supabase_schema.sql).
+Le schéma complet est dans [`supabase_migrations/supabase_schema.sql`](supabase_migrations/supabase_schema.sql).
 
 **Tables principales :**
 
@@ -123,23 +131,40 @@ Le schéma complet est dans [`supabase_schema.sql`](supabase_schema.sql).
 |-------|-------------|
 | `profiles` | Métadonnées utilisateur (username, bio, avatar) |
 | `albums` | Catalogue albums, FK → `artists` |
+| `artists` | Artistes |
 | `tracks` | Pistes, FK → `albums` |
 | `diary_entries` | Écoutes/reviews d'un user pour un album |
+| `track_diary_entries` | Écoutes/reviews d'un user pour un titre |
 | `diary_likes` | Likes sur les entrées |
 | `diary_comments` | Commentaires sur les entrées |
 | `follows` | Relations sociales |
 | `feed_events` | Fil d'activité (fan-out en écriture) |
 | `notifications` | Notifications (like, comment, follow, reco) |
-| `saved_albums` | Albums sauvegardés (wishlist) |
+| `saved_albums` | Albums sauvegardés |
 | `user_favorite_albums` | Top 3 albums du profil (position 1–3) |
+| `lists` | Listes d'albums créées par les users |
+| `list_items` | Albums dans une liste |
+| `recommendations` | Recommandations entre users |
 | `discover_items` | Algo de découverte |
-| `recommendations` | Recommandations d'albums entre users |
+| `search_cache` | Cache des résultats MusicBrainz (24h) |
 
 **Vue :** `album_stats` — listeners, reviews, note moyenne par album.
 
 ### RLS
 
-Le RLS est activé sur toutes les tables. Les policies sont définies dans `supabase_schema.sql`. Les écritures système (fan-out feed, discover) passent par la clé service role côté serveur uniquement.
+Activé sur toutes les tables. Les policies sont dans `supabase_schema.sql`. Les écritures système (fan-out feed, discover) utilisent la clé service role côté serveur uniquement.
+
+### Migrations
+
+Les migrations sont dans `supabase_migrations/` et s'appliquent manuellement via l'éditeur SQL du dashboard Supabase. Aucun outil de migration automatique n'est utilisé.
+
+Migrations à appliquer pour un nouveau projet (dans l'ordre) :
+
+1. `supabase_schema.sql` — schéma de base
+2. `supabase_migration_fulltext_search.sql` — recherche plein texte (nécessite l'extension `unaccent`)
+3. `supabase_migration_trgm.sql` — fuzzy search via pg_trgm
+4. `supabase_migration_search_cache.sql` — cache des résultats MB
+5. Les autres migrations par ordre de dépendance feature
 
 ### Régénérer les types TypeScript
 
@@ -161,27 +186,38 @@ Supabase Auth (email/password). Côté serveur : `getAuthUser()` via cookies SSR
 
 ### Server Actions
 
-Toute la logique métier est dans `frontend/app/actions/`. Pas d'API REST custom — les actions sont appelées directement depuis les composants (client ou serveur).
+Toute la logique métier est dans `frontend/app/actions/`. Pas d'API REST custom.
 
 ```
 actions/
-├── diary.ts          # upsertDiaryEntry, deleteDiaryEntry, toggleDiaryLike, addComment...
-├── feed.ts           # getMyFeed, fanoutEvent
-├── profile.ts        # ensureProfile, updateProfileSettings, changeUsername, deleteAccount
-├── social.ts         # toggleFollow
-├── recommendations.ts # createRecommendation
-├── musicbrainz.ts    # search, preview, import depuis MusicBrainz
-├── saved-albums.ts   # toggleSaveAlbum
-└── search.ts         # searchInternal
+├── diary.ts            # upsertDiaryEntry, deleteDiaryEntry, toggleDiaryLike, addComment...
+├── track-diary.ts      # upsertTrackDiaryEntry, getTrackDiaryEntry...
+├── feed.ts             # getMyFeed, fanoutEvent
+├── profile.ts          # ensureProfile, updateProfileSettings, changeUsername, deleteAccount
+├── social.ts           # toggleFollow
+├── lists.ts            # createList, addAlbumToList...
+├── recommendations.ts  # createRecommendation
+├── musicbrainz.ts      # search, preview, import depuis MusicBrainz
+├── artists.ts          # getArtistMeta, getArtistReleases, getArtistImagesByMbids
+├── search.ts           # searchInternal (Supabase FTS + ILIKE + fuzzy pg_trgm)
+└── explore.ts          # getTrendingThisWeek, getForYouSuggestions, getDiscoveryAlbums...
 ```
+
+### Recherche
+
+Deux niveaux de recherche, toujours en deux phases (interne d'abord, MB en arrière-plan) :
+
+- **Interne** (`searchInternal`) : Supabase full-text search (`tsvector`, config `simple` + `unaccent`), fallback ILIKE, fallback fuzzy pg_trgm en cas de 0 résultats
+- **MusicBrainz** : requêtes Lucene multi-clauses (phrase, per-term, split artist/title), cache L1 mémoire 5min + L2 Supabase 24h
+- **Ranking unifié** (`lib/searchRanking.ts`) : `computeRank` + `mergeAndRank` partagés entre l'overlay et la page `/search`
 
 ### Fan-out du feed
 
-Le feed utilise un modèle **fan-out en écriture** : quand un user effectue une action (review, like, follow...), un événement est inséré dans `feed_events` pour chacun de ses followers. La lecture du feed est une simple requête `WHERE user_id = auth.uid()`.
+Modèle **fan-out en écriture** : chaque action (review, like, follow…) insère un événement dans `feed_events` pour chacun des followers. La lecture est une simple requête filtrée par `user_id`.
 
 ### Storage avatars
 
-Upload signé vers Supabase Storage (bucket `avatars`). Le chemin est `{user_id}/avatar_{timestamp}.jpg`. Les avatars par défaut sont 12 SVG générés côté serveur (`/api/avatars/[userId]`).
+Upload signé vers Supabase Storage (bucket `avatars`). Chemin : `{user_id}/avatar_{timestamp}.jpg`. Les avatars par défaut sont 12 SVG générés via `/api/avatars/[userId]`.
 
 ---
 
@@ -189,31 +225,17 @@ Upload signé vers Supabase Storage (bucket `avatars`). Le chemin est `{user_id}
 
 ### Rafraîchir les items Discover
 
-L'algo de découverte tourne manuellement (ou via cron) :
-
 ```bash
+# Unix
 bash scripts/refresh_discover.sh
-```
 
-Il appelle l'endpoint admin qui remplit `discover_items` avec 7 catégories : trending semaine/mois, all-time top, momentum, hidden gems, nouvelles sorties, community pick.
-
-### Discover — population (notes pratiques)
-
-Si `discover_items` est vide, la page `app/explore` affiche un message d'accueil invitant l'utilisateur à rechercher des albums. En développement ou en production, remplissez la table avec le script suivant :
-
-PowerShell (Windows) :
-
-```powershell
+# Windows
 .\scripts\refresh_discover.ps1
 ```
 
-Unix / Bash :
+Remplit `discover_items` avec 7 catégories : trending semaine/mois, all-time top, momentum, hidden gems, nouvelles sorties, community pick.
 
-```bash
-bash scripts/refresh_discover.sh
-```
-
-En production (Vercel) : planifiez l'appel périodique du script via une tâche cron externe, un GitHub Actions workflow, ou les Scheduled Functions / Cron Jobs de Vercel pour exécuter l'endpoint admin qui peuple `discover_items` (la clé `SUPABASE_SERVICE_KEY` est requise et doit rester côté serveur).
+En production (Vercel) : planifier l'appel via cron externe ou GitHub Actions (la clé `SUPABASE_SERVICE_KEY` est requise).
 
 ---
 
@@ -221,31 +243,15 @@ En production (Vercel) : planifiez l'appel périodique du script via une tâche 
 
 1. Connecter le repo sur [vercel.com](https://vercel.com)
 2. Définir le **Root Directory** sur `frontend`
-3. Ajouter les variables d'environnement (Supabase URL, anon key, service key, et éventuellement Upstash Redis pour le rate limiting)
+3. Ajouter les variables d'environnement
 4. Deploy
-
-> La clé `SUPABASE_SERVICE_KEY` doit rester côté serveur — ne jamais la préfixer `NEXT_PUBLIC_`.
-
----
-
-## Pilotage beta
-
-Documentation interne utile pour passer du MVP a une vraie beta exploitable:
-
-- [Plan beta 30 jours](docs/beta-plan-30-days.md)
-- [Dashboard beta](docs/beta-dashboard.md)
-- [Checklist QA beta](docs/qa-checklist.md)
 
 ---
 
 ## Contribuer
 
 ```bash
-# Créer une branche
 git checkout -b feature/ma-feature
-
-# Développer, puis
 cd frontend && npm run build   # vérifie que ça compile
-
 # PR sur main
 ```

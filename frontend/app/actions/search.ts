@@ -53,6 +53,7 @@ export async function searchInternal(
       const r = await supabase
         .from("albums")
         .select("id, title, cover_url, release_date, artists(name)")
+        .neq("type", "Single")
         .textSearch("search_vector", trimmedUnaccented, { type: "websearch", config: "simple" })
         .limit(5);
       if (!r.error) return r;
@@ -61,6 +62,7 @@ export async function searchInternal(
     return supabase
       .from("albums")
       .select("id, title, cover_url, release_date, artists(name)")
+      .neq("type", "Single")
       .ilike("title", `%${escapedQuery}%`)
       .limit(5);
   };

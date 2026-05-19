@@ -54,7 +54,7 @@ export async function getUserSavedAlbums(
     return [];
   }
 
-  return saved.map((s) => {
+  return saved.filter((s) => (s.albums as any)?.type !== 'Single').map((s) => {
     const album = s.albums as any;
     const artist = album?.artists as any;
     return {

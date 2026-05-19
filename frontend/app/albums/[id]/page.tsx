@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import { msToMMSS, msToDuration } from "@/lib/time";
 import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
@@ -66,11 +66,23 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     // [1] Fetch album — bloque tout, obligatoire en premier
     const { data: album } = await supabase
         .from("albums")
-        .select("id, title, cover_url, release_date, artist_id, mbid")
+        .select("id, title, cover_url, release_date, artist_id, mbid, type")
         .eq("id", id)
         .maybeSingle();
 
     if (!album) notFound();
+
+    // Single importé comme conteneur — rediriger vers la page du titre
+    if ((album as any).type === 'Single') {
+        const { data: firstTrack } = await supabase
+            .from('tracks')
+            .select('id')
+            .eq('album_id', id)
+            .order('track_no', { ascending: true, nullsFirst: true })
+            .limit(1)
+            .maybeSingle();
+        if (firstTrack) redirect(`/tracks/${firstTrack.id}`);
+    }
 
     // [2] Fetch artist, tracks et user en parallèle (dépendent seulement de album)
     const [artistResult, tracksResult, user] = await Promise.all([

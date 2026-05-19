@@ -698,6 +698,8 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
     // mbid may be a release-group MBID (from getArtistReleases which uses browse endpoint).
     // The browse endpoint doesn't support inc=releases, so we store the release-group MBID.
     // In that case, /release/{rgMbid} returns 404 — resolve it via the release-group lookup.
+    let rgPrimaryType: string | null = null;
+
     if (releaseResponse.status === 404) {
       const rgResponse = await fetch(
         `${MUSICBRAINZ_API}/release-group/${encodeURIComponent(mbid)}?inc=releases&fmt=json`,
@@ -707,6 +709,7 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
         return { success: false, error: 'Album not found' };
       }
       const rgData: any = await rgResponse.json();
+      rgPrimaryType = rgData['primary-type'] || null;
       const releases: any[] = rgData.releases ?? [];
       if (releases.length === 0) {
         return { success: false, error: 'No releases found for this release group' };
@@ -733,8 +736,9 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       (m.tracks || []).map((t) => ({ ...t, _discNo: m.position }))
     );
 
-    // Get release-group ID for consistent cover lookup
+    // Get release-group ID and primary-type for consistent cover lookup and type classification
     const releaseGroupId = (data as any)['release-group']?.id || mbid;
+    const primaryType: string | null = rgPrimaryType || (data as any)['release-group']?.['primary-type'] || null;
 
     // Fetch cover art from CoverArt Archive — uses fetchCoverUrl (2 retries, consistent with refreshAlbumCover)
     const coverUrl = releaseGroupId
@@ -746,6 +750,7 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       preview: {
         mbid: data.id,
         releaseGroupMbid: releaseGroupId, // canonical identifier — always use this for dedup & storage
+        primaryType,
         title: data.title,
         artist: artist.name,
         artistMbid: artist.id,
@@ -802,6 +807,8 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
 
     const preview = previewResult.preview!;
 
+    const isSingle = preview.tracks.length === 1 || preview.primaryType === 'Single';
+
     // Always use release-group MBID as canonical identifier.
     // The caller may pass a release MBID or a release-group MBID depending on entry point
     // (search overlay uses release MBID, artist page uses release-group MBID).
@@ -828,7 +835,23 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
     }
 
     if (existingAlbum) {
-      return { success: true, albumId: existingAlbum.id, imported: false };
+      if (isSingle) {
+        const { data: firstTrack } = await supabase
+          .from('tracks')
+          .select('id')
+          .eq('album_id', existingAlbum.id)
+          .order('track_no', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const trackId = firstTrack?.id ?? null;
+        return {
+          success: true,
+          albumId: existingAlbum.id,
+          redirectUrl: trackId ? `/tracks/${trackId}` : `/albums/${existingAlbum.id}`,
+          imported: false,
+        };
+      }
+      return { success: true, albumId: existingAlbum.id, redirectUrl: `/albums/${existingAlbum.id}`, imported: false };
     }
 
     // Get or create artist
@@ -881,6 +904,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
         mbid: canonicalMbid,
         release_date: normalizeReleaseDate(preview.date),
         cover_url: finalCoverUrl,
+        type: preview.primaryType ?? 'Album',
       });
 
     if (albumError) {
@@ -983,7 +1007,16 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       return { success: false, error: externalError.message };
     }
 
-    return { success: true, albumId: newAlbumId, imported: true, title: preview.title, artist: preview.artist, mbid };
+    const firstTrackId = isSingle ? (trackRows[0]?.id ?? null) : null;
+    return {
+      success: true,
+      albumId: newAlbumId,
+      redirectUrl: firstTrackId ? `/tracks/${firstTrackId}` : `/albums/${newAlbumId}`,
+      imported: true,
+      title: preview.title,
+      artist: preview.artist,
+      mbid,
+    };
   } catch (err) {
     console.error('[importAlbumFromMusicBrainz] catch:', err);
     await logAuthedProductEvent('album_import_failed', {

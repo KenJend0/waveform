@@ -174,7 +174,7 @@ export function ArtistPageContent({
                         body: JSON.stringify({ albumId: result.albumId, mbid: result.mbid, title: result.title, artist: result.artist }),
                     }).catch(() => {});
                 }
-                router.push(`/albums/${result.albumId}`);
+                router.push((result as any).redirectUrl || `/albums/${result.albumId}`);
             } else {
                 showToast("Erreur lors de l'import", 'error');
                 setImportingMbid(null);

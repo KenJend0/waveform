@@ -302,7 +302,7 @@ export default function SearchOverlay() {
             setIsOpen(false);
             setResults([]);
             setQ("");
-            router.push(`/albums/${result.albumId}`);
+            const redirectUrl = (result as any).redirectUrl as string ?? `/albums/${result.albumId}`;
             // Fire-and-forget enrichment (genres, bio, streaming links)
             if ('mbid' in result && result.mbid && 'title' in result && 'artist' in result) {
               fetch('/api/enrich', {
@@ -311,8 +311,9 @@ export default function SearchOverlay() {
                 body: JSON.stringify({ albumId: result.albumId, mbid: result.mbid, title: result.title, artist: result.artist }),
               }).catch(() => {});
             }
+            router.push(redirectUrl);
           } else {
-            showToast("Erreur lors de l'import", "error");
+            showToast('error' in result && result.error ? result.error : "Erreur lors de l'import", "error");
           }
         } catch {
           showToast("Erreur lors de l'import", "error");

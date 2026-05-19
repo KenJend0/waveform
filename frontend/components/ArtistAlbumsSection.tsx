@@ -103,11 +103,12 @@ export default function ArtistAlbumsSection({ dbAlbums, mbAlbums }: Props) {
         try {
             const res = await importAlbumFromMusicBrainz(mbid);
             if (!res.success) {
-                showToast("Erreur lors de l'import", "error");
+                showToast('error' in res && res.error ? res.error : "Erreur lors de l'import", "error");
                 return;
             }
-            const albumId = (res as { albumId: string }).albumId;
-            showToast("Album importé", "success");
+            const albumId = (res as any).albumId as string;
+            const redirectUrl = (res as any).redirectUrl as string ?? `/albums/${albumId}`;
+            showToast("Importé", "success");
             // Fire-and-forget enrichment
             if ('mbid' in res && res.mbid && 'title' in res && 'artist' in res) {
                 fetch('/api/enrich', {
@@ -116,8 +117,7 @@ export default function ArtistAlbumsSection({ dbAlbums, mbAlbums }: Props) {
                     body: JSON.stringify({ albumId, mbid: res.mbid, title: res.title, artist: res.artist }),
                 }).catch(() => {});
             }
-            router.refresh();
-            router.push(`/albums/${albumId}`);
+            router.push(redirectUrl);
         } catch {
             showToast("Erreur lors de l'import", "error");
         } finally {

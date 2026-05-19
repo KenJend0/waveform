@@ -141,10 +141,12 @@ export default async function TrackPage({ params }: PageProps) {
 
                     {/* Ligne 2 : album · durée */}
                     <div className="text-[13px] text-text-tertiary mt-0.5 mb-4">
-                        <Link href={`/albums/${t.album_id}`} className="hover:text-text-secondary transition-colors duration-150">
-                            {t.album_title}
-                        </Link>
-                        {t.duration_ms != null && ` · ${msToMMSS(t.duration_ms)}`}
+                        {t.album_type !== 'Single' && (
+                            <Link href={`/albums/${t.album_id}`} className="hover:text-text-secondary transition-colors duration-150">
+                                {t.album_title}
+                            </Link>
+                        )}
+                        {t.duration_ms != null && `${t.album_type !== 'Single' ? ' · ' : ''}${msToMMSS(t.duration_ms)}`}
                     </div>
 
                     {/* Stats communauté */}

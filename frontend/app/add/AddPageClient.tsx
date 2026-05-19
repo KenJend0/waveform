@@ -156,7 +156,7 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
             const result = await upsertDiaryEntry({
                 albumId: selectedAlbum.id,
                 listenedAt,
-                rating: rating ?? 0,
+                rating: rating ?? undefined,
                 reviewBody: comment.trim() || undefined,
                 isPublic: true,
                 relisten: previousEntry !== null,

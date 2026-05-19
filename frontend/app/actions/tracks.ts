@@ -19,6 +19,7 @@ export type TrackDetail = {
   mbid: string | null;
   album_id: string;
   album_title: string;
+  album_type: string;
   cover_url: string | null;
   release_date: string | null;
   artist_id: string;
@@ -43,6 +44,7 @@ export async function getTrack(id: string): Promise<TrackDetail | null> {
         title,
         cover_url,
         release_date,
+        type,
         artist_id,
         artists (
           id,
@@ -67,6 +69,7 @@ export async function getTrack(id: string): Promise<TrackDetail | null> {
     mbid: data.mbid ?? null,
     album_id: album?.id || data.album_id,
     album_title: album?.title || 'Inconnu',
+    album_type: album?.type || 'Album',
     cover_url: album?.cover_url || null,
     release_date: album?.release_date || null,
     artist_id: artist?.id || album?.artist_id || '',

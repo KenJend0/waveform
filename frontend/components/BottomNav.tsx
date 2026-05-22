@@ -36,7 +36,7 @@ export default function BottomNav() {
                         bg-[#FAF8F4]/92 backdrop-blur-md border border-border rounded-[20px]
                         px-2 py-2
                         shadow-[0_8px_20px_-8px_rgba(60,40,20,0.18),0_1px_2px_rgba(0,0,0,0.04)]"
-             style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+             style={{ bottom: 'calc(0.25rem + env(safe-area-inset-bottom))' }}>
             {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);

@@ -712,23 +712,65 @@ async function runPhase3() {
 }
 
 // ── Phase 4: Track streaming links ────────────────────────────────────────────
+// Spotify: 1 call per album via /v1/albums/{id}/tracks (position-based match).
+//   Per-track Spotify search is banned — causes extreme rate limiting (63000s retry-after).
+// Apple Music + Deezer: per-track search (more lenient rate limits).
+
+async function fetchSpotifyAlbumTracks(spotifyAlbumId, token) {
+  // Returns Map: "disc-trackNo" → spotify track URL
+  const map = new Map();
+  if (!spotifyAlbumId || !token) return map;
+  try {
+    const res = await fetch(
+      `https://api.spotify.com/v1/albums/${spotifyAlbumId}/tracks?limit=50`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (res.status === 429) {
+      const wait = Math.min(parseInt(res.headers.get('retry-after') ?? '10', 10), 30);
+      console.warn(`    ⏳ Spotify rate limit — attente ${wait}s`);
+      await delay(wait * 1000);
+      return fetchSpotifyAlbumTracks(spotifyAlbumId, token); // one retry
+    }
+    if (!res.ok) return map;
+    const data = await res.json();
+    for (const t of data.items ?? []) {
+      map.set(`${t.disc_number ?? 1}-${t.track_number}`, t.external_urls?.spotify ?? null);
+    }
+  } catch { /* best-effort */ }
+  return map;
+}
 
 async function runPhase4() {
   console.log('── Phase 4 : liens de streaming par titre ──────────────────────');
 
-  let allTracks, existingMeta;
+  let allTracks, existingMeta, albumMetas;
   try {
-    [allTracks, existingMeta] = await Promise.all([
+    [allTracks, existingMeta, albumMetas] = await Promise.all([
       fetchAllPages((from, to) =>
-        supabase.from('tracks').select('id, title, album_id, albums(id, title, artists(name))').range(from, to)
+        supabase.from('tracks')
+          .select('id, title, album_id, track_no, disc_no, albums(title, artists(name))')
+          .range(from, to)
       ),
       fetchAllPages((from, to) =>
         supabase.from('track_metadata').select('track_id').range(from, to)
+      ),
+      fetchAllPages((from, to) =>
+        supabase.from('album_metadata')
+          .select('album_id, spotify_url')
+          .not('spotify_url', 'is', null)
+          .range(from, to)
       ),
     ]);
   } catch (error) {
     console.error('  ❌ Query error:', error.message);
     return;
+  }
+
+  // album_id → Spotify album ID (extracted from album URL)
+  const spotifyAlbumIdByAlbum = new Map();
+  for (const m of albumMetas ?? []) {
+    const match = m.spotify_url?.match(/album\/([A-Za-z0-9]+)/);
+    if (match) spotifyAlbumIdByAlbum.set(m.album_id, match[1]);
   }
 
   const enrichedIds = new Set((existingMeta ?? []).map((m) => m.track_id));
@@ -742,29 +784,39 @@ async function runPhase4() {
   }
   console.log(`  ${toEnrich.length} titre(s) à enrichir.\n`);
 
-  // Group by album to share the artist name and batch rate-limit pauses
+  // Group by album
   const byAlbum = new Map();
   for (const track of toEnrich) {
-    if (!byAlbum.has(track.album_id)) byAlbum.set(track.album_id, { album: track.albums, tracks: [] });
+    if (!byAlbum.has(track.album_id)) {
+      byAlbum.set(track.album_id, { artistName: track.albums?.artists?.name ?? '', tracks: [] });
+    }
     byAlbum.get(track.album_id).tracks.push(track);
   }
 
+  const spotifyToken = await getSpotifyToken();
   let done = 0, skipped = 0, albumIdx = 0;
 
-  for (const { album, tracks } of byAlbum.values()) {
-    const artistName = album?.artists?.name ?? '';
-    console.log(`  Album [${++albumIdx}/${byAlbum.size}]: ${album?.title} — ${artistName} (${tracks.length} titre(s))`);
+  for (const [albumId, { artistName, tracks }] of byAlbum) {
+    console.log(`  Album [${++albumIdx}/${byAlbum.size}] — ${artistName} (${tracks.length} titre(s))`);
+
+    // Fetch all Spotify track URLs for this album in one API call
+    const spotifyAlbumId = spotifyAlbumIdByAlbum.get(albumId);
+    const spotifyTrackMap = await fetchSpotifyAlbumTracks(spotifyAlbumId, spotifyToken);
+    if (spotifyAlbumId) await delay(200); // gentle pause between Spotify album calls
 
     for (const track of tracks) {
       console.log(`    → ${track.title}`);
       try {
-        // Spotify + Apple Music in parallel; Deezer after 110ms gap (50 req/5s rate limit)
-        const [spot, apl] = await Promise.all([
-          searchSpotifyTrack(artistName, track.title),
-          searchAppleMusicTrack(artistName, track.title),
-        ]);
+        // Spotify: position-based lookup from album tracklist (no per-track search)
+        const posKey = `${track.disc_no ?? 1}-${track.track_no}`;
+        const spot = spotifyTrackMap.get(posKey) ?? null;
+
+        // Apple Music + Deezer: per-track search
         await delay(110);
-        const dz = await searchDeezerTrack(artistName, track.title);
+        const [apl, dz] = await Promise.all([
+          searchAppleMusicTrack(artistName, track.title),
+          searchDeezerTrack(artistName, track.title),
+        ]);
 
         if (!DRY_RUN) {
           await supabase.from('track_metadata').upsert({
@@ -787,10 +839,7 @@ async function runPhase4() {
         console.error(`      ❌ Erreur: ${err.message}`);
         skipped++;
       }
-      await delay(110); // inter-track gap for Deezer rate limit
     }
-
-    if (albumIdx < byAlbum.size) await delay(1000); // inter-album pause
   }
 
   console.log(`\n  Phase 4 terminée — ${done} enrichi(s), ${skipped} ignoré(s).\n`);

@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Waveform — Card album</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream-1:#F5F3EF; --cream-2:#ECE8E1; --cream-3:#E4DFD6;
+    --ink-1:#1C1C1C; --ink-warm:#2A2520; --ink-2:#6B6B6B; --ink-3:#9A9A9A;
+    --accent:#8E6F5E; --accent-deep:#5C4538; --like:#C86C6C; --sage:#7A8471;
+    --border:#D8D3CB; --rule:#C9C2B5; --paper-hi:#FAF8F4; --highlight:#E8D9A8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--cream-1);color:var(--ink-1);font-family:'Inter',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding:72px 40px 120px;position:relative}
+  .eyebrow{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  h1.display{font-family:'Instrument Serif',serif;font-weight:400;font-size:56px;line-height:1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink-warm)}
+  h1.display em{font-style:italic;color:var(--accent-deep)}
+  .lede{color:var(--ink-2);font-size:15px;max-width:580px;line-height:1.55;margin:0 0 56px}
+  .rule{display:flex;align-items:center;gap:10px;margin:48px 0 28px;color:var(--ink-3)}
+  .rule::before,.rule::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .rule span{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+
+  /* Stage */
+  .stage{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;align-items:start}
+  @media (max-width:1000px){.stage{grid-template-columns:1fr}}
+  .stage > .col{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .state-label{font-family:'Inter';font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);align-self:flex-start}
+  .state-desc{font-size:13px;line-height:1.5;color:var(--ink-2);margin:0;align-self:flex-start;max-width:280px}
+
+  /* Card */
+  .card{
+    --pad:14px;
+    width:280px; max-width:100%;
+    background:var(--paper-hi);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:var(--pad) var(--pad) 18px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
+    position:relative;
+    transition:transform .25s ease, box-shadow .25s ease, background .2s ease, border-color .2s ease;
+    cursor:pointer;
+  }
+  .cover{position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1/1;background:var(--cream-3);box-shadow:inset 0 0 0 1px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06)}
+  .cover svg.placeholder{display:block;width:100%;height:100%}
+  .cover::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(0,0,0,.04));
+    mix-blend-mode:overlay;
+  }
+  /* paper grain */
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.06;mix-blend-mode:multiply;border-radius:inherit}
+
+  .meta{padding-top:14px;display:flex;align-items:flex-start;gap:10px}
+  .meta .title-block{flex:1;min-width:0}
+  .title{font-family:'Instrument Serif',serif;font-weight:400;font-size:22px;line-height:1.15;color:var(--ink-warm);margin:0;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .artist{font-family:'Inter';font-size:13px;color:var(--ink-2);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .year{font-family:'Inter';font-size:11px;color:var(--ink-3);letter-spacing:.04em;margin-top:8px;display:flex;align-items:center;gap:8px}
+  .year .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3)}
+
+  /* Rating badge — library-card stamp */
+  .badge{
+    flex-shrink:0;
+    min-width:42px;height:42px;padding:0 8px;
+    background:var(--paper-hi);
+    border:1px solid var(--accent);
+    border-radius:6px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--accent);
+    font-family:'Instrument Serif',serif;
+    line-height:1;
+    position:relative;
+  }
+  .badge .n{font-size:20px;font-style:italic}
+  .badge .d{font-family:'Inter';font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:2px;opacity:.7}
+  .badge.unrated{border:1px dashed var(--rule);color:var(--ink-3)}
+  .badge.unrated .n{font-size:14px;font-style:normal;font-family:'Inter';font-weight:500}
+
+  /* hover state */
+  .card.hover, .card:hover{
+    background:#fff;
+    border-color:#B8AFA0;
+    box-shadow:0 6px 14px rgba(60,40,20,.06), 0 1px 2px rgba(0,0,0,.05);
+    transform:translateY(-2px);
+  }
+  .card.hover .cover, .card:hover .cover{transform:none}
+  .card.hover .cover::before, .card:hover .cover::before{
+    content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%, rgba(0,0,0,.42));z-index:1;
+  }
+  .card.hover .actions, .card:hover .actions{opacity:1;transform:translateY(0)}
+  .actions{
+    position:absolute;left:12px;right:12px;bottom:12px;z-index:2;
+    display:flex;justify-content:space-between;align-items:center;
+    color:#fff;
+    font-family:'Inter';font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s;
+    pointer-events:none;
+  }
+  .actions .pill{
+    background:rgba(255,255,255,.16);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.22);
+    padding:6px 10px;border-radius:99px;display:inline-flex;align-items:center;gap:6px;
+  }
+  .actions .pill svg{width:11px;height:11px}
+  .actions .ico{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:99px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px)}
+  .actions .ico svg{width:13px;height:13px}
+
+  /* rated state */
+  .card.rated{background:var(--paper-hi);border-color:var(--border)}
+  .card.rated .cover::after{box-shadow:inset 0 0 0 2px var(--paper-hi), inset 0 0 0 3px var(--accent);}
+  .corner{position:absolute;top:-1px;right:-1px;width:42px;height:42px;pointer-events:none;overflow:hidden;border-top-right-radius:12px}
+  .corner svg{position:absolute;top:0;right:0}
+  .ribbon{position:absolute;top:8px;left:8px;background:var(--accent-deep);color:#fff;font-family:'Inter';font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:4px 8px;border-radius:4px;z-index:2;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .reviewline{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;line-height:1.4;color:var(--ink-warm)}
+  .reviewline::before{content:"« ";color:var(--accent)}
+  .reviewline::after{content:" »";color:var(--accent)}
+  .when{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+  .when .heart{display:inline-flex;align-items:center;gap:6px;color:var(--like)}
+  .when .heart svg{width:12px;height:12px}
+
+  /* Annotations */
+  .annot{margin-top:18px;width:280px;font-size:12px;line-height:1.5;color:var(--ink-2);padding:14px;background:transparent;border:1px dashed var(--rule);border-radius:8px;align-self:stretch}
+  .annot b{font-weight:500;color:var(--ink-warm);font-family:'Inter'}
+  .annot ul{margin:8px 0 0;padding-left:16px}
+  .annot li{margin-bottom:4px}
+
+  .stamp{position:absolute;top:64px;right:40px;width:96px;height:96px;border:1px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--accent);font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;transform:rotate(-7deg);opacity:.7;text-align:center;line-height:1.1}
+  .stamp::before{content:"";position:absolute;inset:5px;border:1px dashed var(--accent);border-radius:50%}
+  .stamp b{font-style:normal;font-family:'Inter';font-weight:500;font-size:9px;letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">03 — Composant</p>
+  <h1 class="display">La card album, <em>trois moments.</em></h1>
+  <p class="lede">Repos, survol, noté. Le composant le plus répété de l'app — donc celui qui mérite le plus de précision. Cover à filet, titre Instrument Serif, badge de note en tampon de bibliothèque.</p>
+  <div class="stamp">N°3<b>card</b></div>
+
+  <div class="rule"><span>Les trois états</span></div>
+  <div class="stage">
+
+    <!-- REPOS -->
+    <div class="col">
+      <span class="state-label">État 01 — Repos</span>
+      <div class="card" aria-label="Album au repos">
+        <div class="cover">
+          <!-- placeholder cover : abstract striped warm -->
+          <svg class="placeholder" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#3a2a22"/><stop offset="1" stop-color="#7a4d33"/>
+              </linearGradient>
+              <pattern id="s1" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="url(#g1)"/>
+                <rect width="3" height="6" fill="rgba(255,255,255,.06)"/>
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#s1)"/>
+            <circle cx="50" cy="50" r="18" fill="none" stroke="rgba(255,255,255,.4)" stroke-width=".6"/>
+            <circle cx="50" cy="50" r="2" fill="rgba(255,255,255,.65)"/>
+          </svg>
+        </div>
+        <div class="meta">
+          <div class="title-block">
+            <p class="title">Sincèrement</p>
+            <p class="artist">Hamza</p>
+            <p class="year"><span>2022</span><span class="dot"></span><span>R&amp;B</span></p>
+          </div>
+          <div class="badge unrated" title="Non noté"><span class="n">—</span></div>
+        </div>
+      </div>
+      <p class="state-desc">Cover en filet intérieur, titre en serif, badge tireté pour signaler « pas encore noté ». La card respire.</p>
+    </div>
+
+    <!-- HOVER -->
+    <div class="col">
+      <span class="state-label">État 02 — Survol</span>
+      <div class="card hover" aria-label="Album au survol">
+        <div class="cover">
+          <svg class="placeholder" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#1a1a1a"/><stop offset="1" stop-color="#3a3530"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#g2)"/>
+            <polygon points="20,75 50,25 80,75" fill="none" stroke="#e8d9a8" stroke-width=".5"/>
+            <line x1="50" y1="25" x2="86" y2="60" stroke="#c86c6c" stroke-width=".4"/>
+            <line x1="50" y1="25" x2="86" y2="62" stroke="#e8d9a8" stroke-width=".4"/>
+            <line x1="50" y1="25" x2="86" y2="64" stroke="#7a8471" stroke-width=".4"/>
+            <line x1="50" y1="25" x2="86" y2="66" stroke="#8e6f5e" stroke-width=".4"/>
+          </svg>
+          <div class="actions">
+            <span class="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Noter
+            </span>
+            <span class="ico" title="Plus tard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v17l-7-4-7 4z"/></svg>
+            </span>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title-block">
+            <p class="title">The Dark Side of the Moon</p>
+            <p class="artist">Pink Floyd</p>
+            <p class="year"><span>1973</span><span class="dot"></span><span>Rock progressif</span></p>
+          </div>
+          <div class="badge unrated"><span class="n">—</span></div>
+        </div>
+      </div>
+      <p class="state-desc">Élévation discrète, ombre tiédie, fond papier-haut. Sur la cover : actions glassmorphes — noter, ajouter à « À écouter ».</p>
+    </div>
+
+    <!-- RATED -->
+    <div class="col">
+      <span class="state-label">État 03 — Noté</span>
+      <div class="card rated" aria-label="Album noté">
+        <span class="ribbon">Mon journal</span>
+        <div class="cover">
+          <svg class="placeholder" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <radialGradient id="g3" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#e8a85a"/><stop offset=".6" stop-color="#a86530"/><stop offset="1" stop-color="#3a2010"/></radialGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#g3)"/>
+            <g fill="none" stroke="rgba(255,240,200,.55)" stroke-width=".4">
+              <circle cx="50" cy="50" r="10"/><circle cx="50" cy="50" r="18"/><circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="34"/>
+            </g>
+            <circle cx="50" cy="50" r="6" fill="rgba(255,250,240,.85)"/>
+          </svg>
+        </div>
+        <div class="meta">
+          <div class="title-block">
+            <p class="title">Songs in the Key of Life</p>
+            <p class="artist">Stevie Wonder</p>
+            <p class="year"><span>1976</span><span class="dot"></span><span>13 mai</span></p>
+          </div>
+          <div class="badge"><span class="n">9</span><span class="d">/ 10</span></div>
+        </div>
+        <p class="reviewline">Double album, zéro coupe à faire.</p>
+        <div class="when">
+          <span>Écouté le 13 mai</span>
+          <span class="heart">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9C.7 8.5 2.5 4 7 4c2 0 3.5 1 5 3 1.5-2 3-3 5-3 4.5 0 6.3 4.5 4.5 8-2.5 4.5-9.5 9-9.5 9z"/></svg>
+            12
+          </span>
+        </div>
+      </div>
+      <p class="state-desc">Tampon de note en chiffres serif. Ruban brun pour le contexte (journal / liste). Citation italique reprise de la critique.</p>
+    </div>
+  </div>
+
+  <div class="rule"><span>Anatomie</span></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px">
+    <div class="annot"><b>Cover</b><ul>
+      <li>Ratio 1:1, radius 6px (plus serré que la card)</li>
+      <li>Filet intérieur 1px noir 4 %</li>
+      <li>Ombre douce posée, comme une photo</li>
+    </ul></div>
+    <div class="annot"><b>Titre &amp; artiste</b><ul>
+      <li>Titre Instrument Serif 22 / 26</li>
+      <li>Artiste Inter 13, ink-2</li>
+      <li>Année + genre en eyebrow, séparateur point</li>
+    </ul></div>
+    <div class="annot"><b>Badge de note</b><ul>
+      <li>Tampon : bord brun, chiffre italique serif</li>
+      <li>« — » tireté quand non noté</li>
+      <li>« /10 » en micro-label uppercase</li>
+    </ul></div>
+  </div>
+</div>
+</body>
+</html>

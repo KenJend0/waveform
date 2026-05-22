@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Waveform — Palette enrichie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Existants */
+    --cream-1:#F5F3EF; --cream-2:#ECE8E1; --cream-3:#E4DFD6;
+    --ink-1:#1C1C1C; --ink-2:#6B6B6B; --ink-3:#9A9A9A;
+    --accent:#8E6F5E; --like:#C86C6C; --border:#D8D3CB;
+    /* Ajouts */
+    --paper-hi:#FAF8F4;
+    --ink-warm:#2A2520;
+    --accent-deep:#5C4538;
+    --sage:#7A8471;
+    --rule:#C9C2B5;
+    --highlight:#E8D9A8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--cream-1);color:var(--ink-1);font-family:'Inter',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+  .page{max-width:1040px;margin:0 auto;padding:72px 40px 120px}
+  .eyebrow{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  h1.display{font-family:'Instrument Serif',serif;font-weight:400;font-size:56px;line-height:1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink-warm)}
+  h1.display em{font-style:italic;color:var(--accent-deep)}
+  .lede{color:var(--ink-2);font-size:15px;max-width:560px;line-height:1.55;margin:0 0 56px}
+  h2.section{font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;letter-spacing:-.005em;margin:0 0 4px;color:var(--ink-warm)}
+  .section-sub{font-size:13px;color:var(--ink-2);margin:0 0 24px}
+  .rule{display:flex;align-items:center;gap:10px;margin:64px 0 28px;color:var(--ink-3)}
+  .rule::before,.rule::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .rule span{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  @media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .swatch{background:var(--paper-hi);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .chip{height:120px;display:flex;align-items:flex-end;padding:14px}
+  .chip .hex{font-family:'Inter';font-weight:500;font-size:11px;letter-spacing:.06em;padding:3px 7px;border-radius:4px;background:rgba(255,255,255,.7);color:#000;backdrop-filter:saturate(120%)}
+  .chip.dark .hex{background:rgba(0,0,0,.35);color:#fff}
+  .meta{padding:12px 14px 16px;border-top:1px solid var(--border)}
+  .meta .name{font-family:'Instrument Serif',serif;font-size:18px;line-height:1.1;color:var(--ink-warm)}
+  .meta .token{font-family:'Inter';font-size:11px;color:var(--ink-3);letter-spacing:.04em;margin-top:2px}
+  .meta .why{font-size:12px;color:var(--ink-2);line-height:1.45;margin-top:8px;min-height:34px}
+  .pill{display:inline-block;font-family:'Inter';font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--rule);padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}
+  /* Justification block */
+  .notes{margin-top:64px;display:grid;grid-template-columns:1fr 1fr;gap:36px 56px}
+  @media (max-width:760px){.notes{grid-template-columns:1fr}}
+  .note{display:flex;gap:14px;align-items:flex-start}
+  .note .dot{width:14px;height:14px;border-radius:4px;flex-shrink:0;margin-top:4px;border:1px solid rgba(0,0,0,.08)}
+  .note h3{font-family:'Instrument Serif',serif;font-size:19px;font-weight:400;margin:0 0 4px;color:var(--ink-warm)}
+  .note h3 em{font-style:italic;color:var(--accent-deep)}
+  .note p{font-size:13px;line-height:1.5;color:var(--ink-2);margin:0}
+  .stamp{position:absolute;top:64px;right:40px;width:96px;height:96px;border:1px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--accent);font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;transform:rotate(-7deg);opacity:.7;text-align:center;line-height:1.1}
+  .stamp::before{content:"";position:absolute;inset:5px;border:1px dashed var(--accent);border-radius:50%}
+  .stamp b{font-style:normal;font-family:'Inter';font-weight:500;font-size:9px;letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:3px}
+  .header-wrap{position:relative}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header-wrap">
+    <p class="eyebrow">01 — Palette</p>
+    <h1 class="display">Une palette papier, <em>enrichie</em> de trois nuances.</h1>
+    <p class="lede">On garde la charte crème/brun intacte. On ajoute un papier surligné, un encre tiédi, un brun profond pour les états, et un vert sauge rare comme respiration.</p>
+    <div class="stamp">N°1<b>palette</b></div>
+  </div>
+
+  <div class="rule"><span>Fonds &amp; papier</span></div>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#FAF8F4"><span class="hex">#FAF8F4</span></div>
+      <div class="meta"><div class="name">Papier clair <span class="pill">ajout</span></div><div class="token">--paper-hi</div><div class="why">Une crème plus claire pour les cards en hover, modal et zones d'emphase. Apporte une 2e profondeur sans casser le ton.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F5F3EF"><span class="hex">#F5F3EF</span></div>
+      <div class="meta"><div class="name">Crème</div><div class="token">--cream-1</div><div class="why">Fond principal de l'app. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ECE8E1"><span class="hex">#ECE8E1</span></div>
+      <div class="meta"><div class="name">Crème surface</div><div class="token">--cream-2</div><div class="why">Fond des cards d'activité. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E4DFD6"><span class="hex">#E4DFD6</span></div>
+      <div class="meta"><div class="name">Crème profonde</div><div class="token">--cream-3</div><div class="why">Inputs, zones secondaires. Inchangé.</div></div></div>
+  </div>
+
+  <div class="rule"><span>Texte &amp; encre</span></div>
+  <div class="grid">
+    <div class="swatch"><div class="chip dark" style="background:#2A2520"><span class="hex">#2A2520</span></div>
+      <div class="meta"><div class="name">Encre tiède <span class="pill">ajout</span></div><div class="token">--ink-warm</div><div class="why">Pour les titres display en Instrument Serif. Légèrement bruni — moins clinique que #1C1C1C, plus journal.</div></div></div>
+    <div class="swatch"><div class="chip dark" style="background:#1C1C1C"><span class="hex">#1C1C1C</span></div>
+      <div class="meta"><div class="name">Texte principal</div><div class="token">--ink-1</div><div class="why">Corps de texte, Inter. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#6B6B6B"><span class="hex">#6B6B6B</span></div>
+      <div class="meta"><div class="name">Texte secondaire</div><div class="token">--ink-2</div><div class="why">Métadonnées, descriptions. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#9A9A9A"><span class="hex">#9A9A9A</span></div>
+      <div class="meta"><div class="name">Texte tertiaire</div><div class="token">--ink-3</div><div class="why">Eyebrow, timestamps, légendes. Inchangé.</div></div></div>
+  </div>
+
+  <div class="rule"><span>Accents</span></div>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#8E6F5E"><span class="hex" style="color:#fff;background:rgba(0,0,0,.25)">#8E6F5E</span></div>
+      <div class="meta"><div class="name">Brun chaud</div><div class="token">--accent</div><div class="why">Accent principal — notes, liens, ornements. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip dark" style="background:#5C4538"><span class="hex">#5C4538</span></div>
+      <div class="meta"><div class="name">Brun profond <span class="pill">ajout</span></div><div class="token">--accent-deep</div><div class="why">Hover sur l'accent brun, fonds de boutons primaires, italique display. Donne du poids aux états actifs.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#7A8471"><span class="hex" style="color:#fff;background:rgba(0,0,0,.25)">#7A8471</span></div>
+      <div class="meta"><div class="name">Sauge <span class="pill">ajout</span></div><div class="token">--sage</div><div class="why">Accent secondaire rare : badges « suivi », état « écouté », petits points décoratifs. Apporte respiration sans rompre la chaleur.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#C86C6C"><span class="hex" style="color:#fff;background:rgba(0,0,0,.25)">#C86C6C</span></div>
+      <div class="meta"><div class="name">Engagement</div><div class="token">--like</div><div class="why">Likes, cœurs. Inchangé.</div></div></div>
+  </div>
+
+  <div class="rule"><span>Lignes &amp; surligné</span></div>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#D8D3CB"><span class="hex">#D8D3CB</span></div>
+      <div class="meta"><div class="name">Bordure</div><div class="token">--border</div><div class="why">Bordures de cards. Inchangé.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#C9C2B5"><span class="hex">#C9C2B5</span></div>
+      <div class="meta"><div class="name">Filet ornemental <span class="pill">ajout</span></div><div class="token">--rule</div><div class="why">Hairlines décoratifs sur sections, séparateurs « 13 mai », filets autour des ornements.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E8D9A8"><span class="hex">#E8D9A8</span></div>
+      <div class="meta"><div class="name">Surligné <span class="pill">ajout</span></div><div class="token">--highlight</div><div class="why">Surlignage très ponctuel : mot favori dans une critique, jalon « album du mois ». À doser comme un stabilo.</div></div></div>
+    <div class="swatch" style="background:linear-gradient(135deg,#F5F3EF,#ECE8E1);position:relative">
+      <div class="chip" style="background:transparent;position:relative">
+        <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:.5"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2"/><feColorMatrix values="0 0 0 0 0.16  0 0 0 0 0.14  0 0 0 0 0.12  0 0 0 .08 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+        <span class="hex" style="position:relative">grain</span>
+      </div>
+      <div class="meta"><div class="name">Grain de papier <span class="pill">texture</span></div><div class="token">background-blend</div><div class="why">Bruit SVG fractal à 5-8 % d'opacité sur fonds — invisible au premier coup d'œil, palpable à l'usage.</div></div></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><div class="dot" style="background:#FAF8F4;border-color:#D8D3CB"></div><div><h3>Pourquoi <em>un papier plus clair</em> ?</h3><p>La charte a trois crèmes qui descendent. Il manquait une nuance qui monte — pour le hover, le focus, les modales. #FAF8F4 garde la teinte chaude, mais respire.</p></div></div>
+    <div class="note"><div class="dot" style="background:#5C4538"></div><div><h3>Pourquoi <em>un brun profond</em> ?</h3><p>Le brun chaud à #8E6F5E n'a pas d'état hover propre. Le brun profond devient son cousin pour les CTA primaires et l'italique des titres.</p></div></div>
+    <div class="note"><div class="dot" style="background:#7A8471"></div><div><h3>Pourquoi <em>une touche de sauge</em> ?</h3><p>Un journal a souvent une 2e encre. Sauge désaturé pour les états « suivi », « écouté », ou trois petits points entre métadonnées — discret, jamais dominant.</p></div></div>
+    <div class="note"><div class="dot" style="background:#E8D9A8"></div><div><h3>Pourquoi <em>un surligné</em> ?</h3><p>Le geste du stabilo dans un carnet. À garder très rare : un mot dans une critique, un jalon. Sinon ça crie.</p></div></div>
+  </div>
+</div>
+</body>
+</html>

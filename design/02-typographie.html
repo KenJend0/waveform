@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Waveform — Typographie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream-1:#F5F3EF; --cream-2:#ECE8E1; --cream-3:#E4DFD6;
+    --ink-1:#1C1C1C; --ink-warm:#2A2520; --ink-2:#6B6B6B; --ink-3:#9A9A9A;
+    --accent:#8E6F5E; --accent-deep:#5C4538; --like:#C86C6C; --sage:#7A8471;
+    --border:#D8D3CB; --rule:#C9C2B5; --paper-hi:#FAF8F4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--cream-1);color:var(--ink-1);font-family:'Inter',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+  .page{max-width:1040px;margin:0 auto;padding:72px 40px 120px;position:relative}
+  .eyebrow{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  h1.display{font-family:'Instrument Serif',serif;font-weight:400;font-size:56px;line-height:1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink-warm)}
+  h1.display em{font-style:italic;color:var(--accent-deep)}
+  .lede{color:var(--ink-2);font-size:15px;max-width:580px;line-height:1.55;margin:0 0 56px}
+  .rule{display:flex;align-items:center;gap:10px;margin:48px 0 28px;color:var(--ink-3)}
+  .rule::before,.rule::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .rule span{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+
+  /* Pairing */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:end;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:32px 0 36px}
+  .pair .col h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:84px;line-height:.95;margin:0;color:var(--ink-warm)}
+  .pair .col h2 em{font-style:italic;color:var(--accent-deep)}
+  .pair .col.body h2{font-family:'Inter';font-weight:500;font-size:48px;letter-spacing:-.02em;color:var(--ink-1)}
+  .pair .meta{display:flex;justify-content:space-between;margin-top:14px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+  .pair .meta b{font-weight:500;color:var(--ink-2)}
+  .pair .desc{font-size:13px;line-height:1.55;color:var(--ink-2);margin-top:14px}
+  @media (max-width:780px){.pair{grid-template-columns:1fr;gap:24px}.pair .col h2{font-size:64px}.pair .col.body h2{font-size:36px}}
+
+  /* Hierarchy demo */
+  .levels{display:grid;grid-template-columns:160px 1fr;gap:24px 40px;margin-top:32px;align-items:start}
+  @media (max-width:780px){.levels{grid-template-columns:1fr;gap:6px 0}.levels .lvl{margin-top:18px}}
+  .levels .lvl{font-family:'Inter';font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);padding-top:8px;border-top:1px solid var(--rule)}
+  .levels .lvl b{display:block;font-weight:500;color:var(--ink-2);margin-top:4px}
+  .levels .ex{padding-top:8px;border-top:1px solid var(--rule)}
+
+  .ex .h-section{font-family:'Instrument Serif',serif;font-weight:400;font-size:40px;line-height:1.05;color:var(--ink-warm);margin:0}
+  .ex .h-section em{font-style:italic;color:var(--accent-deep)}
+  .ex .h-section-sub{font-family:'Inter';font-size:13px;color:var(--ink-2);margin:6px 0 0}
+
+  .ex .h-card{font-family:'Instrument Serif',serif;font-weight:400;font-size:24px;line-height:1.15;color:var(--ink-warm);margin:0}
+  .ex .h-card-sub{font-family:'Inter';font-size:13px;color:var(--ink-2);margin:2px 0 0}
+
+  .ex .h-meta{font-family:'Inter';font-size:12px;color:var(--ink-2);line-height:1.5;margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ex .h-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3)}
+  .ex .h-meta b{font-weight:500;color:var(--ink-1)}
+
+  .ex .h-label{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0}
+
+  /* Sample card */
+  .sample{margin-top:24px;background:var(--paper-hi);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .sample h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:32px;margin:0 0 4px;color:var(--ink-warm)}
+  .sample h3 em{font-style:italic;color:var(--accent-deep)}
+  .sample .quote{font-family:'Instrument Serif',serif;font-style:italic;font-size:22px;line-height:1.35;color:var(--ink-warm);margin:18px 0 12px;max-width:560px}
+  .sample .quote::before{content:"« ";color:var(--accent)}
+  .sample .quote::after{content:" »";color:var(--accent)}
+  .sample p{font-size:14px;line-height:1.55;color:var(--ink-1);margin:0 0 8px;max-width:620px}
+  .sample p.byline{font-size:12px;color:var(--ink-2);margin-top:14px}
+
+  /* Glyph showcase */
+  .glyphs{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;margin-top:24px;background:var(--paper-hi);border:1px solid var(--border);border-radius:12px;padding:28px}
+  @media (max-width:780px){.glyphs{grid-template-columns:repeat(3,1fr)}}
+  .glyph{font-family:'Instrument Serif',serif;font-size:48px;text-align:center;color:var(--ink-warm);line-height:1}
+  .glyph em{font-style:italic;color:var(--accent-deep)}
+  .glyph .tag{display:block;font-family:'Inter';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
+
+  /* Stamp */
+  .stamp{position:absolute;top:64px;right:40px;width:96px;height:96px;border:1px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--accent);font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;transform:rotate(-7deg);opacity:.7;text-align:center;line-height:1.1}
+  .stamp::before{content:"";position:absolute;inset:5px;border:1px dashed var(--accent);border-radius:50%}
+  .stamp b{font-style:normal;font-family:'Inter';font-weight:500;font-size:9px;letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">02 — Typographie</p>
+  <h1 class="display">Instrument Serif <em>rencontre</em> Inter.</h1>
+  <p class="lede">Une display ouverte, à l'italique très penché — le caractère d'une plume sur un carnet. Inter reste pour tout le corps de texte : on ne change rien à la lisibilité, on ajoute une voix.</p>
+  <div class="stamp">N°2<b>type</b></div>
+
+  <div class="rule"><span>Le duo</span></div>
+  <div class="pair">
+    <div class="col display">
+      <h2>Wave<em>form</em></h2>
+      <div class="meta"><span><b>Instrument Serif</b> · Google Fonts</span><span>display</span></div>
+      <div class="desc">Pour les titres de section, les noms d'albums dans les cards, les titres de pages. Italique réservée à l'emphase et aux mots clefs.</div>
+    </div>
+    <div class="col body">
+      <h2>Aa Éé &amp; 8/10</h2>
+      <div class="meta"><span><b>Inter</b> · 400 / 500 / 600</span><span>body</span></div>
+      <div class="desc">Conservée pour tout le corps de texte, métadonnées, labels, boutons et tableaux. C'est la voix calme de l'app.</div>
+    </div>
+  </div>
+
+  <div class="rule"><span>Glyphes display</span></div>
+  <div class="glyphs">
+    <div class="glyph">A<span class="tag">cap</span></div>
+    <div class="glyph"><em>g</em><span class="tag">italic</span></div>
+    <div class="glyph">&amp;<span class="tag">ampersand</span></div>
+    <div class="glyph">É<span class="tag">accent</span></div>
+    <div class="glyph">8<span class="tag">chiffre</span></div>
+    <div class="glyph">«&#8201;»<span class="tag">guillemets</span></div>
+  </div>
+
+  <div class="rule"><span>Les quatre niveaux</span></div>
+  <div class="levels">
+    <div class="lvl">Niveau 01<b>Titre de section</b></div>
+    <div class="ex">
+      <p class="h-section">Pour <em>toi</em></p>
+      <p class="h-section-sub">Sélectionnés d'après tes notes et tes goûts.</p>
+      <small style="display:block;margin-top:10px;font-size:11px;color:var(--ink-3);letter-spacing:.04em">Instrument Serif · 40/42 · ink-warm + italique accent-deep</small>
+    </div>
+
+    <div class="lvl">Niveau 02<b>Titre de card</b></div>
+    <div class="ex">
+      <p class="h-card">Songs in the Key of Life</p>
+      <p class="h-card-sub">Stevie Wonder</p>
+      <small style="display:block;margin-top:10px;font-size:11px;color:var(--ink-3);letter-spacing:.04em">Instrument Serif · 24/28 · artiste Inter 13</small>
+    </div>
+
+    <div class="lvl">Niveau 03<b>Métadonnée</b></div>
+    <div class="ex">
+      <p class="h-meta"><b>lachaple</b><span class="dot"></span>a écrit quelques mots<span class="dot"></span>6j</p>
+      <small style="display:block;margin-top:10px;font-size:11px;color:var(--ink-3);letter-spacing:.04em">Inter 12/18 · ink-2 · noms en 500 / ink-1</small>
+    </div>
+
+    <div class="lvl">Niveau 04<b>Label / eyebrow</b></div>
+    <div class="ex">
+      <p class="h-label">13 mai · Mon journal</p>
+      <small style="display:block;margin-top:10px;font-size:11px;color:var(--ink-3);letter-spacing:.04em">Inter 11 · uppercase · letter-spacing .22em · ink-3</small>
+    </div>
+  </div>
+
+  <div class="rule"><span>Mise en situation</span></div>
+  <div class="sample">
+    <p class="h-label" style="margin-bottom:8px">Critique du jour</p>
+    <h3>Songs in the Key of <em>Life</em></h3>
+    <p class="h-card-sub">Stevie Wonder · 1976</p>
+    <p class="quote">Je l'ai mis pendant que je faisais la vaisselle et j'ai fini par tout poser pour écouter.</p>
+    <p>Quand un album dure deux heures et que tu redémarres la face A à la fin, c'est qu'il y a quelque chose. Notation maximale, sans hésiter — peut-être le seul double album qui ne mérite pas d'être coupé.</p>
+    <p class="byline">lachaple · 13 mai · noté <b style="color:var(--accent);font-weight:500">10/10</b></p>
+  </div>
+</div>
+</body>
+</html>

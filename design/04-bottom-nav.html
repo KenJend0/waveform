@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Waveform — Bottom nav</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream-1:#F5F3EF; --cream-2:#ECE8E1; --cream-3:#E4DFD6;
+    --ink-1:#1C1C1C; --ink-warm:#2A2520; --ink-2:#6B6B6B; --ink-3:#9A9A9A;
+    --accent:#8E6F5E; --accent-deep:#5C4538; --like:#C86C6C; --sage:#7A8471;
+    --border:#D8D3CB; --rule:#C9C2B5; --paper-hi:#FAF8F4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--cream-1);color:var(--ink-1);font-family:'Inter',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+  .page{max-width:1100px;margin:0 auto;padding:72px 40px 120px;position:relative}
+  .eyebrow{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  h1.display{font-family:'Instrument Serif',serif;font-weight:400;font-size:56px;line-height:1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink-warm)}
+  h1.display em{font-style:italic;color:var(--accent-deep)}
+  .lede{color:var(--ink-2);font-size:15px;max-width:580px;line-height:1.55;margin:0 0 56px}
+  .rule{display:flex;align-items:center;gap:10px;margin:48px 0 28px;color:var(--ink-3)}
+  .rule::before,.rule::after{content:"";flex:1;height:1px;background:var(--rule)}
+  .rule span{font-family:'Inter';font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+
+  /* Phone */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:48px;align-items:start}
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  .col h3.colt{font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;margin:0 0 4px;color:var(--ink-warm)}
+  .col h3.colt em{font-style:italic;color:var(--accent-deep)}
+  .col .colsub{font-size:13px;color:var(--ink-2);margin:0 0 22px}
+
+  .phone{
+    width:340px;max-width:100%;margin:0 auto;
+    background:var(--cream-1);
+    border:1px solid var(--rule);
+    border-radius:40px;
+    padding:14px;
+    box-shadow:0 24px 48px -16px rgba(60,40,20,.15), 0 2px 4px rgba(60,40,20,.06);
+    position:relative;
+  }
+  .phone::before{content:"";position:absolute;top:24px;left:50%;transform:translateX(-50%);width:84px;height:24px;background:#1C1C1C;border-radius:99px;z-index:5}
+  .screen{
+    background:var(--cream-1);
+    border-radius:28px;overflow:hidden;
+    position:relative;
+    height:560px;
+    display:flex;flex-direction:column;
+  }
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-family:'Inter';font-size:13px;font-weight:600;color:var(--ink-1)}
+  .statusbar .right{display:flex;gap:5px;align-items:center}
+  .statusbar svg{width:14px;height:14px}
+  .content{flex:1;overflow:hidden;padding:46px 24px 24px;position:relative}
+  .content h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:38px;margin:0;color:var(--ink-warm)}
+  .content .sub{font-size:13px;color:var(--ink-2);margin:4px 0 18px}
+  .ph-card{background:var(--cream-2);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
+  .ph-card b{font-family:'Inter';font-weight:500;color:var(--ink-1)}
+
+  /* NAV — variant A : floating pill with seal */
+  .nav{
+    position:absolute;left:14px;right:14px;bottom:14px;
+    background:rgba(250,248,244,.88);
+    backdrop-filter:blur(14px) saturate(120%);
+    -webkit-backdrop-filter:blur(14px) saturate(120%);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:8px 6px 10px;
+    box-shadow:0 8px 20px -8px rgba(60,40,20,.18), 0 1px 2px rgba(0,0,0,.04);
+    display:grid;grid-template-columns:repeat(4,1fr);
+    z-index:4;
+  }
+  .nav .tab{
+    appearance:none;background:transparent;border:0;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:6px 4px;cursor:pointer;
+    color:var(--ink-3);
+    position:relative;font-family:'Inter';font-size:11px;letter-spacing:.04em;
+    transition:color .2s ease;
+  }
+  .nav .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .nav .tab.active{color:var(--ink-warm)}
+  .nav .tab.active svg{stroke-width:1.8}
+  .nav .tab.active::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:18px;height:2px;background:var(--accent);border-radius:2px}
+  .nav .tab .label{font-weight:500}
+  .nav .tab.active .label{color:var(--accent-deep)}
+
+  /* Add button — center signature */
+  .nav .tab.add{position:relative}
+  .nav .tab.add .ink{
+    width:34px;height:34px;border-radius:10px;background:var(--ink-warm);color:var(--paper-hi);
+    display:flex;align-items:center;justify-content:center;margin-bottom:2px;
+    box-shadow:0 4px 10px -2px rgba(60,40,20,.3), inset 0 1px 0 rgba(255,255,255,.06);
+    transform:rotate(-4deg);
+  }
+  .nav .tab.add .ink svg{width:16px;height:16px;stroke:currentColor;stroke-width:2}
+  .nav .tab.add .label{margin-top:2px}
+
+  /* Profile avatar */
+  .nav .tab .avatar{width:24px;height:24px;border-radius:99px;background:linear-gradient(135deg,#c8a888,#7a4d33);position:relative;overflow:hidden;border:1px solid var(--rule)}
+  .nav .tab.active .avatar{box-shadow:0 0 0 2px var(--paper-hi), 0 0 0 3px var(--accent)}
+
+  /* Variant B : minimal underline only */
+  .nav.b{background:var(--cream-1);backdrop-filter:none;border-left:0;border-right:0;border-bottom:0;border-radius:0;border-top:1px solid var(--rule);box-shadow:none;padding:10px 4px 12px;left:0;right:0;bottom:0}
+  .nav.b .tab.active::after{display:none}
+  .nav.b .tab.active{color:var(--ink-warm)}
+  .nav.b .tab.active .icowrap{position:relative}
+  .nav.b .tab.active .icowrap::after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:4px;height:4px;background:var(--accent);border-radius:99px}
+  .nav.b .tab.add .ink{background:transparent;color:var(--ink-warm);box-shadow:none;border:1px dashed var(--accent);transform:rotate(0)}
+  .nav.b .tab.add .ink svg{stroke:var(--accent)}
+
+  /* Annot */
+  .annot{margin-top:24px;font-size:12px;line-height:1.5;color:var(--ink-2);padding:14px 16px;border:1px dashed var(--rule);border-radius:8px}
+  .annot b{font-family:'Inter';font-weight:500;color:var(--ink-warm)}
+  .annot ul{margin:8px 0 0;padding-left:16px}
+  .annot li{margin-bottom:4px}
+
+  .stamp{position:absolute;top:64px;right:40px;width:96px;height:96px;border:1px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--accent);font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;transform:rotate(-7deg);opacity:.7;text-align:center;line-height:1.1}
+  .stamp::before{content:"";position:absolute;inset:5px;border:1px dashed var(--accent);border-radius:50%}
+  .stamp b{font-style:normal;font-family:'Inter';font-weight:500;font-size:9px;letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">04 — Navigation</p>
+  <h1 class="display">La barre du <em>bas,</em> signature.</h1>
+  <p class="lede">Deux directions, même grammaire. Bouton « Ajouter » en encrier — un petit volume avec rotation discrète qui devient le geste signature de l'app. Onglet actif souligné en brun chaud, avec un filet plutôt qu'un fond.</p>
+  <div class="stamp">N°4<b>nav</b></div>
+
+  <div class="rule"><span>Deux directions</span></div>
+  <div class="grid">
+
+    <!-- VARIANT A -->
+    <div class="col">
+      <h3 class="colt">Direction <em>A</em> — flottante</h3>
+      <p class="colsub">Pilule détachée, fond papier translucide, ombre douce. Recommandée.</p>
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="right">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 17a15 15 0 0 1 20 0"/><circle cx="12" cy="20" r="1.5"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 8h20v8H2z" opacity=".3"/><path d="M4 10h14v4H4z"/></svg>
+          </div></div>
+          <div class="content">
+            <h2>Feed</h2>
+            <p class="sub">Ce qui se passe autour de toi.</p>
+            <div class="ph-card"><b>lachaple</b> · a écrit quelques mots</div>
+            <div class="ph-card"><b>Ra_u</b> · a aimé ton écoute</div>
+            <div class="ph-card"><b>judithmachado</b> · a commencé à te suivre</div>
+            <nav class="nav" role="tablist">
+              <button class="tab active" role="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg><span class="label">Feed</span></button>
+              <button class="tab" role="tab"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><span class="label">Explorer</span></button>
+              <button class="tab add" role="tab"><span class="ink"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></span><span class="label">Ajouter</span></button>
+              <button class="tab" role="tab"><span class="avatar"></span><span class="label">Moi</span></button>
+            </nav>
+          </div>
+        </div>
+      </div>
+      <div class="annot"><b>Signaux</b><ul>
+        <li>Filet brun de 2px sur l'onglet actif (au-dessus de l'icône)</li>
+        <li>Bouton « Ajouter » : petit volume incliné -4°, encre tiède sur papier</li>
+        <li>Avatar bordé d'un filet brun quand « Moi » est actif</li>
+        <li>Fond papier-haut translucide avec flou (88 % opacité)</li>
+      </ul></div>
+    </div>
+
+    <!-- VARIANT B -->
+    <div class="col">
+      <h3 class="colt">Direction <em>B</em> — filet papier</h3>
+      <p class="colsub">Pleine largeur, hairline en haut, point brun sous l'onglet actif. Plus carnet.</p>
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><div class="right">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 17a15 15 0 0 1 20 0"/><circle cx="12" cy="20" r="1.5"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 8h20v8H2z" opacity=".3"/><path d="M4 10h14v4H4z"/></svg>
+          </div></div>
+          <div class="content" style="padding-bottom:0">
+            <h2>Explorer</h2>
+            <p class="sub">Découvre de la musique.</p>
+            <div class="ph-card"><b>Pour toi</b> · 24 albums</div>
+            <div class="ph-card"><b>Tendances</b> · cette semaine</div>
+            <div class="ph-card"><b>Hors de ta bulle</b> · pour s'aérer</div>
+          </div>
+          <nav class="nav b" role="tablist" style="position:static">
+            <button class="tab" role="tab"><span class="icowrap"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="label">Feed</span></button>
+            <button class="tab active" role="tab"><span class="icowrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg></span><span class="label">Explorer</span></button>
+            <button class="tab add" role="tab"><span class="ink"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></span><span class="label">Ajouter</span></button>
+            <button class="tab" role="tab"><span class="avatar"></span><span class="label">Moi</span></button>
+          </nav>
+        </div>
+      </div>
+      <div class="annot"><b>Signaux</b><ul>
+        <li>Filet papier 1px séparant nav et contenu</li>
+        <li>Point brun (4px) sous l'icône active — comme un marque-page</li>
+        <li>Bouton « Ajouter » : carré tireté, plus discret</li>
+        <li>À privilégier si on veut un look encore plus carnet</li>
+      </ul></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

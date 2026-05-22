@@ -43,7 +43,7 @@ export default function SavedTracks({ albums }: Props) {
       <div className="mb-6 relative inline-block">
         <button
           onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-          className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
+          className="text-label text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
         >
           Trié par: <span className="font-medium text-text-primary">{SORT_LABELS[sortBy]}</span>
           <span className="text-[10px]">▾</span>
@@ -58,7 +58,7 @@ export default function SavedTracks({ albums }: Props) {
                   setSortBy(option);
                   setSortDropdownOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-[12px] transition-colors duration-150 ${
+                className={`w-full text-left px-3 py-2 text-label transition-colors duration-150 ${
                   sortBy === option
                     ? "bg-background-secondary text-text-primary font-medium"
                     : "text-text-tertiary hover:bg-background-secondary"
@@ -93,7 +93,7 @@ export default function SavedTracks({ albums }: Props) {
 
           {/* Info below cover */}
           <div className="mt-2 text-left">
-            <p className="text-[12px] font-medium text-text-primary truncate">{album.album_title}</p>
+            <p className="text-label font-medium text-text-primary truncate">{album.album_title}</p>
             <p className="text-[10px] text-text-tertiary truncate">{album.artist_name}</p>
           </div>
         </div>

@@ -180,19 +180,19 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             {confirmDelete && (
                 <div className="fixed inset-0 bg-[#1C1C1C]/20 flex items-center justify-center z-50 p-4">
                     <div className="bg-background rounded-[12px] p-6 max-w-md w-full border border-border">
-                        <h2 className="text-[14px] font-medium text-text-primary mb-2">Supprimer cette liste ?</h2>
-                        <p className="text-[12px] text-text-secondary mb-4">Cette action ne peut pas être annulée.</p>
+                        <h2 className="text-meta font-medium font-sans text-text-primary mb-2">Supprimer cette liste ?</h2>
+                        <p className="text-label text-text-secondary mb-4">Cette action ne peut pas être annulée.</p>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setConfirmDelete(false)}
-                                className="flex-1 px-3 py-2.5 bg-background-secondary hover:bg-background-tertiary text-text-primary rounded-[8px] text-[14px] transition-colors"
+                                className="flex-1 px-3 py-2.5 bg-background-secondary hover:bg-background-tertiary text-text-primary rounded-[8px] text-meta transition-colors"
                             >
                                 Annuler
                             </button>
                             <button
                                 onClick={handleDelete}
                                 disabled={deleting}
-                                className="flex-1 px-3 py-2.5 bg-[#C86C6C] hover:opacity-85 text-[#F5F3EF] rounded-[8px] text-[14px] disabled:opacity-50 transition-opacity"
+                                className="flex-1 px-3 py-2.5 bg-[#C86C6C] hover:opacity-85 text-[#F5F3EF] rounded-[8px] text-meta disabled:opacity-50 transition-opacity"
                             >
                                 {deleting ? "Suppression…" : "Supprimer"}
                             </button>

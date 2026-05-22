@@ -55,7 +55,7 @@ export default function ProfileTabs({ isMe, userId, diaryEntries, userLists, tra
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "diary", label: isMe ? "Mon journal" : "Journal" },
-    { id: "reviews", label: "Revues" },
+    { id: "reviews", label: "Critiques" },
     ...(isMe ? [{ id: "lists" as TabId, label: "Listes" }] : []),
   ];
 
@@ -68,9 +68,9 @@ export default function ProfileTabs({ isMe, userId, diaryEntries, userLists, tra
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`text-[14px] pb-3 transition-colors duration-150 border-b-2 ${
+            className={`text-meta pb-3 transition-colors duration-150 border-b-2 ${
               activeTab === tab.id
-                ? "text-text-primary border-[#1C1C1C]"
+                ? "text-accent-deep border-accent"
                 : "text-text-tertiary hover:text-text-secondary border-transparent"
             }`}
           >

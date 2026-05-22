@@ -13,16 +13,16 @@ type AlbumSort = "date_listened" | "release_date" | "personal_rating";
 type TrackSort = "date_listened" | "personal_rating";
 type MediaFilter = "albums" | "titres";
 
-const ALBUM_SORT_LABELS: Record<AlbumSort, string> = {
+const ALBUM_SORT_LABELS = (ratingLabel: string): Record<AlbumSort, string> => ({
   date_listened: "Date d'écoute",
   release_date: "Date de parution",
-  personal_rating: "Ma note",
-};
+  personal_rating: ratingLabel,
+});
 
-const TRACK_SORT_LABELS: Record<TrackSort, string> = {
+const TRACK_SORT_LABELS = (ratingLabel: string): Record<TrackSort, string> => ({
   date_listened: "Date d'écoute",
-  personal_rating: "Ma note",
-};
+  personal_rating: ratingLabel,
+});
 
 const PAGE_SIZE = 51;
 
@@ -31,9 +31,10 @@ type Props = {
   isMe: boolean;
   trackEntries?: TrackDiaryEntryUI[];
   userId?: string;
+  ratingLabel?: string;
 };
 
-export default function DiaryList({ entries, isMe, trackEntries, userId }: Props) {
+export default function DiaryList({ entries, isMe, trackEntries, userId, ratingLabel = "Ma note" }: Props) {
   const showToggle = trackEntries !== undefined;
   const [media, setMedia] = useState<MediaFilter>("albums");
 
@@ -93,7 +94,9 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
     return new Date(b.listened_at).getTime() - new Date(a.listened_at).getTime();
   });
 
-  const currentSortLabel = media === "albums" ? ALBUM_SORT_LABELS[albumSort] : TRACK_SORT_LABELS[trackSort];
+  const albumSortLabels = ALBUM_SORT_LABELS(ratingLabel);
+  const trackSortLabels = TRACK_SORT_LABELS(ratingLabel);
+  const currentSortLabel = media === "albums" ? albumSortLabels[albumSort] : trackSortLabels[trackSort];
 
   return (
     <div>
@@ -102,30 +105,30 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
         <div className="relative inline-block">
           <button
             onClick={() => setSortOpen((v) => !v)}
-            className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
+            className="text-label text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
           >
             Trié par: <span className="font-medium text-text-primary">{currentSortLabel}</span>
             <span className="text-[10px]">▾</span>
           </button>
           {sortOpen && (
-            <div className="absolute top-full mt-2 bg-background border border-border rounded-[8px] z-10 min-w-max">
+            <div className="absolute top-full mt-2 bg-background border border-border rounded-button z-10 min-w-max">
               {media === "albums"
-                ? (Object.entries(ALBUM_SORT_LABELS) as [AlbumSort, string][]).map(([opt, label]) => (
+                ? (Object.entries(albumSortLabels) as [AlbumSort, string][]).map(([opt, label]) => (
                     <button
                       key={opt}
                       onClick={() => { setAlbumSort(opt); setSortOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-[12px] transition-colors duration-150 ${
+                      className={`w-full text-left px-3 py-2 text-label transition-colors duration-150 ${
                         albumSort === opt ? "bg-background-secondary text-text-primary font-medium" : "text-text-tertiary hover:bg-background-secondary"
                       }`}
                     >
                       {label}
                     </button>
                   ))
-                : (Object.entries(TRACK_SORT_LABELS) as [TrackSort, string][]).map(([opt, label]) => (
+                : (Object.entries(trackSortLabels) as [TrackSort, string][]).map(([opt, label]) => (
                     <button
                       key={opt}
                       onClick={() => { setTrackSort(opt); setSortOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-[12px] transition-colors duration-150 ${
+                      className={`w-full text-left px-3 py-2 text-label transition-colors duration-150 ${
                         trackSort === opt ? "bg-background-secondary text-text-primary font-medium" : "text-text-tertiary hover:bg-background-secondary"
                       }`}
                     >
@@ -138,7 +141,7 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
         </div>
 
         {showToggle && (
-          <div className="flex items-center gap-1 text-[12px]">
+          <div className="flex items-center gap-1 text-label">
             <button
               onClick={() => { setMedia("albums"); setSortOpen(false); }}
               className={`transition-colors duration-150 ${
@@ -166,12 +169,12 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
           <div className="text-center text-text-tertiary py-12">Aucune entrée dans le journal</div>
         ) : (
           <>
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
               {sortedAlbums.map((entry) => (
                 <div key={entry.id} className="flex flex-col">
                   <Link
                     href={`/diary/${entry.id}`}
-                    className="group relative block aspect-square rounded-[10px] overflow-hidden"
+                    className="group relative block aspect-square rounded-cover overflow-hidden"
                   >
                     {entry.cover_url ? (
                       <CoverImage
@@ -184,19 +187,16 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
                     ) : (
                       <div className="w-full h-full bg-background-tertiary" />
                     )}
+                    {entry.rating && (
+                      <span className="absolute top-1.5 right-1.5 inline-flex items-baseline gap-0.5 bg-paper-hi/90 border border-accent rounded-badge-sm px-1.5 py-0.5 text-accent font-display italic text-[13px] leading-none backdrop-blur-sm">
+                        {Math.round(entry.rating)}
+                        <span className="font-sans not-italic text-[8px] tracking-[0.14em] uppercase opacity-70">/10</span>
+                      </span>
+                    )}
                   </Link>
                   <div className="mt-2">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-medium text-text-primary truncate">{entry.album_title}</p>
-                        <p className="text-[10px] text-text-tertiary truncate">{entry.artist_name}</p>
-                      </div>
-                      {entry.rating && (
-                        <div className="text-[#8E6F5E] font-medium text-[12px] ml-2 flex-shrink-0">
-                          {Math.round(entry.rating)}/10
-                        </div>
-                      )}
-                    </div>
+                    <p className="font-display font-normal text-sm text-text-warm line-clamp-2 leading-snug">{entry.album_title}</p>
+                    <p className="text-label text-text-tertiary truncate mt-0.5">{entry.artist_name}</p>
                   </div>
                 </div>
               ))}
@@ -206,7 +206,7 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
                 <button
                   onClick={loadMoreAlbums}
                   disabled={albumLoadingMore}
-                  className="text-[13px] text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
+                  className="text-sm text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
                 >
                   {albumLoadingMore ? "Chargement…" : "Charger plus"}
                 </button>
@@ -222,10 +222,10 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
           <div className="text-center text-text-tertiary py-12">Aucun titre noté pour le moment</div>
         ) : (
           <>
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
               {sortedTracks.map((entry) => (
                 <Link key={entry.id} href={`/tracks/${entry.track_id}`} className="group">
-                  <div className="aspect-square rounded-[10px] overflow-hidden bg-background-secondary relative">
+                  <div className="aspect-square rounded-cover overflow-hidden bg-background-secondary relative">
                     {entry.cover_url ? (
                       <Image src={entry.cover_url} alt={entry.track_title} fill className="object-cover" />
                     ) : (
@@ -233,16 +233,17 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
                         <span className="text-text-disabled text-[20px]">♪</span>
                       </div>
                     )}
-                  </div>
-                  <div className="mt-1.5 flex items-start justify-between gap-1">
-                    <p className="text-[12px] text-text-primary font-medium truncate leading-snug group-hover:text-[#8E6F5E] transition-colors flex-1 min-w-0">
-                      {entry.track_title}
-                    </p>
                     {entry.rating !== null && (
-                      <span className="text-[11px] text-[#8E6F5E] font-medium flex-shrink-0">{entry.rating}/10</span>
+                      <span className="absolute top-1.5 right-1.5 inline-flex items-baseline gap-0.5 bg-paper-hi/90 border border-accent rounded-badge-sm px-1.5 py-0.5 text-accent font-display italic text-[13px] leading-none backdrop-blur-sm">
+                        {Math.round(entry.rating)}
+                        <span className="font-sans not-italic text-[8px] tracking-[0.14em] uppercase opacity-70">/10</span>
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-text-tertiary truncate">{entry.artist_name}</p>
+                  <div className="mt-2">
+                    <p className="font-display font-normal text-sm text-text-warm line-clamp-2 leading-snug">{entry.track_title}</p>
+                    <p className="text-label text-text-tertiary truncate mt-0.5">{entry.artist_name}</p>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -251,7 +252,7 @@ export default function DiaryList({ entries, isMe, trackEntries, userId }: Props
                 <button
                   onClick={loadMoreTracks}
                   disabled={trackLoadingMore}
-                  className="text-[13px] text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
+                  className="text-sm text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
                 >
                   {trackLoadingMore ? "Chargement…" : "Charger plus"}
                 </button>

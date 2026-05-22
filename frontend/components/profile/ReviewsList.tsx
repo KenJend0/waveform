@@ -67,7 +67,7 @@ export default function ReviewsList({ reviews }: Props) {
       <div className="mb-6 relative inline-block">
         <button
           onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-          className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
+          className="text-label text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
         >
           Trié par: <span className="font-medium text-text-primary">{SORT_LABELS[sortBy]}</span>
           <span className="text-[10px]">▾</span>
@@ -78,7 +78,7 @@ export default function ReviewsList({ reviews }: Props) {
               <button
                 key={option}
                 onClick={() => { setSortBy(option); setSortDropdownOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-[12px] transition-colors duration-150 ${
+                className={`w-full text-left px-3 py-2 text-label transition-colors duration-150 ${
                   sortBy === option ? "bg-background-secondary text-text-primary font-medium" : "text-text-tertiary hover:bg-background-secondary"
                 }`}
               >
@@ -93,8 +93,11 @@ export default function ReviewsList({ reviews }: Props) {
         {sorted.map((review) => (
           <article
             key={`${review.type}-${review.id}`}
-            className="min-w-0 p-4 border border-border hover:border-[#8E6F5E] transition-colors duration-150 flex gap-4 bg-background-secondary rounded-[12px]"
+            className="relative min-w-0 p-4 border border-border transition-colors duration-150 flex gap-4 bg-background-secondary rounded-[12px] overflow-hidden"
           >
+            {/* Barre accent gauche */}
+            <div className="absolute left-0 top-5 bottom-5 w-0.5 bg-accent opacity-40 rounded-r-full" />
+
             {/* Cover */}
             {review.cover_url && (
               <Link href={review.href} className="flex-shrink-0">
@@ -113,49 +116,50 @@ export default function ReviewsList({ reviews }: Props) {
 
             <div className="flex-1 min-w-0 flex flex-col justify-between">
               <div className="mb-3">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Link href={review.href} className="hover:text-[#8E6F5E] transition-colors duration-150 block flex-1 min-w-0">
-                    <h3 className="font-medium text-[14px] text-text-primary truncate">{review.title}</h3>
+                <div className="flex items-start gap-2 mb-0.5">
+                  <Link href={review.href} className="hover:text-accent transition-colors duration-150 block flex-1 min-w-0">
+                    <p className="font-display font-normal text-[18px] text-text-warm leading-snug line-clamp-2">{review.title}</p>
                   </Link>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                    review.type === 'track'
-                      ? 'bg-background-tertiary text-text-tertiary'
-                      : 'bg-background-tertiary text-text-tertiary'
-                  }`}>
-                    {review.type === 'track' ? 'Titre' : 'Album'}
+                  <span className="font-display italic text-sm text-accent border border-accent rounded-full px-2 py-0.5 leading-snug flex-shrink-0 bg-[#FAF8F4]">
+                    {review.type === 'track' ? 'titre' : 'album'}
                   </span>
                 </div>
-                <span className="text-text-tertiary text-[12px]">{review.subtitle}</span>
+                <div className="flex flex-col gap-1.5 mt-0.5">
+                  <span className="text-text-tertiary text-label">{review.subtitle}</span>
+                  {review.rating && (
+                    <span className="inline-flex items-baseline gap-0.5 bg-[#FAF8F4] border border-accent rounded-[6px] px-1.5 py-0.5 text-accent font-display italic text-[15px] leading-none w-fit">
+                      {Math.round(review.rating)}
+                      <span className="font-sans not-italic text-[9px] tracking-[0.16em] uppercase opacity-70">/10</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               {review.review_body && (
-                <p className="text-[14px] leading-[1.6] text-text-secondary line-clamp-3 mb-3">{review.review_body}</p>
+                <p className="italic text-meta leading-relaxed text-text-secondary line-clamp-3 mb-3">
+                  &laquo;&thinsp;{review.review_body}&thinsp;&raquo;
+                </p>
               )}
 
-              <div className="flex items-center justify-between pt-3 border-t border-border-divider">
-                {review.rating && (
-                  <div className="text-[#8E6F5E] font-medium text-[12px]">
-                    {Math.round(review.rating)}/10
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-[12px] text-text-tertiary ml-auto">
+              <div className="flex items-center justify-end gap-4 pt-3 border-t border-rule">
+                <div className="flex items-center gap-4 text-label text-text-tertiary">
                   <button
                     onClick={() => handleLike(review.id, review.type)}
                     disabled={likesState[review.id]?.liking}
-                    className="flex items-center gap-1 hover:text-[#C86C6C] transition-colors duration-150 disabled:opacity-50"
+                    className="flex items-center gap-1.5 hover:text-like transition-colors duration-150 disabled:opacity-50"
                   >
                     <Heart
                       size={14}
-                      className={likesState[review.id]?.isLiked ? "fill-[#C86C6C] text-[#C86C6C]" : ""}
+                      className={likesState[review.id]?.isLiked ? "fill-like text-like" : ""}
                     />
-                    <span>{likesState[review.id]?.likesCount ?? review.likes_count}</span>
+                    <span>{likesState[review.id]?.likesCount ? `${likesState[review.id].likesCount} ` : ''}J'aime</span>
                   </button>
                   <Link
                     href={`${review.href}#comments`}
-                    className="flex items-center gap-1 text-text-tertiary hover:text-text-primary transition-colors duration-150"
+                    className="flex items-center gap-1.5 text-text-tertiary hover:text-text-primary transition-colors duration-150"
                   >
                     <MessageCircle size={14} />
-                    <span className="text-[12px]">{review.comments_count ?? 0}</span>
+                    <span>Répondre</span>
                   </Link>
                 </div>
               </div>

@@ -56,7 +56,7 @@ export default function TracksList({ userId, initialEntries }: Props) {
             <div className="mb-6 relative inline-block">
                 <button
                     onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-                    className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
+                    className="text-label text-text-tertiary hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
                 >
                     Trié par: <span className="font-medium text-text-primary">{SORT_LABELS[sortBy]}</span>
                     <span className="text-[10px]">▾</span>
@@ -67,7 +67,7 @@ export default function TracksList({ userId, initialEntries }: Props) {
                             <button
                                 key={key}
                                 onClick={() => { setSortBy(key); setSortDropdownOpen(false); }}
-                                className={`w-full text-left px-4 py-2.5 text-[13px] hover:bg-background-secondary transition-colors duration-150 ${
+                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-background-secondary transition-colors duration-150 ${
                                     sortBy === key ? "text-text-primary font-medium" : "text-text-secondary"
                                 }`}
                             >
@@ -97,14 +97,14 @@ export default function TracksList({ userId, initialEntries }: Props) {
                             )}
                         </div>
                         <div className="mt-1.5 flex items-start justify-between gap-1">
-                            <p className="text-[12px] text-text-primary font-medium truncate leading-snug group-hover:text-[#8E6F5E] transition-colors flex-1 min-w-0">
+                            <p className="text-label text-text-primary font-medium truncate leading-snug group-hover:text-accent transition-colors flex-1 min-w-0">
                                 {entry.track_title}
                             </p>
                             {entry.rating !== null && (
-                                <span className="text-[11px] text-[#8E6F5E] font-medium flex-shrink-0">{entry.rating}/10</span>
+                                <span className="text-label text-accent font-medium flex-shrink-0">{entry.rating}/10</span>
                             )}
                         </div>
-                        <p className="text-[11px] text-text-tertiary truncate">{entry.artist_name}</p>
+                        <p className="text-label text-text-tertiary truncate">{entry.artist_name}</p>
                     </Link>
                 ))}
             </div>
@@ -114,7 +114,7 @@ export default function TracksList({ userId, initialEntries }: Props) {
                     <button
                         onClick={loadMore}
                         disabled={loadingMore}
-                        className="text-[13px] text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
+                        className="text-sm text-text-tertiary hover:text-text-primary transition-colors duration-150 disabled:opacity-50"
                     >
                         {loadingMore ? "Chargement…" : "Charger plus"}
                     </button>

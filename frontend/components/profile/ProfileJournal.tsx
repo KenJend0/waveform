@@ -45,12 +45,12 @@ export default function ProfileJournal({ entries }: ProfileJournalProps) {
             <Link
               key={entry.id}
               href={`/diary/${entry.id}`}
-              className="group block border border-border hover:border-[#8E6F5E] transition-colors duration-150 p-4 bg-background-secondary rounded-[12px] flex gap-4"
+              className="group block border border-border hover:border-accent transition-colors duration-150 p-4 bg-background-secondary rounded-card flex gap-4"
             >
               {/* Cover */}
               {album.cover_url && (
                 <div className="flex-shrink-0 relative" style={{ width: 64 }}>
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[10px] overflow-hidden relative">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-cover overflow-hidden relative">
                     <CoverImage src={album.cover_url} alt={album.title} fill className="object-cover" placeholder={<div className="w-full h-full bg-background-tertiary" />} />
                   </div>
                 </div>
@@ -61,26 +61,26 @@ export default function ProfileJournal({ entries }: ProfileJournalProps) {
                 {/* Header: Album title + Rating */}
                 <div className="flex justify-between items-start gap-4">
                   <div className="min-w-0">
-                    <h2 className="text-[16px] font-medium text-text-primary group-hover:text-[#8E6F5E] transition-colors duration-150 truncate">
+                    <p className="font-display font-normal text-sm text-text-warm line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
                       {album.title}
-                    </h2>
-                    <p className="text-[12px] text-text-tertiary mt-1 truncate">{album.artists?.name}</p>
+                    </p>
+                    <p className="text-label text-text-tertiary mt-1 truncate">{album.artists?.name}</p>
                   </div>
                   {entry.rating && (
-                    <div className="flex-shrink-0 text-[12px] font-medium text-[#8E6F5E] whitespace-nowrap">
+                    <div className="flex-shrink-0 text-label font-medium text-accent whitespace-nowrap">
                       {entry.rating}/10
                     </div>
                   )}
                 </div>
 
                 {/* Date */}
-                <div className="text-[12px] text-text-tertiary mt-2">
+                <div className="text-label text-text-tertiary mt-2">
                   {new Date(entry.listened_at).toLocaleDateString("fr-FR")}
                 </div>
 
                 {/* Review text */}
                 {entry.review_body && (
-                  <p className="text-[14px] text-text-secondary leading-[1.6] mt-3 line-clamp-3">
+                  <p className="text-meta text-text-secondary leading-[1.6] mt-3 line-clamp-3">
                     {entry.review_body}
                   </p>
                 )}
@@ -94,7 +94,7 @@ export default function ProfileJournal({ entries }: ProfileJournalProps) {
       {hasMore && (
         <button
           onClick={() => setDisplayCount(displayCount + 3)}
-          className="mt-8 text-[12px] text-text-tertiary hover:text-[#8E6F5E] transition-colors duration-150 font-medium"
+          className="mt-8 text-label text-text-tertiary hover:text-accent transition-colors duration-150 font-medium"
         >
           Afficher plus
         </button>

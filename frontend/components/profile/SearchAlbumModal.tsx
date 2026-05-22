@@ -74,7 +74,7 @@ export default function SearchAlbumModal({ position, onSelect, onClose }: Props)
       <div className="bg-background rounded-[12px] w-full max-w-2xl max-h-[90vh] flex flex-col border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-divider">
-          <h2 className="text-[16px] font-medium text-text-primary">
+          <h2 className="text-body font-sans font-medium text-text-primary">
             Album #{position}
           </h2>
           <button
@@ -94,7 +94,7 @@ export default function SearchAlbumModal({ position, onSelect, onClose }: Props)
             value={q}
             onChange={(e) => setQ(e.target.value)}
             autoFocus
-            className="w-full px-3 py-2.5 bg-background-secondary border border-border rounded-[10px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E] transition-colors duration-150 text-[16px]"
+            className="w-full px-3 py-2.5 bg-background-secondary border border-border rounded-[10px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E] transition-colors duration-150 text-body"
           />
         </div>
 
@@ -129,8 +129,8 @@ export default function SearchAlbumModal({ position, onSelect, onClose }: Props)
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-text-primary truncate">{album.label}</p>
-                  <p className="text-[12px] text-text-secondary truncate">{album.sublabel}</p>
+                  <p className="text-meta font-medium text-text-primary truncate">{album.label}</p>
+                  <p className="text-label text-text-secondary truncate">{album.sublabel}</p>
                 </div>
               </button>
             ))}

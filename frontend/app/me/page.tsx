@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { ensureProfile } from "@/app/actions/profile";
+import UnauthCTA from "@/components/UnauthCTA";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import Top3Albums from "@/components/profile/Top3Albums";
@@ -22,21 +22,11 @@ export default async function MyProfilePage() {
             <div className="px-4 md:px-6 lg:px-8 pb-28 lg:pb-12">
                 <div className="pt-8 pb-6">
                     <h1 className="text-h1 text-text-primary mb-2">Mon profil</h1>
-                    <p className="text-[14px] text-text-tertiary">Ton journal, tes stats, tes albums favoris.</p>
+                    <p className="text-meta text-text-tertiary">Ton journal, tes stats, tes albums favoris.</p>
                 </div>
-                <div className="flex flex-col items-start gap-3 px-4 py-4 bg-background-secondary border border-border rounded-[12px]">
-                    <p className="text-[14px] text-text-secondary leading-snug">
-                        Crée un compte pour accéder à ton profil.
-                    </p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <a href="/auth?mode=signup" className="text-[13px] font-medium px-3 py-1.5 bg-[#1C1C1C] text-[#F5F3EF] rounded-[8px] hover:opacity-85 transition-opacity">
-                            Créer un compte
-                        </a>
-                        <a href="/auth?mode=login" className="text-[13px] text-text-secondary hover:text-text-primary transition-colors underline">
-                            Se connecter
-                        </a>
-                    </div>
-                </div>
+                <UnauthCTA
+                    title={<>Ton profil musical t&apos;attend — <em className="italic text-accent-deep">journal, stats et albums favoris.</em></>}
+                />
             </div>
         );
     }
@@ -62,6 +52,8 @@ export default async function MyProfilePage() {
         favoriteAlbumsResult,
         trackEntries,
         unifiedReviews,
+        allRatingsResult,
+        trackReviewsCountResult,
     ] = await Promise.all([
         supabase
             .from("follows")
@@ -86,6 +78,13 @@ export default async function MyProfilePage() {
             .limit(3),
         getUserTrackDiary(user.id),
         getUserReviewsUnified(user.id),
+        supabase.from("diary_entries").select("rating").eq("user_id", user.id),
+        (supabase as any)
+            .from("track_diary_entries")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .not("review_body", "is", null)
+            .neq("review_body", ""),
     ]);
 
     const favoriteAlbums = (favoriteAlbumsResult.data || []).map((item: any) => ({
@@ -99,7 +98,8 @@ export default async function MyProfilePage() {
     const followersCount = followersResult.count || 0;
     const followingCount = followingResult.count || 0;
 
-    const reviewsCount = reviewsTotalResult.count ?? 0;
+    const allRatings = (allRatingsResult.data ?? []).map((e: any) => e.rating as number | null);
+    const reviewsCount = (reviewsTotalResult.count ?? 0) + (trackReviewsCountResult.count ?? 0);
 
     const username = profile?.username || user.email?.split("@")[0] || "user";
     const isAdmin = ADMIN_IDS.includes(user.id);
@@ -125,9 +125,13 @@ export default async function MyProfilePage() {
             <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
                 <ProfileHeader user={userData} stats={stats} />
                 <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
+                    {/* Histogramme mobile : juste sous le hero */}
+                    <div className="lg:hidden mt-4 mb-2">
+                        <RatingDistribution ratings={allRatings} />
+                    </div>
                     <Top3Albums userId={user.id} isMe={true} initialAlbums={favoriteAlbums} />
                     <div className="hidden lg:block mt-8">
-                        <RatingDistribution ratings={diaryEntries.map((e) => e.rating)} />
+                        <RatingDistribution ratings={allRatings} />
                     </div>
                 </div>
             </aside>

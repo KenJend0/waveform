@@ -62,7 +62,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                 <Link
                   href="/settings"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <Settings size={16} />
                   Éditer profil
@@ -70,7 +70,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                 <Link
                   href="/settings/favorite-albums"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <Heart size={16} />
                   Albums favoris
@@ -78,7 +78,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                 <Link
                   href="/legal"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <FileText size={16} />
                   Légal & infos
@@ -87,7 +87,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                   <Link
                     href="/admin"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] text-text-primary"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                   >
                     <Shield size={16} />
                     Admin
@@ -95,7 +95,7 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-[14px] border-t border-border-divider text-[#C86C6C] text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta border-t border-border-divider text-[#C86C6C] text-left"
                 >
                   <LogOut size={16} />
                   Se déconnecter
@@ -124,8 +124,8 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
                 <button
                   onClick={onFollowClick}
                   className={user.is_following
-                    ? "border border-border text-text-secondary text-[14px] font-medium px-4 py-2 rounded-[8px] hover:border-accent hover:text-accent transition-colors duration-150"
-                    : "bg-[#1C1C1C] text-white text-[14px] font-medium px-4 py-2 rounded-[8px] hover:bg-[#333] transition-colors duration-150"
+                    ? "border border-border text-text-secondary text-meta font-medium px-4 py-2 rounded-[8px] hover:border-accent hover:text-accent transition-colors duration-150"
+                    : "bg-[#1C1C1C] text-white text-meta font-medium px-4 py-2 rounded-[8px] hover:bg-[#333] transition-colors duration-150"
                   }
                 >
                   {user.is_following ? "Suivi" : "Suivre"}
@@ -137,26 +137,26 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-[14px] text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">
+          <p className="text-meta text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">
             {user.bio}
           </p>
         )}
 
         {/* Stats row */}
-        <div className="flex gap-8 mt-6">
+        <div className="flex w-full mt-5 pt-4 border-t border-rule">
           {stats && (
-            <div className="flex flex-col">
-              <span className="text-[18px] font-semibold text-text-primary leading-none">{stats.reviews_count}</span>
-              <span className="text-[11px] text-text-tertiary mt-1">revue{stats.reviews_count !== 1 ? 's' : ''}</span>
+            <div className="flex-1 flex flex-col border-r border-rule pr-4">
+              <span className="font-display italic text-[28px] text-text-warm leading-none">{stats.reviews_count}</span>
+              <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">critique{stats.reviews_count !== 1 ? 's' : ''}</span>
             </div>
           )}
-          <Link href={`/u/${user.username}/followers`} className="flex flex-col hover:opacity-75 transition-opacity duration-150">
-            <span className="text-[18px] font-semibold text-text-primary leading-none">{user.followers_count || 0}</span>
-            <span className="text-[11px] text-text-tertiary mt-1">abonné{(user.followers_count || 0) !== 1 ? 's' : ''}</span>
+          <Link href={`/u/${user.username}/followers`} className={`flex-1 flex flex-col hover:opacity-75 transition-opacity duration-150 border-r border-rule ${stats ? 'px-4' : 'pr-4'}`}>
+            <span className="font-display italic text-[28px] text-text-warm leading-none">{user.followers_count || 0}</span>
+            <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">abonné{(user.followers_count || 0) !== 1 ? 's' : ''}</span>
           </Link>
-          <Link href={`/u/${user.username}/following`} className="flex flex-col hover:opacity-75 transition-opacity duration-150">
-            <span className="text-[18px] font-semibold text-text-primary leading-none">{user.following_count || 0}</span>
-            <span className="text-[11px] text-text-tertiary mt-1">abonnements</span>
+          <Link href={`/u/${user.username}/following`} className="flex-1 flex flex-col hover:opacity-75 transition-opacity duration-150 pl-4">
+            <span className="font-display italic text-[28px] text-text-warm leading-none">{user.following_count || 0}</span>
+            <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">suivis</span>
           </Link>
         </div>
       </div>

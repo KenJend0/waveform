@@ -62,7 +62,7 @@ export default function Loading() {
                 </div>
 
                 {/* Diary grid — 3 cols mobile, 4 cols lg */}
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <div key={i}>
                             <div className="aspect-square rounded-[10px] bg-background-secondary mb-2" />

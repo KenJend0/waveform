@@ -53,7 +53,7 @@ export default async function PublicProfilePage({
 
   if (!profile) {
     return (
-      <main className="max-w-page mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-page mx-auto px-4 sm:px-6 pt-4 pb-6">
         <BackButton />
         <div className="mt-16 text-center">
           <h1 className="text-h2 text-text-primary mb-2">Utilisateur non trouvé</h1>
@@ -76,6 +76,7 @@ export default async function PublicProfilePage({
     favoriteAlbumsResult,
     profileTrackDiary,
     profileUnifiedReviews,
+    allRatingsResult,
   ] = await Promise.all([
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("followee_id", profile.id),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
@@ -89,6 +90,7 @@ export default async function PublicProfilePage({
       .limit(3),
     getUserTrackDiary(profile.id),
     getUserReviewsUnified(profile.id),
+    supabase.from("diary_entries").select("rating").eq("user_id", profile.id),
   ]);
 
   const favoriteAlbums = (favoriteAlbumsResult.data || []).map((item: any) => ({
@@ -128,11 +130,12 @@ export default async function PublicProfilePage({
 
   const bio = (profile as any).bio || "";
   const reviewsCount = profileUnifiedReviews.length;
+  const allRatings = (allRatingsResult.data ?? []).map((e: any) => e.rating as number | null);
   const publicDiary = profileDiary.filter((e) => (e as any).is_public !== false);
 
   if (isBlocking) {
     return (
-      <main className="max-w-page mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-page mx-auto px-4 sm:px-6 pt-4 pb-6">
         <BackButton />
         <div className="mt-8 flex items-start gap-5">
           <div className="flex-shrink-0 rounded-full border border-border overflow-hidden">
@@ -154,17 +157,30 @@ export default async function PublicProfilePage({
 
   return (
     <>
-      {/* BackButton mobile uniquement */}
-      <div className="lg:hidden px-4 sm:px-6 pt-4">
-        <BackButton />
-      </div>
-
       <div className="lg:flex lg:items-start lg:gap-12 lg:px-8 pb-28 lg:pb-12">
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
           {/* Profil */}
           <div className="bg-background-secondary border-b border-border-divider lg:bg-transparent lg:border-0">
-            <div className="px-4 sm:px-6 py-8 lg:px-0 lg:py-6">
+            <div className="max-w-page mx-auto px-4 sm:px-6 pt-4 pb-8 lg:max-w-none lg:px-0 lg:py-6 relative">
+              {/* BackButton + menu 3 points — fixed côte à côte sur mobile */}
+              <div className="lg:hidden">
+                <BackButton />
+                {authUser && authUser.id !== profile.id && (
+                  <div className="fixed top-3 right-4 z-30">
+                    <ProfileActionsMenu userId={profile.id} initialIsBlocking={false} />
+                  </div>
+                )}
+              </div>
+
+              {/* Menu 3 points desktop — top right absolu */}
+              {authUser && authUser.id !== profile.id && (
+                <div className="absolute top-6 right-0 hidden lg:block">
+                  <ProfileActionsMenu userId={profile.id} initialIsBlocking={false} />
+                </div>
+              )}
+
+              {/* Avatar + Nom */}
               <div className="flex gap-5 items-center">
                 <div className="flex-shrink-0 rounded-full border border-border overflow-hidden">
                   <div className="w-[80px] h-[80px] lg:w-[96px] lg:h-[96px]">
@@ -172,48 +188,51 @@ export default async function PublicProfilePage({
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-[22px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
+                  <h1 className="text-[24px] lg:text-[22px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
                     @{username}
                   </h1>
                   {authUser && authUser.id !== profile.id && (
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <FollowButton userId={profile.id} initialIsFollowing={isFollowing} />
                       {isFollowingYou && (
-                        <span className="text-[12px] text-text-tertiary">Vous suit</span>
+                        <span className="text-[11px] text-text-tertiary/60 italic">vous suit</span>
                       )}
-                      <ProfileActionsMenu userId={profile.id} initialIsBlocking={false} />
                     </div>
                   )}
                 </div>
               </div>
 
               {bio && (
-                <p className="text-[14px] text-text-secondary leading-relaxed mt-5 whitespace-pre-line">{bio}</p>
+                <p className="text-meta text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">{bio}</p>
               )}
 
-              {/* Stats empilées */}
-              <div className="flex gap-8 mt-6">
-                <div className="flex flex-col">
-                  <span className="text-[18px] font-semibold text-text-primary leading-none">{reviewsCount}</span>
-                  <span className="text-[11px] text-text-tertiary mt-1">revue{reviewsCount !== 1 ? "s" : ""}</span>
+              {/* Stats — charte : font-display italic 28px text-text-warm, labels text-label */}
+              <div className="flex w-full mt-5 pt-4 border-t border-rule">
+                <div className="flex-1 flex flex-col border-r border-rule pr-4">
+                  <span className="font-display italic text-[28px] text-text-warm leading-none">{reviewsCount}</span>
+                  <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">critique{reviewsCount !== 1 ? "s" : ""}</span>
                 </div>
-                <Link href={`/u/${username}/followers`} className="flex flex-col hover:opacity-75 transition-opacity duration-150">
-                  <span className="text-[18px] font-semibold text-text-primary leading-none">{followersCount || 0}</span>
-                  <span className="text-[11px] text-text-tertiary mt-1">abonné{(followersCount || 0) !== 1 ? "s" : ""}</span>
+                <Link href={`/u/${username}/followers`} className="flex-1 flex flex-col hover:opacity-75 transition-opacity duration-150 border-r border-rule px-4">
+                  <span className="font-display italic text-[28px] text-text-warm leading-none">{followersCount || 0}</span>
+                  <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">abonné{(followersCount || 0) !== 1 ? "s" : ""}</span>
                 </Link>
-                <Link href={`/u/${username}/following`} className="flex flex-col hover:opacity-75 transition-opacity duration-150">
-                  <span className="text-[18px] font-semibold text-text-primary leading-none">{followingCount || 0}</span>
-                  <span className="text-[11px] text-text-tertiary mt-1">abonnements</span>
+                <Link href={`/u/${username}/following`} className="flex-1 flex flex-col hover:opacity-75 transition-opacity duration-150 pl-4">
+                  <span className="font-display italic text-[28px] text-text-warm leading-none">{followingCount || 0}</span>
+                  <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">suivis</span>
                 </Link>
               </div>
             </div>
           </div>
 
           {/* Albums favoris + distribution */}
-          <div className="px-4 sm:px-6 lg:px-0 lg:mt-4">
+          <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
+            {/* Distribution mobile — juste sous le hero */}
+            <div className="lg:hidden mt-4 mb-2">
+              <RatingDistribution ratings={allRatings} label="Ses" />
+            </div>
             <Top3Albums userId={profile.id} initialAlbums={favoriteAlbums} />
             <div className="hidden lg:block mt-8">
-              <RatingDistribution ratings={publicDiary.map((e) => e.rating)} />
+              <RatingDistribution ratings={allRatings} label="Ses" />
             </div>
           </div>
         </aside>

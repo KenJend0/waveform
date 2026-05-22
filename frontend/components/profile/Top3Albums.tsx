@@ -47,12 +47,22 @@ export default function Top3Albums({ userId, isMe, initialAlbums }: Props) {
 
   return (
     <div className="mt-6">
-      <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-3">
-        {albums.length === 1 ? "Album favori" : "Albums favoris"}
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-display font-normal text-[15px] text-text-warm">
+          {albums.length === 1 ? "Album favori" : "Albums favoris"}
+        </p>
+        {isMe && (
+          <Link
+            href="/settings/favorite-albums"
+            className="font-display italic text-sm text-accent border-b border-accent pb-px shrink-0 hover:text-accent-deep hover:border-accent-deep transition-colors"
+          >
+            éditer
+          </Link>
+        )}
+      </div>
 
       {albums.length === 0 ? (
-        <p className="text-[13px] text-text-tertiary">Aucun album favori</p>
+        <p className="text-sm text-text-tertiary">Aucun album favori</p>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {albums.map((album) => (

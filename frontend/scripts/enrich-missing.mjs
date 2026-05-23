@@ -729,7 +729,7 @@ async function runPhase3() {
 //   Per-track Spotify search is banned — causes extreme rate limiting (63000s retry-after).
 // Apple Music + Deezer: per-track search (more lenient rate limits).
 
-async function searchSpotifyAlbumId(artist, title, token) {
+async function searchSpotifyAlbumId(artist, title, token, attempt = 0) {
   if (!token) return null;
   try {
     const q = encodeURIComponent(`album:"${title}" artist:"${artist}"`);
@@ -737,10 +737,10 @@ async function searchSpotifyAlbumId(artist, title, token) {
       `https://api.spotify.com/v1/search?q=${q}&type=album&limit=5`,
       { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
-    if (res.status === 429) {
+    if (res.status === 429 && attempt < 2) {
       const wait = Math.min(parseInt(res.headers.get('retry-after') ?? '10', 10), 30);
       await delay(wait * 1000);
-      return searchSpotifyAlbumId(artist, title, token);
+      return searchSpotifyAlbumId(artist, title, token, attempt + 1);
     }
     if (!res.ok) return null;
     const data = await res.json();
@@ -759,34 +759,40 @@ async function searchSpotifyAlbumId(artist, title, token) {
 
 async function fetchSpotifyAlbumTracks(spotifyAlbumId, token) {
   // Returns { byPosition: Map<"disc-trackNo", url>, byTitle: Map<normalizedTitle, url> }
-  // byTitle is the primary match strategy — covers NULL track_no in DB.
   const byPosition = new Map();
   const byTitle    = new Map();
   if (!spotifyAlbumId || !token) return { byPosition, byTitle };
   try {
-    // Paginate in case album has >50 tracks
-    let url = `https://api.spotify.com/v1/albums/${spotifyAlbumId}/tracks?limit=50`;
-    while (url) {
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (res.status === 429) {
-        const wait = Math.min(parseInt(res.headers.get('retry-after') ?? '10', 10), 30);
-        console.warn(`    ⏳ Spotify rate limit — attente ${wait}s`);
-        await delay(wait * 1000);
-        continue; // retry same url
+    let nextUrl = `https://api.spotify.com/v1/albums/${spotifyAlbumId}/tracks?limit=50`;
+    let pages   = 0;
+    while (nextUrl && pages < 10) {
+      const currentUrl = nextUrl;
+      let retries = 0;
+      let res;
+      while (retries < 3) {
+        res = await fetch(currentUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (res.status === 429) {
+          const wait = Math.min(parseInt(res.headers.get('retry-after') ?? '10', 10), 30);
+          console.warn(`    ⏳ Spotify rate limit — attente ${wait}s`);
+          await delay(wait * 1000);
+          retries++;
+          continue;
+        }
+        break;
       }
       if (!res.ok) break;
       const data = await res.json();
       for (const t of data.items ?? []) {
         const trackUrl = t.external_urls?.spotify ?? null;
         byPosition.set(`${t.disc_number ?? 1}-${t.track_number}`, trackUrl);
-        // Normalize: lowercase, strip leading/trailing punctuation, collapse spaces
         const norm = t.name.toLowerCase().replace(/[''`]/g, "'").replace(/\s+/g, ' ').trim();
         byTitle.set(norm, trackUrl);
       }
-      url = data.next ?? null; // pagination
+      nextUrl = data.next ?? null;
+      pages++;
     }
   } catch { /* best-effort */ }
   return { byPosition, byTitle };

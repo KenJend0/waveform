@@ -1,4 +1,4 @@
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
 import { ensureProfile } from "@/app/actions/profile";
 import UnauthCTA from "@/components/UnauthCTA";
 import ProfileHeader from "@/components/profile/ProfileHeader";
@@ -14,8 +14,7 @@ export const revalidate = 0; // Pas de cache, recharger à chaque accès
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
 export default async function MyProfilePage() {
-    const supabase = await createSupabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     if (!user) {
         return (
@@ -30,6 +29,8 @@ export default async function MyProfilePage() {
             </div>
         );
     }
+
+    const supabase = await createSupabaseServer();
 
     // Créer le profil + liste "À écouter" par défaut si première connexion
     await ensureProfile();

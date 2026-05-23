@@ -166,9 +166,9 @@ export async function updateDiaryEntry(input: {
       .eq('id', input.entryId)
       .eq('user_id', user.id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) return { success: false, error: 'An error occurred' };
+    if (error || !data) return { success: false, error: 'An error occurred' };
 
     return { success: true, data };
   } catch (err) {
@@ -195,7 +195,7 @@ export async function deleteDiaryEntry(entryId: string) {
       .from('diary_entries')
       .select('user_id')
       .eq('id', entryId)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !entry) {
       return { success: false, error: 'Entry not found' };
@@ -256,7 +256,7 @@ export async function addComment(entryId: string, body: string, parentCommentId?
     .from('diary_entries')
     .select('id, user_id, is_public, album_id')
     .eq('id', entryId)
-    .single();
+    .maybeSingle();
 
   if (entryCheckError || !entryCheck) {
     throw new Error('Entry not found');
@@ -286,7 +286,7 @@ export async function addComment(entryId: string, body: string, parentCommentId?
       .from('diary_comments')
       .select('id, entry_id, parent_comment_id, user_id')
       .eq('id', parentCommentId)
-      .single();
+      .maybeSingle();
 
     if (parentError || !parentComment) {
       throw new Error('Parent comment not found');
@@ -378,7 +378,7 @@ export async function deleteComment(commentId: string): Promise<void> {
     .from('diary_comments')
     .select('user_id')
     .eq('id', commentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !comment) {
     throw new Error('Comment not found');
@@ -416,9 +416,9 @@ export async function toggleDiaryLike(entryId: string): Promise<void> {
     .select('*')
     .eq('entry_id', entryId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (fetchError && fetchError.code !== 'PGRST116') {
+  if (fetchError) {
     throw new Error('An error occurred');
   }
 
@@ -427,7 +427,7 @@ export async function toggleDiaryLike(entryId: string): Promise<void> {
     .from('diary_entries')
     .select('user_id')
     .eq('id', entryId)
-    .single();
+    .maybeSingle();
 
   if (entryError || !entry) {
     throw new Error('Entry not found');
@@ -564,7 +564,7 @@ export async function getEntryComments(entryId: string): Promise<DiaryEntryComme
     .from('diary_entries')
     .select('id, user_id, is_public')
     .eq('id', entryId)
-    .single();
+    .maybeSingle();
 
   if (!entryCheck) return [];
   if (!entryCheck.is_public && entryCheck.user_id !== currentUser?.id) return [];
@@ -1168,7 +1168,7 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
         )
       `)
       .eq('id', entryId)
-      .single();
+      .maybeSingle();
 
     if (entryError || !entry) {
       return { success: false, error: 'Entry not found' };
@@ -1184,7 +1184,7 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
       .from('profiles')
       .select('id, username, display_name, avatar_url')
       .eq('id', entry.user_id)
-      .single();
+      .maybeSingle();
 
     if (profileError || !authorProfile) {
       return { success: false, error: 'Author not found' };
@@ -1195,7 +1195,7 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
       .from('diary_entry_stats')
       .select('likes_count, comments_count')
       .eq('entry_id', entryId)
-      .single();
+      .maybeSingle();
 
     const stats = {
       likes_count: statsData?.likes_count || 0,

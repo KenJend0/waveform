@@ -53,7 +53,7 @@ export async function getTrack(id: string): Promise<TrackDetail | null> {
       )
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return null;
 

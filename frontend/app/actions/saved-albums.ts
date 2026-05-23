@@ -87,7 +87,7 @@ export async function toggleSaveAlbum(albumId: string): Promise<{ saved: boolean
     .select('id')
     .eq('user_id', user.id)
     .eq('album_id', albumId)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Remove
@@ -153,7 +153,7 @@ export async function isAlbumSaved(albumId: string, userId?: string): Promise<bo
     .select('id')
     .eq('user_id', resolvedUserId)
     .eq('album_id', albumId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }

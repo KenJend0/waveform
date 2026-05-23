@@ -84,7 +84,7 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
           .from('tracks')
           .select('title, albums(id, title, cover_url, artist_id, artists(id, name))')
           .eq('id', input.trackId)
-          .single(),
+          .maybeSingle(),
         supabaseAdmin
           .from('follows')
           .select('follower_id')
@@ -133,7 +133,7 @@ export async function deleteTrackDiaryEntry(entryId: string) {
       .from('track_diary_entries')
       .select('user_id')
       .eq('id', entryId)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !entry) return { success: false, error: 'Entrée introuvable' };
     if (entry.user_id !== user.id) return { success: false, error: 'Forbidden' };
@@ -453,16 +453,16 @@ export async function getTrackDiaryEntry(
     .from('track_diary_entries')
     .select('id, rating, review_title, review_body, listened_at, created_at, is_public, user_id, track_id, album_id, artist_id')
     .eq('id', entryId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return { success: false, error: 'Entrée introuvable' };
   if (!data.is_public && data.user_id !== currentUser?.id) return { success: false, error: 'Entrée introuvable' };
 
   const [trackRes, albumRes, authorRes, artistRes, statsRes, likedRes, commentsRes] = await Promise.all([
-    supabase.from('tracks').select('id, title, track_no, duration_ms').eq('id', data.track_id).single(),
-    supabase.from('albums').select('id, title, cover_url, release_date').eq('id', data.album_id).single(),
-    supabase.from('profiles').select('id, username, display_name, avatar_url').eq('id', data.user_id).single(),
-    supabase.from('artists').select('id, name').eq('id', data.artist_id).single(),
+    supabase.from('tracks').select('id, title, track_no, duration_ms').eq('id', data.track_id).maybeSingle(),
+    supabase.from('albums').select('id, title, cover_url, release_date').eq('id', data.album_id).maybeSingle(),
+    supabase.from('profiles').select('id, username, display_name, avatar_url').eq('id', data.user_id).maybeSingle(),
+    supabase.from('artists').select('id, name').eq('id', data.artist_id).maybeSingle(),
     // Likes + comments count
     (supabase as any).from('track_diary_entry_stats').select('likes_count, comments_count').eq('entry_id', entryId).maybeSingle(),
     // Has current user liked?
@@ -747,7 +747,7 @@ export async function toggleTrackDiaryLike(entryId: string): Promise<void> {
         .from('track_diary_entries')
         .select('user_id, track_id, album_id, tracks(title, albums(id, title, cover_url))')
         .eq('id', entryId)
-        .single();
+        .maybeSingle();
       if (entryData) {
         const track = (entryData as any).tracks as any;
         const album = track?.albums as any;
@@ -788,7 +788,7 @@ export async function addTrackComment(entryId: string, body: string, parentComme
     .from('track_diary_entries')
     .select('id, user_id, is_public')
     .eq('id', entryId)
-    .single();
+    .maybeSingle();
 
   if (!entry) throw new Error('Entrée introuvable');
   if (!entry.is_public && entry.user_id !== user.id) throw new Error('Entrée introuvable');

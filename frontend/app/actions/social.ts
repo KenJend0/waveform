@@ -40,7 +40,7 @@ export async function toggleFollow(idOrUsername: string, source?: string) {
         .from('profiles')
         .select('id')
         .eq('username', idOrUsername)
-        .single();
+        .maybeSingle();
 
       if (profileError || !profile) {
         return { success: false, error: 'User not found' };
@@ -71,7 +71,7 @@ export async function toggleFollow(idOrUsername: string, source?: string) {
       .select('follower_id')
       .eq('follower_id', user.id)
       .eq('followee_id', targetId)
-      .single();
+      .maybeSingle();
 
     const supabaseAdmin = createSupabaseAdmin();
 

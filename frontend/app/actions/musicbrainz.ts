@@ -861,7 +861,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       .from('artists')
       .select('id')
       .eq('mbid', preview.artistMbid)
-      .single();
+      .maybeSingle();
 
     if (existingArtist) {
       artistId = existingArtist.id;

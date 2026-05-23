@@ -2,9 +2,17 @@
 
 import { useEffect } from "react";
 
-export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
     useEffect(() => {
         console.error(error);
+        // ChunkLoadError = JS chunks invalidated after a deployment → force reload
+        if (
+            error.name === 'ChunkLoadError' ||
+            error.message?.includes('Loading chunk') ||
+            error.message?.includes('Failed to fetch dynamically imported module')
+        ) {
+            window.location.reload();
+        }
     }, [error]);
 
     return (

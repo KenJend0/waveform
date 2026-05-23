@@ -527,9 +527,18 @@ export async function enrichAlbumMetadata(
     }
 
     // Batch upsert genres + album_genres (3 DB calls total instead of N*2)
-    const validTags = [...tagMap.entries()]
+    const rawTags = [...tagMap.entries()]
       .map(([name, { count, source }]) => ({ name, slug: toSlug(name), count, source }))
       .filter((t) => t.slug);
+
+    // Two tag names can produce the same slug (e.g. "hip-hop" vs "hip hop") — deduplicate
+    // to avoid PostgreSQL error 21000 ("ON CONFLICT DO UPDATE command cannot affect row a second time")
+    const slugMap = new Map<string, typeof rawTags[number]>();
+    for (const tag of rawTags) {
+      const existing = slugMap.get(tag.slug);
+      if (!existing || tag.count > existing.count) slugMap.set(tag.slug, tag);
+    }
+    const validTags = [...slugMap.values()];
 
     if (validTags.length > 0) {
       // 1. Batch upsert all genres

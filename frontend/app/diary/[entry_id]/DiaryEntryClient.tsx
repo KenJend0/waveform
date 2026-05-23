@@ -258,6 +258,7 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
                   width={84}
                   height={84}
                   className="rounded-[8px] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06),0_2px_6px_rgba(60,40,20,0.12)]"
+                  unoptimized
                 />
               ) : (
                 <div className="w-[84px] h-[84px] bg-background-secondary rounded-[8px]" />

@@ -45,6 +45,7 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
               width={80}
               height={80}
               className="w-20 h-20 object-cover rounded-cover"
+              unoptimized
             />
           ) : (
             <div className="w-20 h-20 rounded-cover bg-background-secondary" />

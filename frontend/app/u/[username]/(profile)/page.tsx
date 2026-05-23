@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -239,16 +240,18 @@ export default async function PublicProfilePage({
 
         {/* ── Contenu principal ────────────────────────────────────────────── */}
         <div className="lg:flex-1 lg:min-w-0 mt-8 lg:pt-8 lg:mt-0">
-          <PublicProfileTabs
-            profileUserId={profile.id}
-            username={username}
-            diaryEntries={publicDiary}
-            publicLists={profilePublicLists}
-            myListenedAlbums={myListenedAlbums}
-            isLoggedIn={!!authUser}
-            trackEntries={profileTrackDiary}
-            unifiedReviews={profileUnifiedReviews}
-          />
+          <Suspense fallback={null}>
+            <PublicProfileTabs
+              profileUserId={profile.id}
+              username={username}
+              diaryEntries={publicDiary}
+              publicLists={profilePublicLists}
+              myListenedAlbums={myListenedAlbums}
+              isLoggedIn={!!authUser}
+              trackEntries={profileTrackDiary}
+              unifiedReviews={profileUnifiedReviews}
+            />
+          </Suspense>
         </div>
       </div>
     </>

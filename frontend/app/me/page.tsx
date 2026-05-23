@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
 import { ensureProfile } from "@/app/actions/profile";
 import UnauthCTA from "@/components/UnauthCTA";
@@ -139,14 +140,16 @@ export default async function MyProfilePage() {
 
             {/* Contenu principal : tabs */}
             <div className="lg:flex-1 lg:min-w-0 mt-8 lg:pt-8 lg:mt-0">
-                <ProfileTabs
-                    isMe={true}
-                    userId={user.id}
-                    diaryEntries={diaryEntries}
-                    userLists={userLists}
-                    trackEntries={trackEntries}
-                    unifiedReviews={unifiedReviews}
-                />
+                <Suspense fallback={null}>
+                    <ProfileTabs
+                        isMe={true}
+                        userId={user.id}
+                        diaryEntries={diaryEntries}
+                        userLists={userLists}
+                        trackEntries={trackEntries}
+                        unifiedReviews={unifiedReviews}
+                    />
+                </Suspense>
             </div>
         </div>
     );

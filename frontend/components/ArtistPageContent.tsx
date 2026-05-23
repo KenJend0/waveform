@@ -196,7 +196,7 @@ export function ArtistPageContent({
                     {/* Artist image */}
                     {imageUrl ? (
                         <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden relative">
-                            <Image src={imageUrl} alt={artistName} fill className="object-cover" />
+                            <Image src={imageUrl} alt={artistName} fill className="object-cover" sizes="80px" />
                         </div>
                     ) : (
                         <div className="flex-shrink-0 w-20 h-20 rounded-full bg-background-secondary flex items-center justify-center">
@@ -290,7 +290,7 @@ export function ArtistPageContent({
                                 <span className="font-display italic text-[16px] text-accent w-5 text-right flex-shrink-0 leading-none tabular-nums">{idx + 1}</span>
                                 <div className="w-10 h-10 rounded-[6px] overflow-hidden flex-shrink-0 bg-background-secondary relative">
                                     {album.cover_url && (
-                                        <Image src={album.cover_url} alt={album.title} fill className="object-cover" />
+                                        <Image src={album.cover_url} alt={album.title} fill className="object-cover" unoptimized />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -426,7 +426,7 @@ export function ArtistPageContent({
                             >
                                 <div className="w-14 h-14 rounded-full overflow-hidden bg-background-secondary relative flex-shrink-0">
                                     {a.imageUrl ? (
-                                        <Image src={a.imageUrl} alt={a.name} fill className="object-cover" />
+                                        <Image src={a.imageUrl} alt={a.name} fill className="object-cover" sizes="56px" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center">
                                             <span className="text-[20px] text-text-tertiary">{a.name.charAt(0)}</span>
@@ -462,7 +462,7 @@ function AlbumCover({ album }: { album: DiscographyItem }) {
     if (album.cover && !error) {
         return (
             <div className="aspect-square overflow-hidden relative">
-                <Image src={album.cover} alt={album.title} fill className="object-cover" onError={() => setError(true)} />
+                <Image src={album.cover} alt={album.title} fill className="object-cover" onError={() => setError(true)} unoptimized />
             </div>
         );
     }
@@ -477,6 +477,7 @@ function AlbumCover({ album }: { album: DiscographyItem }) {
                     className="object-cover"
                     loading="lazy"
                     onError={() => setError(true)}
+                    unoptimized
                 />
             </div>
         );

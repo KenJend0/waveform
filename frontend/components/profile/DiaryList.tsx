@@ -227,7 +227,7 @@ export default function DiaryList({ entries, isMe, trackEntries, userId, ratingL
                 <Link key={entry.id} href={`/tracks/${entry.track_id}`} className="group">
                   <div className="aspect-square rounded-cover overflow-hidden bg-background-secondary relative">
                     {entry.cover_url ? (
-                      <Image src={entry.cover_url} alt={entry.track_title} fill className="object-cover" />
+                      <Image src={entry.cover_url} alt={entry.track_title} fill className="object-cover" sizes="128px" unoptimized />
                     ) : (
                       <div className="w-full h-full bg-background-tertiary flex items-center justify-center">
                         <span className="text-text-disabled text-[20px]">♪</span>

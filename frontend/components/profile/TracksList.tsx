@@ -89,6 +89,8 @@ export default function TracksList({ userId, initialEntries }: Props) {
                                     alt={entry.track_title}
                                     fill
                                     className="object-cover"
+                                    sizes="128px"
+                                    unoptimized
                                 />
                             ) : (
                                 <div className="w-full h-full bg-background-tertiary flex items-center justify-center">

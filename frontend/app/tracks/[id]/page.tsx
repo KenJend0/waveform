@@ -122,7 +122,7 @@ export default async function TrackPage({ params }: PageProps) {
                 <div className="flex-shrink-0 w-full md:w-48 mb-2 md:mb-0">
                     {t.cover_url ? (
                         <div className="rounded-[10px] overflow-hidden aspect-square w-full max-w-48 mx-auto md:mx-0 relative">
-                            <Image src={t.cover_url} alt={`${t.album_title} cover`} fill className="object-cover" />
+                            <Image src={t.cover_url} alt={`${t.album_title} cover`} fill className="object-cover" sizes="(max-width: 768px) 192px, 192px" unoptimized />
                         </div>
                     ) : (
                         <div className="rounded-[10px] bg-background-secondary aspect-square w-full max-w-48 mx-auto md:mx-0 flex items-center justify-center">
@@ -314,7 +314,7 @@ export default async function TrackPage({ params }: PageProps) {
                                 >
                                     <div className="aspect-square rounded-[8px] overflow-hidden bg-background-secondary relative mb-2">
                                         {album.cover_url ? (
-                                            <Image src={album.cover_url} alt={album.title} fill className="object-cover group-hover:opacity-80 transition-opacity" />
+                                            <Image src={album.cover_url} alt={album.title} fill className="object-cover group-hover:opacity-80 transition-opacity" sizes="144px" unoptimized />
                                         ) : (
                                             <div className="w-full h-full bg-background-tertiary" />
                                         )}

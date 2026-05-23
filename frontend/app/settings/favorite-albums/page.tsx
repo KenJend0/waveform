@@ -162,6 +162,7 @@ export default function EditFavoriteAlbumsPage() {
                       alt={album.title}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full bg-background-tertiary" />

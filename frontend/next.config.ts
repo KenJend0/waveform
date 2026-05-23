@@ -5,6 +5,11 @@ const nextConfig = {
     },
   },
   images: {
+    // Cache each transformation for 30 days — same URL won't cost a new transformation
+    minimumCacheTTL: 2592000,
+    // Fewer breakpoints → fewer variants generated per URL
+    deviceSizes: [640, 1080, 1920],
+    imageSizes: [32, 64, 128, 256],
     remotePatterns: [
       { protocol: 'https', hostname: 'coverartarchive.org' },
       { protocol: 'https', hostname: 'archive.org' },

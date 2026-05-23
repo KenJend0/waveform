@@ -385,7 +385,7 @@ export default function ProfileSettings() {
                                     />
                                 ) : profile.avatar_url ? (
                                     <div className="w-20 h-20 rounded-full overflow-hidden relative">
-                                        <Image src={profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
+                                        <Image src={profile.avatar_url} alt="Profile avatar" fill className="object-cover" sizes="80px" />
                                     </div>
                                 ) : (
                                     <div className="w-20 h-20 rounded-full bg-background-tertiary flex items-center justify-center">

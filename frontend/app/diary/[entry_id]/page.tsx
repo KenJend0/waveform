@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getDiaryEntry } from '@/app/actions/diary';
 import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
@@ -76,5 +77,9 @@ export default async function DiaryEntryPage({ params }: DiaryEntryPageProps) {
     if (block) notFound();
   }
 
-  return <DiaryEntryClient entry={result.data} currentUser={currentUser} />;
+  return (
+    <Suspense fallback={null}>
+      <DiaryEntryClient entry={result.data} currentUser={currentUser} />
+    </Suspense>
+  );
 }

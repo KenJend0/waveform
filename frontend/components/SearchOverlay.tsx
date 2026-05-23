@@ -390,7 +390,7 @@ export default function SearchOverlay() {
       <div className="w-full max-w-2xl mx-auto">
         <div
           onClick={() => setIsOpen(true)}
-          className="bg-[#FAF8F4] border border-[#D8D3CB] rounded-[14px] px-4 py-3 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:border-accent hover:shadow-sm"
+          className="bg-[#FAF8F4] border border-accent/40 ring-1 ring-accent/15 rounded-[14px] px-4 py-3 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:border-accent hover:ring-accent/30 hover:shadow-sm"
         >
           <Search size={18} className="text-accent flex-shrink-0" />
           <span className="flex-1 text-[14px] text-text-tertiary truncate">
@@ -423,6 +423,7 @@ export default function SearchOverlay() {
                   placeholder="Album, titre, artiste, profil…"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
+                  autoFocus
                   className="flex-1 bg-transparent text-[15px] text-text-primary placeholder-text-tertiary focus:outline-none"
                 />
                 {q && (

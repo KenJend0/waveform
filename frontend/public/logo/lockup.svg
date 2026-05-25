@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 240" fill="#1C1C1C">
+  <title>Waveform lockup — Direction B</title>
+  <defs>
+    
+  </defs>
+  <g transform="translate(40 60) scale(0.4)">
+    <path d="M 0 0 C 75 0, 75 300, 150 300 S 225 0, 300 0 S 375 300, 450 300 S 525 0, 600 0" fill="none" stroke="#1C1C1C" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"></path>
+  </g>
+  <text x="320" y="170" class="wm">Wave<tspan class="wm-it">form</tspan></text>
+</svg>

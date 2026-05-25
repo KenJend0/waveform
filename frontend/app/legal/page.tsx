@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText, Shield, ScrollText, HelpCircle } from "lucide-react";
+import { FileText, Shield, ScrollText, HelpCircle, LifeBuoy } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "Légal — Waveform",
@@ -12,6 +12,12 @@ const links = [
         icon: HelpCircle,
         label: "FAQ",
         description: "Questions fréquentes sur l'utilisation de Waveform",
+    },
+    {
+        href: "/support",
+        icon: LifeBuoy,
+        label: "Support",
+        description: "Besoin d'aide ? Contacte-nous",
     },
     {
         href: "/legal/cgu",

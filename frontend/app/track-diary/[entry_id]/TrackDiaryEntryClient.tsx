@@ -18,6 +18,7 @@ import {
   type TrackDiaryEntryDetail,
   type TrackDiaryComment,
 } from '@/app/actions/track-diary';
+import { reportContent } from '@/app/actions/moderation';
 
 function relativeTime(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
@@ -204,6 +205,15 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
     }
   };
 
+  const handleReportEntry = async () => {
+    if (!currentUser) return;
+    const result = await reportContent('track_diary_entry', entry.id);
+    showToast(
+      result.success ? 'Contenu signalé — merci' : (result.error ?? 'Erreur'),
+      result.success ? 'success' : 'error'
+    );
+  };
+
   return (
     <div className="max-w-page mx-auto px-4 pt-4 pb-6">
       <BackButton label="Journal" fallbackHref="/diary" />
@@ -266,7 +276,7 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
           <MoreMenu
             onShare={handleShare}
             onCopyLink={handleCopyLink}
-            onReport={!isAuthor && currentUser ? async () => {} : undefined}
+            onReport={!isAuthor && currentUser ? handleReportEntry : undefined}
             onEdit={isAuthor ? () => setIsEditModalOpen(true) : undefined}
             onDelete={isAuthor ? () => setIsDeleteModalOpen(true) : undefined}
             isAuthor={isAuthor}

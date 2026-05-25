@@ -12,7 +12,7 @@ export type ReportReason = 'inappropriate' | 'spam' | 'harassment';
  * Silently deduplicates: if the user already reported this content, returns success.
  */
 export async function reportContent(
-  contentType: 'diary_entry' | 'diary_comment',
+  contentType: 'diary_entry' | 'diary_comment' | 'track_diary_entry' | 'track_diary_comment',
   contentId: string,
   reason: ReportReason = 'inappropriate'
 ): Promise<{ success: boolean; error?: string }> {
@@ -45,7 +45,7 @@ export async function reportContent(
  * Admin only: delete reported content and its associated reports.
  */
 export async function adminDeleteContent(
-  contentType: 'diary_entry' | 'diary_comment',
+  contentType: 'diary_entry' | 'diary_comment' | 'track_diary_entry' | 'track_diary_comment',
   contentId: string
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getAuthUser();
@@ -53,7 +53,14 @@ export async function adminDeleteContent(
 
   const supabase = createSupabaseAdmin();
 
-  const table = contentType === 'diary_entry' ? 'diary_entries' : 'diary_comments';
+  const tableMap: Record<string, string> = {
+    diary_entry: 'diary_entries',
+    diary_comment: 'diary_comments',
+    track_diary_entry: 'track_diary_entries',
+    track_diary_comment: 'track_diary_comments',
+  };
+  const table = tableMap[contentType];
+  if (!table) return { success: false, error: 'Type inconnu' };
   const { error } = await supabase.from(table as any).delete().eq('id', contentId);
 
   if (error) {

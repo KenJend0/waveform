@@ -35,7 +35,9 @@ export default function Header() {
                 className="hidden md:flex items-center px-8 py-3 border-b border-border sticky top-0 z-50 bg-background"
             >
                 {/* LOGO — à gauche */}
-                <Link href="/" className="flex items-center space-x-2">
+                <Link href="/" className="flex items-center gap-2.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo/mark.svg" alt="" aria-hidden="true" className="h-5 w-auto" />
                     <span className="font-display italic text-[22px] leading-none text-text-warm">
                         Waveform
                     </span>

@@ -27,7 +27,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
-const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
+const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
 const DELAY_MS = 1200; // slightly above 1s to stay safely under MB rate limit
 
 const supabase = createClient(

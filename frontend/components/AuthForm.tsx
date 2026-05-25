@@ -171,7 +171,8 @@ export default function AuthForm() {
   return (
     <div className="space-y-6 w-full">
       <div className="text-center mb-8">
-        <h1 className="text-h1 text-text-primary mb-2">Waveform</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo/mark.svg" alt="Waveform" className="h-10 w-auto mx-auto mb-4" />
         <p className="text-meta text-text-secondary">
           {mode === "login" ? "Connecte-toi à ton compte" : mode === "signup" ? "Crée ton compte Waveform" : "Réinitialise ton mot de passe"}
         </p>

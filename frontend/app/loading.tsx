@@ -14,9 +14,8 @@ export default function Loading() {
                         />
                     ))}
                 </div>
-                <span className="text-[13px] text-[#9A9A9A] tracking-wide">
-                    Waveform
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo/mark.svg" alt="Waveform" className="h-4 w-auto opacity-40" />
             </div>
             <style>{`
                 @keyframes waveBar {

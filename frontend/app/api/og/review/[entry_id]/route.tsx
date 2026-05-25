@@ -194,7 +194,7 @@ export async function GET(
               {'\u2002\u00B7\u2002'}
               {formattedDate}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 400, color: C.disabled }}>waveform.app</span>
+            <span style={{ fontSize: 14, fontWeight: 400, color: C.disabled }}>waveformapp.online</span>
           </div>
         </div>
       </div>

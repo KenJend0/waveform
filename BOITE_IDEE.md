@@ -21,3 +21,17 @@ si j'ai ecouté l'album, l'activté resau apparait dans le truc mon ecoute alors
 
 dans les du meme artiste de album, on prend ceux qui ont le plus de listeners
 
+le signalement doit fonctionner dans le pannel admin. le signalement de tracks ne retourne pas le texte. signaler aussi les commentaires ? rate limit sur les signalements ? 
+
+revoir le feed entierement ? ou au moins les textes dans les cartes
+
+taffer sur les listes : ajout rapide, enlever de la liste quand on note etc. 
+
+contenu pour le snouveaux utilisateurs
+
+onboarding tout neuf
+
+pages legales a refaire un peu
+
+
+

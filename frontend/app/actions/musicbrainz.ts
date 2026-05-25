@@ -6,7 +6,7 @@ import { uploadCoverToSupabase } from '@/lib/storage';
 import type { SearchResultUI } from './search';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
-const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
+const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
 const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 heures
 
 // Search timeout: prod (Vercel → MB) ~200ms, dev (localhost → MB) ~400ms.
@@ -1402,7 +1402,7 @@ export async function searchMusicBrainzPreview(query: string): Promise<SearchRes
       `${MUSICBRAINZ_API}/release?query=${encodeURIComponent(query)}&fmt=json&limit=${limit}`,
       {
         headers: {
-          'User-Agent': 'Waveform/1.0 (https://waveform.app)',
+          'User-Agent': 'Waveform/1.0 (https://waveformapp.online)',
         },
       }
     );

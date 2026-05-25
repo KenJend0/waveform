@@ -16,7 +16,7 @@ export default function MentionsLegales() {
                 </p>
                 <dl>
                     <Row label="Nom du projet" value="Waveform" />
-                    <Row label="Site" value="waveform-alpha.vercel.app" />
+                    <Row label="Site" value="waveformapp.online" />
                     <Row label="Contact" value="waveform.contact@proton.me" />
                     <Row label="Statut" value="Projet personnel non commercial" />
                 </dl>

@@ -10,7 +10,7 @@
  */
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
-const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
+const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
 const MB_RATE_LIMIT_MS = 1100; // MB allows 1 req/sec
 
 const EXCLUDED_SECONDARY_TYPES = new Set([

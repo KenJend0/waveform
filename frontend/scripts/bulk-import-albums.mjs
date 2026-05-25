@@ -20,7 +20,7 @@ import { randomUUID } from 'crypto';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const COVER_ART_API = 'https://coverartarchive.org';
-const USER_AGENT = 'Waveform/1.0 (https://waveform.app)';
+const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
 const DELAY_MS = 1300; // 1.3s between MB requests to respect 1 req/sec rate limit
 
 const DRY_RUN = process.argv.includes('--dry-run');

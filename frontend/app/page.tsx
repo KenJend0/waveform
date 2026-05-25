@@ -11,8 +11,9 @@ export default async function HomePage() {
 
     return (
         <div className="max-w-page mx-auto px-6 pt-[20vh] pb-[10vh] min-h-screen">
-            <h1 className="text-h1 text-text-primary mb-section-md">
-                Waveform
+            <h1 className="mb-section-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo/mark.svg" alt="Waveform" className="h-14 w-auto" />
             </h1>
 
             <p className="text-[16px] text-text-primary leading-snug mb-4 max-w-xs">

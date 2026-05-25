@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.waveform',
+  appId: 'online.waveformapp',
   appName: 'Waveform',
   // webDir is required by Capacitor CLI but unused in remote URL mode
   webDir: 'public',
   server: {
-    url: 'https://waveform.app',
+    url: 'https://waveformapp.online',
     cleartext: false,
   },
   ios: {

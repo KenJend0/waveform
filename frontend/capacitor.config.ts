@@ -8,6 +8,8 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://waveformapp.online',
     cleartext: false,
+    androidScheme: 'https',
+    allowNavigation: ['waveformapp.online', '*.supabase.co'],
   },
   ios: {
     // Respect device safe areas (notch, home indicator)

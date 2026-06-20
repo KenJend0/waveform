@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FeedEvent } from '@/app/actions/feed';
 import { getCommentActors } from '@/app/actions/feed';
-import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
-import { formatActors } from '@/components/feed/formatActors';
 import FeedActorsBottomSheet from '@/components/feed/FeedActorsBottomSheet';
+import { FeedAvatarCluster } from './FeedAvatarCluster';
+import { FeedRightCluster } from './FeedRightCluster';
+import { FeedTextLines } from './FeedTextLines';
+import { buildInteractionContext } from './feedInteractionContext';
 
 interface FeedCardCommentCreatedProps {
   event: FeedEvent & { type: 'COMMENT_CREATED' };
@@ -22,67 +24,38 @@ export default function FeedCardCommentCreated({
   const timeAgo = getTimeAgo(event.created_at);
   const isAggregate = event.actors_count && event.actors_count > 1 && event.actors;
   const needsFetch = isAggregate && event.actors_count! > event.actors!.length;
+  const entryHref = event.entry_id ? `/diary/${event.entry_id}` : (event.album ? `/albums/${event.album.id}` : null);
 
-  const albumLink = event.album && (
-    <>
-      {' de '}
-      <Link
-        href={event.entry_id ? `/diary/${event.entry_id}` : `/albums/${event.album.id}`}
-        className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-      >
-        {event.album.title}
-      </Link>
-    </>
+  const context = buildInteractionContext({
+    currentUserId,
+    actor: event.actor,
+    verb: 'commenté',
+    isAggregate,
+    actors: event.actors,
+    actorsCount: event.actors_count,
+    onShowMore: needsFetch ? () => setSheetOpen(true) : undefined,
+    entryOwnerId: event.entry_owner_id,
+    alsoActed: event.current_user_also_commented,
+  });
+
+  const title = event.album && (
+    <Link href={entryHref ?? `/albums/${event.album.id}`} className="hover:text-accent-deep transition-colors duration-150">
+      {event.album.title}
+    </Link>
   );
 
   return (
     <>
-      <div className="relative flex items-start gap-2 px-6 py-2">
-        <time className="absolute top-2 right-6 text-label text-text-disabled">
-          {timeAgo}
-        </time>
+      <div className="relative flex items-center gap-3 px-3 py-2">
+        <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="comment" />
 
-        {isAggregate ? (
-          <div className="flex -space-x-1 flex-shrink-0">
-            {event.actors!.slice(0, 3).map(a => (
-              <UserAvatar key={a.id} userId={a.id} src={a.avatar_url} size={18} />
-            ))}
-          </div>
-        ) : (
-          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={18} />
-        )}
+        <FeedTextLines context={context} title={title} titleText={event.album?.title} time={timeAgo} className="flex-1 min-w-0" />
 
-        <p className="flex-1 min-w-0 pr-16 text-label text-text-tertiary leading-relaxed">
-          {currentUserId === event.actor.id ? (
-            <>Tu as commenté une écoute{albumLink}</>
-          ) : isAggregate ? (
-            <>
-              {formatActors(
-                event.actors!,
-                event.actors_count!,
-                needsFetch ? () => setSheetOpen(true) : undefined,
-              )}{' '}
-              ont commenté ton écoute{albumLink}
-            </>
-          ) : (
-            <>
-              <Link
-                href={`/u/${event.actor.username}`}
-                className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-              >
-                {event.actor.username}
-              </Link>
-              {event.entry_owner_id === currentUserId ? (
-                <>{' '}a commenté ton écoute</>
-              ) : event.current_user_also_commented ? (
-                <>{' '}a aussi commenté l&apos;écoute</>
-              ) : (
-                <>{' '}a commenté une écoute</>
-              )}
-              {albumLink}
-            </>
-          )}
-        </p>
+        <FeedRightCluster
+          coverUrl={event.album?.cover_url}
+          coverHref={entryHref}
+          coverAlt={event.album?.title}
+        />
       </div>
 
       {isAggregate && event.entry_id && (

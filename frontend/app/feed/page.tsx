@@ -3,30 +3,9 @@ import { redirect } from 'next/navigation';
 import { getMyFeed, getPublicFeed } from '@/app/actions/feed';
 import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
-import { getSuggestedUsers } from '@/app/actions/social';
-import type { SuggestedUser } from '@/app/actions/social';
-import FollowButton from '@/components/social/FollowButton';
-import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import PublicFeedCard from '@/components/feed/PublicFeedCard';
-import { getTrendingThisWeek } from '@/app/actions/explore';
-import type { TrendingAlbum } from '@/app/actions/explore';
-import { CoverImage } from '@/components/CoverImage';
+import MarkActivitySeen from '@/components/feed/MarkActivitySeen';
 import UnauthCTA from '@/components/UnauthCTA';
-
-/**
- * Feed state machine — calculé une seule fois, drive fetches ET rendu.
- *
- * empty   0 events  → CTAs + suggestions
- * sparse  1-2 ev.   → feed + suggestions
- * normal  ≥3 ev.    → feed seul
- */
-type FeedState = 'empty' | 'sparse' | 'normal';
-
-function computeFeedState(eventCount: number): FeedState {
-  if (eventCount >= 3) return 'normal';
-  if (eventCount === 0) return 'empty';
-  return 'sparse';
-}
 
 export default async function FeedPage() {
   const user = await getAuthUser();
@@ -36,7 +15,7 @@ export default async function FeedPage() {
     const publicEntries = await getPublicFeed(30);
 
     return (
-      <div className="px-4 md:px-6 lg:px-8 pb-28 lg:pb-12">
+      <div className="px-3 md:px-5 lg:px-6 pb-28 lg:pb-12">
         <div className="pt-8 pb-6">
           <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
           <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
@@ -80,189 +59,41 @@ export default async function FeedPage() {
     redirect('/onboarding');
   }
 
-  // Count followings
-  const { count: followingCount } = await supabase
-    .from('follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('follower_id', user.id);
-
-  const following = followingCount ?? 0;
-
-  const [feedResult, suggestedUsers, trendingAlbums] = await Promise.all([
-    getMyFeed({ limit: 20 }),
-    getSuggestedUsers(4),
-    getTrendingThisWeek(4),
-  ]);
-
+  const feedResult = await getMyFeed({ limit: 20 });
   if (!feedResult.success) console.error('Feed error:', feedResult.error);
 
   const events = feedResult.events;
-  const state = computeFeedState(events.length);
-
-  const publicEntries = state !== 'normal' ? await getPublicFeed(8) : [];
-
-  const SuggestedUsersSection = () => (
-    <div className="divide-y divide-border-divider">
-      {suggestedUsers.map((p: SuggestedUser) => (
-        <div key={p.id} className="flex items-center gap-4 py-4">
-          <Link href={`/u/${p.username}`} className="flex-shrink-0">
-            <div className="rounded-full overflow-hidden border border-border">
-              <UserAvatar userId={p.id} src={p.avatar_url} size={40} />
-            </div>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <Link href={`/u/${p.username}`} className="block hover:opacity-70 transition-opacity duration-150">
-              <p className="text-meta font-medium text-text-primary truncate">
-                @{p.username}
-              </p>
-            </Link>
-          </div>
-          <FollowButton userId={p.id} initialIsFollowing={false} />
-        </div>
-      ))}
-    </div>
-  );
-
-  const AddAlbumCTA = () => (
-    <Link
-      href="/add"
-      className="flex items-center justify-between px-4 py-3.5 bg-text-warm text-paper-hi rounded-input hover:opacity-90 transition-opacity duration-150 group"
-    >
-      <p className="text-sm font-medium">Noter un album</p>
-      <span className="text-[16px] leading-none ml-4 transition-transform duration-150 group-hover:translate-x-0.5">→</span>
-    </Link>
-  );
-
-  const TrendingMini = () => (
-    <div className="mb-4">
-      <p className="text-label font-medium text-text-tertiary uppercase tracking-[0.22em] mb-2">
-        Tendances cette semaine
-      </p>
-      <div className="space-y-0 divide-y divide-dashed divide-rule">
-        {trendingAlbums.map((album: TrendingAlbum, i: number) => (
-          <Link
-            key={album.id}
-            href={`/albums/${album.album_id}`}
-            className="flex items-center gap-2.5 py-2 hover:opacity-75 transition-opacity duration-150"
-          >
-            <span className="font-display italic text-[15px] text-accent leading-none w-3 text-right flex-shrink-0">{i + 1}</span>
-            <div className="relative w-8 h-8 rounded-badge-sm overflow-hidden flex-shrink-0 bg-background-secondary">
-              {album.cover_url && (
-                <CoverImage
-                  src={album.cover_url}
-                  alt={album.album_title}
-                  fill
-                  className="object-cover"
-                  placeholder={<div className="w-full h-full bg-background-tertiary" />}
-                />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-label font-medium text-text-primary truncate">{album.album_title}</p>
-              <p className="text-label text-text-tertiary truncate">{album.artist_name}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-
-  const Sidebar = () => (
-    <div className="relative bg-paper-hi border border-border rounded-card-lg p-4 overflow-hidden">
-      <div className="absolute left-0 top-5 bottom-5 w-0.5 bg-accent opacity-40 rounded-r-full" />
-      {trendingAlbums.length > 0 && <TrendingMini />}
-      {suggestedUsers.length > 0 && (
-        <div className="mb-4">
-          <p className="text-label font-medium text-text-tertiary uppercase tracking-[0.22em] mb-2">
-            À suivre
-          </p>
-          <SuggestedUsersSection />
-        </div>
-      )}
-      <AddAlbumCTA />
-    </div>
-  );
+  const hasEvents = events.length > 0;
 
   return (
-    <div className="px-4 md:px-6 lg:px-8 pb-28 lg:pb-12 lg:flex lg:gap-12 lg:items-start">
-      {/* Colonne principale */}
-      <div className="lg:flex-1 lg:min-w-0">
-        <div className="pt-8 pb-6">
-          <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
-          <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
-        </div>
-
-        {/* ── empty ──────────────────────────────────────────────────────────── */}
-        {state === 'empty' && (
-          <div className="py-4">
-            <p className="text-body text-text-secondary mb-2">Le fil est calme pour l&apos;instant.</p>
-            <p className="text-meta text-text-tertiary mb-8 leading-relaxed">
-              Suis des gens pour voir leurs écoutes ici, ou commence par noter un album.
-            </p>
-            <div className="flex flex-col gap-3 mb-12">
-              <AddAlbumCTA />
-              <Link
-                href="/explore"
-                className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
-              >
-                <p className="text-meta text-text-primary font-medium">Explorer des albums</p>
-                <span className="text-[18px] leading-none ml-4 text-text-tertiary">→</span>
-              </Link>
-            </div>
-            {publicEntries.length > 0 && (
-              <div>
-                <p className="text-label text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                  Ce qui se passe sur Waveform
-                </p>
-                <div className="flex flex-col gap-3">
-                  {publicEntries.map((entry) => (
-                    <PublicFeedCard key={entry.id} entry={entry} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── sparse ─────────────────────────────────────────────────────────── */}
-        {state === 'sparse' && (
-          <div>
-            <FeedInfiniteList
-              initialEvents={events}
-              initialCursor={feedResult.nextCursor ?? null}
-              currentUserId={user.id}
-            />
-            {publicEntries.length > 0 && (
-              <div className="mt-8">
-                <p className="text-label text-text-secondary font-medium uppercase tracking-[0.08em] mb-4">
-                  Découvrir sur Waveform
-                </p>
-                <div className="flex flex-col gap-3">
-                  {publicEntries.map((entry) => (
-                    <PublicFeedCard key={entry.id} entry={entry} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── normal ─────────────────────────────────────────────────────────── */}
-        {state === 'normal' && (
-          <FeedInfiniteList
-            initialEvents={events}
-            initialCursor={feedResult.nextCursor ?? null}
-            currentUserId={user.id}
-          />
-        )}
+    <div className="px-3 md:px-5 lg:px-6 pb-28 lg:pb-12">
+      <MarkActivitySeen />
+      <div className="pt-8 pb-6">
+        <h1 className="text-h1 text-text-primary mb-2">Activité</h1>
+        <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
       </div>
 
-      {/* Sidebar unique — sticky depuis le haut */}
-      <aside className="hidden lg:block lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto">
-        <div className="pt-8 pb-4">
-          <Sidebar />
+      {hasEvents ? (
+        <FeedInfiniteList
+          initialEvents={events}
+          initialCursor={feedResult.nextCursor ?? null}
+          currentUserId={user.id}
+        />
+      ) : (
+        <div className="py-4">
+          <p className="text-body text-text-secondary mb-2">Pas encore d&apos;activité.</p>
+          <p className="text-meta text-text-tertiary mb-8 leading-relaxed">
+            Les likes, commentaires et nouveaux abonnés apparaîtront ici.
+          </p>
+          <Link
+            href="/explore"
+            className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"
+          >
+            <p className="text-meta text-text-primary font-medium">Découvrir des albums</p>
+            <span className="text-[18px] leading-none ml-4 text-text-tertiary">→</span>
+          </Link>
         </div>
-      </aside>
+      )}
     </div>
   );
 }

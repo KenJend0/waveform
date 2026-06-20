@@ -1,9 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { FeedEvent } from '@/app/actions/feed';
-import { UserAvatar } from '@/components/avatars/DefaultAvatar';
+import { getTrackEntryLikes } from '@/app/actions/feed';
 import { getTimeAgo } from '@/lib/utils/formatDate';
+import FeedActorsBottomSheet from '@/components/feed/FeedActorsBottomSheet';
+import { FeedAvatarCluster } from './FeedAvatarCluster';
+import { FeedRightCluster } from './FeedRightCluster';
+import { FeedTextLines } from './FeedTextLines';
+import { buildInteractionContext } from './feedInteractionContext';
 
 interface Props {
   event: FeedEvent & { type: 'TRACK_REVIEW_LIKED' };
@@ -11,39 +17,61 @@ interface Props {
 }
 
 export default function FeedCardTrackReviewLiked({ event, currentUserId }: Props) {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const timeAgo = getTimeAgo(event.created_at);
+  const isAggregate = event.actors_count && event.actors_count > 1 && event.actors;
+  const needsFetch = isAggregate && event.actors_count! > event.actors!.length;
   const track = event.track;
   const entryHref = event.liked_entry_id ? `/track-diary/${event.liked_entry_id}` : undefined;
 
-  const trackLink = track && entryHref && (
-    <>
-      {' de '}
-      <Link href={entryHref} className="text-text-secondary hover:text-text-primary transition-colors duration-150">
+  const context = buildInteractionContext({
+    currentUserId,
+    actor: event.actor,
+    verb: 'aimé',
+    isAggregate,
+    actors: event.actors,
+    actorsCount: event.actors_count,
+    onShowMore: needsFetch ? () => setSheetOpen(true) : undefined,
+    entryOwnerId: event.entry_owner_id,
+  });
+
+  const title = track && (
+    entryHref ? (
+      <Link href={entryHref} className="hover:text-accent-deep transition-colors duration-150">
         {track.title}
       </Link>
-    </>
+    ) : (
+      track.title
+    )
   );
 
   return (
-    <div className="relative flex items-start gap-2 px-6 py-2">
-      <time className="absolute top-2 right-6 text-label text-text-disabled">{timeAgo}</time>
-      <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={18} />
-      <p className="flex-1 min-w-0 pr-16 text-label text-text-tertiary leading-relaxed">
-        {currentUserId === event.actor.id ? (
-          <>Tu as aimé une écoute{trackLink}</>
-        ) : (
-          <>
-            <Link href={`/u/${event.actor.username}`} className="text-text-secondary hover:text-text-primary transition-colors duration-150">
-              {event.actor.username}
-            </Link>
-            {event.entry_owner_id === currentUserId
-              ? <>{' '}a aimé ton écoute</>
-              : <>{' '}a aimé une écoute</>
-            }
-            {trackLink}
-          </>
-        )}
-      </p>
-    </div>
+    <>
+      <div className="relative flex items-center gap-3 px-3 py-2">
+        <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="like" />
+
+        <FeedTextLines context={context} title={title} titleText={track?.title} time={timeAgo} className="flex-1 min-w-0" />
+
+        <FeedRightCluster
+          coverUrl={track?.cover_url}
+          coverHref={entryHref}
+          coverAlt={track?.title}
+        />
+      </div>
+
+      {isAggregate && event.liked_entry_id && (
+        <FeedActorsBottomSheet
+          isOpen={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          title="J'aime"
+          knownActors={event.actors!}
+          totalCount={event.actors_count!}
+          fetchActors={needsFetch
+            ? () => getTrackEntryLikes(event.liked_entry_id!)
+            : undefined
+          }
+        />
+      )}
+    </>
   );
 }

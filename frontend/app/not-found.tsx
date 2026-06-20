@@ -11,10 +11,10 @@ export default function NotFound() {
                 Cette page n'existe pas ou a été déplacée.
             </p>
             <Link
-                href="/feed"
+                href="/explore"
                 className="px-6 py-2.5 bg-[#1C1C1C] text-[#F5F3EF] text-[14px] font-medium rounded-[8px] hover:opacity-85 transition-opacity"
             >
-                Retour au fil
+                Retour à l&apos;accueil
             </Link>
         </main>
     );

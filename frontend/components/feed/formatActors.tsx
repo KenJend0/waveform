@@ -1,6 +1,6 @@
 import React from 'react';
-import Link from 'next/link';
 import type { FeedActor } from '@/app/actions/feed';
+import { ActorLink } from './cards/FeedActorLink';
 
 /**
  * Renders a list of actors as linked names.
@@ -19,15 +19,7 @@ export function formatActors(
   totalCount: number,
   onShowAll?: () => void,
 ): React.ReactNode {
-  const makeLink = (a: FeedActor) => (
-    <Link
-      key={a.id}
-      href={`/u/${a.username}`}
-      className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-    >
-      {a.username}
-    </Link>
-  );
+  const makeLink = (a: FeedActor) => <ActorLink key={a.id} username={a.username} />;
 
   const hasAll = totalCount <= actors.length;
 

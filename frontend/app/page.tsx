@@ -6,7 +6,7 @@ export default async function HomePage() {
     const user = await getAuthUser();
 
     if (user) {
-        redirect('/feed');
+        redirect('/explore');
     }
 
     return (

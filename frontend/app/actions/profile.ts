@@ -346,3 +346,56 @@ export async function deleteAccount(): Promise<{ ok: boolean; error?: string }> 
   }
 }
 
+function dayKey(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+/**
+ * Streak de jours consécutifs avec au moins une entrée de journal
+ * (album ou titre). Lecture pure — ne touche pas à diary_entries/
+ * track_diary_entries, bornée à 365 jours en arrière, marche arrière
+ * avec arrêt au premier trou (coût ~ longueur du streak, pas la table).
+ */
+export async function getCurrentStreak(userId: string): Promise<{ ok: boolean; streakDays: number; isActiveToday: boolean }> {
+  try {
+    const supabase = await createSupabaseServer();
+    const since = new Date();
+    since.setDate(since.getDate() - 365);
+
+    const [{ data: albumDays }, { data: trackDays }] = await Promise.all([
+      supabase
+        .from('diary_entries')
+        .select('listened_at')
+        .eq('user_id', userId)
+        .gte('listened_at', since.toISOString()),
+      (supabase as any)
+        .from('track_diary_entries')
+        .select('listened_at')
+        .eq('user_id', userId)
+        .gte('listened_at', since.toISOString()),
+    ]);
+
+    const activeDays = new Set<string>();
+    for (const row of albumDays ?? []) activeDays.add(dayKey((row as any).listened_at));
+    for (const row of trackDays ?? []) activeDays.add(dayKey((row as any).listened_at));
+
+    const today = new Date();
+    const isActiveToday = activeDays.has(dayKey(today.toISOString()));
+
+    const cursor = new Date(today);
+    if (!isActiveToday) cursor.setDate(cursor.getDate() - 1);
+
+    let streakDays = 0;
+    while (activeDays.has(dayKey(cursor.toISOString()))) {
+      streakDays += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return { ok: true, streakDays, isActiveToday };
+  } catch (err) {
+    console.error('getCurrentStreak error:', err);
+    return { ok: false, streakDays: 0, isActiveToday: false };
+  }
+}
+

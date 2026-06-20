@@ -1,9 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { supabase } from './supabase/client';
 import { AuthApiError, type User as SupabaseUser } from '@supabase/supabase-js';
 import { ensureProfile } from '@/app/actions/profile';
+import { hasUnseenActivity } from '@/app/actions/feed';
 import { showToast } from '@/components/Toast';
 
 type AuthContextType = {
@@ -11,16 +13,20 @@ type AuthContextType = {
   profile: any | null;
   isAdmin: boolean;
   loading: boolean;
+  unseenActivity: boolean;
+  refreshUnseenActivity: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [unseenActivity, setUnseenActivity] = useState(false);
 
   async function syncAdminStatus() {
     try {
@@ -34,6 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(Boolean(payload?.user?.isAdmin));
     } catch {
       setIsAdmin(false);
+    }
+  }
+
+  async function refreshUnseenActivity() {
+    try {
+      setUnseenActivity(await hasUnseenActivity());
+    } catch {
+      setUnseenActivity(false);
     }
   }
 
@@ -71,12 +85,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (user) {
           setUser(user);
           syncAdminStatus().catch(() => setIsAdmin(false));
+          refreshUnseenActivity().catch(() => setUnseenActivity(false));
           // 🎯 NEW: Ensure profile exists (non-blocking)
           ensureUserProfile(user).catch(err => console.error('Profile sync error:', err));
         } else {
           setUser(null);
           setProfile(null);
           setIsAdmin(false);
+          setUnseenActivity(false);
         }
       } catch (error) {
         if (error instanceof AuthApiError && error.status === 401) {
@@ -106,12 +122,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(session.user);
           syncAdminStatus().catch(() => setIsAdmin(false));
+          refreshUnseenActivity().catch(() => setUnseenActivity(false));
           // 🎯 NEW: Ensure profile on auth state change (non-blocking)
           ensureUserProfile(session.user).catch(err => console.error('Profile sync error:', err));
         } else {
           setUser(null);
           setProfile(null);
           setIsAdmin(false);
+          setUnseenActivity(false);
         }
       } catch (error) {
         if (error instanceof AuthApiError && error.status === 401) {
@@ -130,15 +148,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription?.unsubscribe();
   }, []);
 
+  // Le badge "non lu" ne se mettait à jour qu'aux évènements d'auth (rares,
+  // ex. refresh de token) — on le rafraîchit aussi à chaque navigation pour
+  // qu'il reste synchronisé avec l'activité réelle.
+  // Exception : /feed gère déjà son propre marquage + rafraîchissement
+  // (MarkActivitySeen) — le faire aussi ici créerait une course entre les
+  // deux appels (l'un avec l'ancienne donnée, l'autre avec la nouvelle) qui
+  // peut ré-afficher le badge juste après qu'il ait été effacé.
+  useEffect(() => {
+    if (!user || pathname === '/feed') return;
+    refreshUnseenActivity().catch(() => setUnseenActivity(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setUnseenActivity(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, isAdmin, loading, unseenActivity, refreshUnseenActivity, signOut }}>
       {children}
     </AuthContext.Provider>
   );

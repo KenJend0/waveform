@@ -4,7 +4,7 @@ import { getAuthUser } from "@/lib/supabase/server";
 import { getTrendingThisWeek, getForYouSuggestions, getDiscoveryAlbums, getSimilarUsers, getForYouTracks } from "@/app/actions/explore";
 import { getPublicLists, type UserList } from "@/app/actions/lists";
 import { getTrendingTracks } from "@/app/actions/track-diary";
-import SearchOverlay from "@/components/SearchOverlay";
+import StickySearchBar from "@/components/explore/StickySearchBar";
 import PourToiSection from "@/components/PourToiSection";
 import DiscoverySection from "@/components/DiscoverySection";
 import SimilarUsersSection from "@/components/SimilarUsersSection";
@@ -39,21 +39,20 @@ export default async function ExplorePage() {
         console.error("Explore data fetch failed:", err);
     }
 
-    const isEmpty = trending.length === 0 && trendingTracks.length === 0;
+    const isEmpty = trending.length === 0 && trendingTracks.length === 0 && communityLists.length === 0;
 
     return (
-        <>
+        <div>
             <section className="px-6 lg:px-8 pt-6 lg:pt-8 pb-5">
                 <h1 className="text-h1 text-text-primary mb-2">
-                    Explorer
+                    Découvrir
                 </h1>
                 <p className="text-text-secondary text-meta">
                     Découvre de la musique, des listes et des profils qui correspondent à tes goûts.
                 </p>
-                <div className="mt-4">
-                    <SearchOverlay />
-                </div>
             </section>
+
+            <StickySearchBar />
 
             <main className="px-6 lg:px-8 pb-28 lg:pb-10">
                 {isEmpty ? (
@@ -109,6 +108,6 @@ export default async function ExplorePage() {
                     </div>
                 )}
             </main>
-        </>
+        </div>
     );
 }

@@ -1,3 +1,5 @@
+sur les cartes "critique" de la page Activité (FeedCardReviewCreated/FeedCardTrackReviewCreated), les boutons like/répondre ont été retirés (commentés dans le code, pas supprimés) pour la refonte ligne uniforme — la carte entière navigue déjà vers la critique complète où ces actions existent. Trouver une façon plus subtile de les réintroduire sur la carte du feed (icône discrète dans le coin, au survol, etc.) sans recharger la ligne.
+
 liker les titres sur les pages albums, ajouter les singles a la recherche
 creer une feed card en consequence : 'X aime 'titre' sur 'album.titre'
 version pc
@@ -31,7 +33,39 @@ contenu pour le snouveaux utilisateurs
 
 onboarding tout neuf
 
-pages legales a refaire un peu
+pages legales a refaire un peu surtotu que maintenant qu'il y a la page support
+
+voir le parcours utilisateur, est ce que c'est vraiment bien de faire / puis /auth, ca peut casser l'experience.
+
+refaire /, /auth, /add avec claude design. 
 
 
+
+---
+
+## Triage suite à un gros doc d'idées "engagement/addictif" (session redesign Explore/Activité)
+
+### Déjà construit mais sous-exploité — à corriger avant d'ajouter du neuf
+- cartes de partage : ShareButton existe mais c'est une icône de 15px planquée dans un sous-menu d'entrée de journal, quasi invisible. Le vrai chantier c'est de lui donner une place (CTA visible juste après avoir noté un album), pas refaire le partage.
+- "profils proches" / taste-matching : SimilarUsersSection existe sur Explore mais dépend d'une table ML (user_similarity) peuplée en batch offline — vide tant que le batch n'a pas tourné pour l'utilisateur. Vérifier si ce batch tourne vraiment en prod.
+- badge "ça me concerne" sur Activité : déjà vrai dans le code, exclut déjà tes propres actions.
+- onboarding première action rapide : déjà fait (genres → 3 albums → suivre quelqu'un).
+
+### Idées neuves pertinentes, effort modeste
+- feedback après notation (pas juste un toast "ajouté", un retour qui fait sentir que le profil évolue)
+- "à noter rapidement" sur Explore : cartes avec notation inline, sans ouvrir la page album
+- critique minimale / tags "vibe" (sombre, nostalgique, énergique...) au lieu de forcer du texte
+- collections implicites (X/10 albums essentiels d'un artiste, X albums des années 2010 explorés) — à vérifier si les albums ont déjà des métadonnées de genre/décennie exploitables
+
+### Pertinent mais gros effort ou ROI incertain à l'échelle actuelle
+- weekly recap (genre dominant, album le plus clivant, etc.) — demande de vraies agrégations
+- comparaisons sociales ("plus sévère que 72% des gens") — avec peu d'utilisateurs, les pourcentages seraient statistiquement creux
+- formule de ranking pondérée pour Explore — le problème actuel c'est le volume de données (cold start), pas la sophistication du ranking
+- nav contextuelle (bouton + qui change de label selon le contexte) — risque de complexité pour un gain cosmétique
+
+### Process à prioriser, pas une feature
+- instrumentation/analytics : aucun event "jour actif"/retention tracké aujourd'hui. Construire des features d'engagement sans pouvoir mesurer si elles marchent, c'est designer à l'aveugle — probablement plus urgent que la moitié des idées ci-dessus.
+
+### À ne pas faire pour l'instant
+messagerie privée, ML lourd, refonte complète du feed, trop de badges/notifs push, marketplace de recommandations, playlists trop ambitieuses.
 

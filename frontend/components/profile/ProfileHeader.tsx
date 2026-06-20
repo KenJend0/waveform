@@ -23,10 +23,14 @@ type Props = {
   stats?: {
     reviews_count: number;
   };
+  streak?: {
+    days: number;
+    isActiveToday: boolean;
+  };
   onFollowClick?: () => void;
 };
 
-export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
+export default function ProfileHeader({ user, stats, streak, onFollowClick }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { signOut } = useAuth();
@@ -117,6 +121,12 @@ export default function ProfileHeader({ user, stats, onFollowClick }: Props) {
             <h1 className="text-[24px] lg:text-[22px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
               {user.username}
             </h1>
+
+            {user.is_me && streak && streak.days >= 2 && (
+              <span className="mt-1.5 inline-flex items-center gap-1 bg-paper-hi border border-border rounded-badge px-2 py-0.5 text-label text-accent-deep">
+                🔥 {streak.days} jours d&apos;affilée
+              </span>
+            )}
 
             {/* Follow button for other users */}
             {!user.is_me && onFollowClick && (

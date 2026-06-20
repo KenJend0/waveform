@@ -6,15 +6,16 @@ import { usePathname } from "next/navigation";
 export const NAV_PREV_KEY = "wf_nav_prev";
 
 export function getNavLabel(pathname: string): string {
-    if (pathname === "/" || pathname === "/feed") return "Feed";
+    if (pathname === "/feed") return "Activité";
+    if (pathname === "/") return "Découvrir";
     if (pathname === "/diary") return "Journal";
     if (pathname.startsWith("/diary/")) return "Journal";
     if (pathname === "/track-diary") return "Journal";
     if (pathname.startsWith("/track-diary/")) return "Journal";
     if (pathname.startsWith("/search")) return "Recherche";
-    if (pathname === "/explore") return "Explorer";
+    if (pathname === "/explore") return "Découvrir";
     if (pathname === "/explore/tendances") return "Tendances";
-    if (pathname.startsWith("/explore/")) return "Explorer";
+    if (pathname.startsWith("/explore/")) return "Découvrir";
     if (pathname.startsWith("/u/")) return "Profil";
     if (pathname === "/me") return "Mon profil";
     if (pathname.startsWith("/settings")) return "Paramètres";

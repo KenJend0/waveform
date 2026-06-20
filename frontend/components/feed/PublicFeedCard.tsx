@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
 import type { PublicFeedEntry } from '@/app/actions/feed';
+import { ActorLink } from './cards/FeedActorLink';
+import { FeedRightCluster } from './cards/FeedRightCluster';
+import { FeedTextLines } from './cards/FeedTextLines';
 
 const REVIEW_LONG_THRESHOLD = 120;
 
@@ -15,71 +17,54 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
   const isLong = hasWords && entry.review_body!.length > REVIEW_LONG_THRESHOLD;
   const [expanded, setExpanded] = useState(false);
 
+  const albumHref = `/albums/${entry.album.id}`;
+  const verb = entry.rating != null ? 'noté' : 'écouté';
+
+  const context = (
+    <>
+      <ActorLink username={entry.author.username} />
+      <span>{` a ${verb}`}</span>
+    </>
+  );
+
+  const title = (
+    <Link href={albumHref} className="hover:text-accent-deep transition-colors duration-150">
+      {entry.album.title}
+    </Link>
+  );
+
   return (
-    <div className="w-full relative rounded-card px-6 py-6 bg-background-tertiary overflow-hidden">
-      <div className="absolute left-0 top-6 bottom-6 w-0.5 bg-accent opacity-40 rounded-r-full" />
-      <time className="absolute top-5 right-6 text-label text-text-disabled">
-        {timeAgo}
-      </time>
+    <div className="relative rounded-card px-3 py-2 bg-background-tertiary">
+      <div className="flex items-center gap-3">
+        <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={32} />
 
-      {/* Author context */}
-      <div className="mb-4 flex items-center gap-2 pr-16 text-label text-text-tertiary">
-        <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={18} />
-        <Link
-          href={`/u/${entry.author.username}`}
-          className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-        >
-          {entry.author.username}
-        </Link>
-        <span>·</span>
-        <span>{hasWords ? 'a écrit quelques mots' : 'a écouté'}</span>
+        <FeedTextLines
+          context={context}
+          title={title}
+          titleText={entry.album.title}
+          artist={entry.album.artist_name}
+          artistText={entry.album.artist_name}
+          time={timeAgo}
+          className="flex-1 min-w-0"
+        />
+
+        <FeedRightCluster
+          rating={entry.rating}
+          coverUrl={entry.album.cover_url}
+          coverHref={albumHref}
+          coverAlt={entry.album.title}
+        />
       </div>
 
-      {/* Cover + title/rating */}
-      <div className="flex gap-4 items-center mb-4">
-        <Link href={`/albums/${entry.album.id}`} className="shrink-0">
-          {entry.album.cover_url ? (
-            <Image
-              src={entry.album.cover_url}
-              alt={entry.album.title}
-              width={80}
-              height={80}
-              className="w-20 h-20 object-cover rounded-cover"
-              unoptimized
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-cover bg-background-secondary" />
-          )}
-        </Link>
-
-        <div className="flex-1 min-w-0">
-          <Link href={`/albums/${entry.album.id}`}>
-            <p className="font-display font-normal text-body text-text-warm line-clamp-2 leading-snug">
-              {entry.album.title}
-            </p>
-          </Link>
-          {entry.album.artist_name && (
-            <p className="text-sm text-text-tertiary mt-0.5 truncate">{entry.album.artist_name}</p>
-          )}
-          {entry.rating !== null && (
-            <span className="inline-flex items-baseline gap-0.5 mt-2 bg-paper-hi border border-accent rounded-badge px-1.5 py-0.5 text-accent font-display italic text-[15px] leading-none">
-              {entry.rating}
-              <span className="font-sans not-italic text-[9px] tracking-[0.16em] uppercase opacity-70">/10</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Review excerpt */}
       {hasWords && (
-        <div>
-          <p className={`italic text-meta leading-relaxed text-text-secondary max-w-[540px] ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
+        <div className="mt-2 pl-[44px]">
+          <p className={`italic text-meta leading-relaxed text-text-secondary ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
             &laquo;&thinsp;{entry.review_body}&thinsp;&raquo;
           </p>
           {isLong && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="mt-1 text-label text-text-tertiary hover:text-text-primary transition-colors duration-150 pl-3.5"
+              className="mt-1 text-label text-text-tertiary hover:text-text-primary transition-colors duration-150"
             >
               {expanded ? 'Voir moins' : 'Voir plus'}
             </button>

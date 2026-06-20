@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
     if (!user) redirect('/auth?mode=login');
 
     const profileResult = await getMyProfileSettings();
-    if (!profileResult.ok || !profileResult.profile) redirect('/feed');
+    if (!profileResult.ok || !profileResult.profile) redirect('/explore');
 
     const profile = profileResult.profile;
 
@@ -24,7 +24,7 @@ export default async function OnboardingPage() {
     //   calls revalidatePath, so no re-render occurs mid-flow)
     const defaultUsername = user.id.substring(0, 8);
     const hasRealUsername = profile.username && profile.username !== defaultUsername;
-    if (profile.username_changed === true || hasRealUsername) redirect('/feed');
+    if (profile.username_changed === true || hasRealUsername) redirect('/explore');
 
     const suggestedUsers = await getSuggestedUsers(5);
 

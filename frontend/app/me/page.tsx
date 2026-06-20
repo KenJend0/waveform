@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
-import { ensureProfile } from "@/app/actions/profile";
+import { ensureProfile, getCurrentStreak } from "@/app/actions/profile";
 import UnauthCTA from "@/components/UnauthCTA";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
@@ -56,6 +56,7 @@ export default async function MyProfilePage() {
         unifiedReviews,
         allRatingsResult,
         trackReviewsCountResult,
+        streakResult,
     ] = await Promise.all([
         supabase
             .from("follows")
@@ -87,6 +88,7 @@ export default async function MyProfilePage() {
             .eq("user_id", user.id)
             .not("review_body", "is", null)
             .neq("review_body", ""),
+        getCurrentStreak(user.id),
     ]);
 
     const favoriteAlbums = (favoriteAlbumsResult.data || []).map((item: any) => ({
@@ -121,11 +123,15 @@ export default async function MyProfilePage() {
         reviews_count: reviewsCount,
     };
 
+    const streak = streakResult.ok
+        ? { days: streakResult.streakDays, isActiveToday: streakResult.isActiveToday }
+        : undefined;
+
     return (
         <div className="lg:flex lg:items-start lg:gap-12 lg:px-8">
             {/* Sidebar gauche (desktop) / Layout empilé (mobile) */}
             <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
-                <ProfileHeader user={userData} stats={stats} />
+                <ProfileHeader user={userData} stats={stats} streak={streak} />
                 <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
                     {/* Histogramme mobile : juste sous le hero */}
                     <div className="lg:hidden mt-4 mb-2">

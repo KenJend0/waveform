@@ -9,7 +9,7 @@ import ProfileMenuClient from "@/components/ProfileMenuClient";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 
 export default function Header() {
-    const { user, loading } = useAuth();
+    const { user, loading, unseenActivity } = useAuth();
     const pathname = usePathname();
     const [mounted, setMounted] = useState(false);
 
@@ -18,9 +18,9 @@ export default function Header() {
     }, []);
 
     const navItems = [
-        { href: "/feed", label: "Feed" },
-        { href: "/explore", label: "Explore" },
+        { href: "/explore", label: "Découvrir" },
         { href: "/add", label: "Ajouter" },
+        { href: "/feed", label: "Activité" },
         { href: "/me", label: "Profile" },
     ];
 
@@ -49,13 +49,16 @@ export default function Header() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`text-meta font-medium px-6 py-2 transition-colors duration-150 ${
+                            className={`relative text-meta font-medium px-6 py-2 transition-colors duration-150 ${
                                 isActive(item.href)
                                     ? "text-text-primary"
                                     : "text-text-secondary hover:text-text-primary"
                             }`}
                         >
                             {item.label}
+                            {item.href === "/feed" && unseenActivity && (
+                                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent rounded-full" />
+                            )}
                         </Link>
                     ))}
                 </nav>

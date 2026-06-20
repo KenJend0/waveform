@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { FeedEvent } from '@/app/actions/feed';
-import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
+import { ActorLink } from './FeedActorLink';
+import { FeedAvatarGlyph } from './FeedAvatarGlyph';
+import { FeedRightCluster } from './FeedRightCluster';
+import { FeedTextLines } from './FeedTextLines';
 
 interface FeedCardCommentReplyProps {
   event: FeedEvent & { type: 'COMMENT_REPLY' };
@@ -18,34 +21,36 @@ export default function FeedCardCommentReply({ event }: FeedCardCommentReplyProp
     ? `/albums/${event.album.id}`
     : null;
 
+  const context = (
+    <>
+      <ActorLink username={event.actor.username} />
+      <span>{' a répondu à ton commentaire'}</span>
+    </>
+  );
+
+  const title = event.album && entryLink && (
+    <Link href={entryLink} className="hover:text-accent-deep transition-colors duration-150">
+      {event.album.title}
+    </Link>
+  );
+
   return (
-    <div className="relative flex items-start gap-2 px-6 py-2">
-      <time className="absolute top-2 right-6 text-label text-text-disabled">
-        {timeAgo}
-      </time>
+    <div className="relative flex items-center gap-3 px-3 py-2">
+      <FeedAvatarGlyph userId={event.actor.id} avatarUrl={event.actor.avatar_url} size={32} glyph="reply" />
 
-      <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={18} />
+      <FeedTextLines
+        context={context}
+        title={title}
+        titleText={event.album?.title}
+        time={timeAgo}
+        className="flex-1 min-w-0"
+      />
 
-      <p className="flex-1 min-w-0 pr-16 text-label text-text-tertiary leading-relaxed">
-        <Link
-          href={`/u/${event.actor.username}`}
-          className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-        >
-          {event.actor.username}
-        </Link>
-        {' a répondu à ton commentaire'}
-        {event.album && entryLink && (
-          <>
-            {' sur '}
-            <Link
-              href={entryLink}
-              className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-            >
-              {event.album.title}
-            </Link>
-          </>
-        )}
-      </p>
+      <FeedRightCluster
+        coverUrl={event.album?.cover_url}
+        coverHref={entryLink}
+        coverAlt={event.album?.title}
+      />
     </div>
   );
 }

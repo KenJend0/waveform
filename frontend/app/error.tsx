@@ -12,7 +12,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
         <main className="min-h-[60dvh] flex flex-col items-center justify-center p-6 text-center">
             <h1 className="text-h2 text-text-primary mb-2">Une erreur est survenue</h1>
             <p className="text-[14px] text-text-secondary max-w-xs mb-8">
-                Quelque chose s'est mal passé. Tu peux réessayer ou revenir au fil.
+                Quelque chose s'est mal passé. Tu peux réessayer ou revenir à l'accueil.
             </p>
             <div className="flex items-center gap-3">
                 <button
@@ -22,10 +22,10 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
                     Réessayer
                 </button>
                 <Link
-                    href="/feed"
+                    href="/explore"
                     className="px-6 py-2.5 border border-border text-text-secondary text-[14px] font-medium rounded-[8px] hover:border-[#8E6F5E] hover:text-[#8E6F5E] transition-colors duration-150"
                 >
-                    Retour au fil
+                    Retour à l&apos;accueil
                 </Link>
             </div>
         </main>

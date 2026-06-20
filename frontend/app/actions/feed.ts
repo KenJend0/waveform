@@ -220,17 +220,26 @@ export async function getMyFeed({
       .filter((e: any) => e.type === 'track_diary_entry' && e.payload?.trackEntryId)
       .map((e: any) => e.payload.trackEntryId);
 
-    const [{ data: trackStatsData }, { data: trackLikedData }] = await Promise.all([
+    // Track entries commented on by others (for TRACK_COMMENT_CREATED "also commented" flag)
+    const trackCommentEventEntryIds = (rawEvents || [])
+      .filter((e: any) => e.type === 'track_comment' && e.payload?.trackEntryId)
+      .map((e: any) => e.payload.trackEntryId);
+
+    const [{ data: trackStatsData }, { data: trackLikedData }, { data: trackCommentedData }] = await Promise.all([
       trackEntryIds.length > 0
         ? (supabase as any).from('track_diary_entry_stats').select('entry_id, likes_count, comments_count').in('entry_id', trackEntryIds)
         : Promise.resolve({ data: [] }),
       trackEntryIds.length > 0
         ? (supabase as any).from('track_diary_likes').select('entry_id').in('entry_id', trackEntryIds).eq('user_id', user.id)
         : Promise.resolve({ data: [] }),
+      trackCommentEventEntryIds.length > 0
+        ? (supabase as any).from('track_diary_comments').select('entry_id').in('entry_id', trackCommentEventEntryIds).eq('user_id', user.id)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const trackStatsMap = new Map((trackStatsData || []).map((s: any) => [s.entry_id, s]));
     const trackLikedIds = new Set((trackLikedData || []).map((l: any) => l.entry_id));
+    const trackCommentedEntryIds = new Set((trackCommentedData || []).map((c: any) => c.entry_id));
 
     // Map DB events to frontend types
     const events: FeedEvent[] = (rawEvents || [])
@@ -253,6 +262,9 @@ export async function getMyFeed({
         // Attach "also commented" flag for comment events from other users
         if (mapped && mapped.type === 'COMMENT_CREATED' && mapped.entry_id && mapped.actor.id !== user.id) {
           mapped.current_user_also_commented = commentedEntryIds.has(mapped.entry_id);
+        }
+        if (mapped && mapped.type === 'TRACK_COMMENT_CREATED' && mapped.entry_id && mapped.actor.id !== user.id) {
+          mapped.current_user_also_commented = trackCommentedEntryIds.has(mapped.entry_id);
         }
         return mapped;
       })
@@ -360,6 +372,57 @@ function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEv
       }
       result.push(group.length > 1
         ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-comment-${e.entry_id}` }
+        : e
+      );
+      i = j;
+      continue;
+    }
+
+    // TRACK_REVIEW_LIKED targeting currentUser's entry — consecutive likes on the same track entry
+    if (e.type === 'TRACK_REVIEW_LIKED' && e.entry_owner_id === currentUserId && e.liked_entry_id && e.actor.id !== currentUserId) {
+      const group = [e];
+      const anchor = new Date(e.created_at).getTime();
+      let j = i + 1;
+      while (
+        j < events.length &&
+        events[j].type === 'TRACK_REVIEW_LIKED' &&
+        events[j].entry_owner_id === currentUserId &&
+        events[j].liked_entry_id === e.liked_entry_id &&
+        events[j].actor.id !== currentUserId &&
+        anchor - new Date(events[j].created_at).getTime() < MS_24H
+      ) {
+        group.push(events[j++]);
+      }
+      result.push(group.length > 1
+        ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-track-like-${e.liked_entry_id}` }
+        : e
+      );
+      i = j;
+      continue;
+    }
+
+    // TRACK_COMMENT_CREATED targeting currentUser's entry — consecutive comments on the same track entry
+    if (e.type === 'TRACK_COMMENT_CREATED' && e.entry_owner_id === currentUserId && e.entry_id && e.actor.id !== currentUserId) {
+      const group = [e];
+      const seenActors = new Set<string>([e.actor.id]);
+      const anchor = new Date(e.created_at).getTime();
+      let j = i + 1;
+      while (
+        j < events.length &&
+        events[j].type === 'TRACK_COMMENT_CREATED' &&
+        events[j].entry_owner_id === currentUserId &&
+        events[j].entry_id === e.entry_id &&
+        events[j].actor.id !== currentUserId &&
+        anchor - new Date(events[j].created_at).getTime() < MS_24H
+      ) {
+        if (!seenActors.has(events[j].actor.id)) {
+          seenActors.add(events[j].actor.id);
+          group.push(events[j]);
+        }
+        j++;
+      }
+      result.push(group.length > 1
+        ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-track-comment-${e.entry_id}` }
         : e
       );
       i = j;
@@ -651,6 +714,56 @@ export async function getCommentActors(entryId: string): Promise<FeedActor[]> {
 }
 
 /**
+ * Get all actors who commented on a track diary entry.
+ * Used by the feed aggregation bottom sheet for TRACK_COMMENT_CREATED cards.
+ */
+export async function getTrackCommentActors(entryId: string): Promise<FeedActor[]> {
+  try {
+    const supabase = await createSupabaseServer();
+
+    const { data: comments, error } = await (supabase as any)
+      .from('track_diary_comments')
+      .select('user_id')
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: false });
+
+    if (error || !comments || comments.length === 0) return [];
+
+    const userIds = [...new Set(comments.map((c: any) => c.user_id))] as string[];
+    const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    return userIds.map((id) => profileMap.get(id)).filter(Boolean) as FeedActor[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get all actors who liked a track diary entry.
+ * Used by the feed aggregation bottom sheet for TRACK_REVIEW_LIKED cards.
+ */
+export async function getTrackEntryLikes(entryId: string): Promise<FeedActor[]> {
+  try {
+    const supabase = await createSupabaseServer();
+
+    const { data: likes, error } = await (supabase as any)
+      .from('track_diary_likes')
+      .select('user_id')
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: false });
+
+    if (error || !likes || likes.length === 0) return [];
+
+    const userIds = [...new Set(likes.map((l: any) => l.user_id))] as string[];
+    const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url').in('id', userIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    return userIds.map((id) => profileMap.get(id)).filter(Boolean) as FeedActor[];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Backfill: when a user follows someone, insert that person's last N feed_events
  * into the follower's feed so it's not empty right away.
  * Only inserts events that don't already exist (upsert by actor_id + type + entry_id + album_id).
@@ -881,5 +994,61 @@ export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
   } catch (err) {
     console.error('getPublicFeed unexpected error:', err);
     return [];
+  }
+}
+
+/**
+ * Marque l'activité comme vue par l'utilisateur courant (visite de /feed).
+ * N'écrit jamais dans feed_events — uniquement profiles.last_seen_activity_at.
+ */
+export async function markActivitySeen() {
+  try {
+    const user = await getAuthUser();
+    if (!user) return { ok: false as const };
+
+    const supabase = await createSupabaseServer();
+    await (supabase as any)
+      .from('profiles')
+      .update({ last_seen_activity_at: new Date().toISOString() })
+      .eq('id', user.id);
+
+    return { ok: true as const };
+  } catch (err) {
+    console.error('markActivitySeen error:', err);
+    return { ok: false as const };
+  }
+}
+
+/**
+ * Y a-t-il un événement (provenant d'un autre utilisateur) plus récent
+ * que la dernière visite de /feed ? Utilisé pour le badge "non lu" sur la nav.
+ */
+export async function hasUnseenActivity(): Promise<boolean> {
+  try {
+    const user = await getAuthUser();
+    if (!user) return false;
+
+    const supabase = await createSupabaseServer();
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('last_seen_activity_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const since = (profile as any)?.last_seen_activity_at ?? new Date(0).toISOString();
+
+    const { count } = await supabase
+      .from('feed_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .neq('actor_id', user.id)
+      .gt('created_at', since)
+      .limit(1);
+
+    return (count ?? 0) > 0;
+  } catch (err) {
+    console.error('hasUnseenActivity error:', err);
+    return false;
   }
 }

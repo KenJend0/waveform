@@ -11,9 +11,9 @@ export default function AuthPage() {
     const { user } = useAuth();
 
     useEffect(() => {
-        // Si déjà connecté, rediriger vers le feed
+        // Si déjà connecté, rediriger vers explore
         if (user) {
-            router.push('/feed');
+            router.push('/explore');
         }
     }, [user, router]);
 

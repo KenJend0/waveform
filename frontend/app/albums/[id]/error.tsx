@@ -16,8 +16,8 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
                 <button onClick={reset} className="px-6 py-2.5 bg-[#1C1C1C] text-[#F5F3EF] text-[14px] font-medium rounded-[8px] hover:opacity-85 transition-opacity">
                     Réessayer
                 </button>
-                <Link href="/feed" className="px-6 py-2.5 border border-border text-text-secondary text-[14px] font-medium rounded-[8px] hover:border-[#8E6F5E] hover:text-[#8E6F5E] transition-colors duration-150">
-                    Retour au fil
+                <Link href="/explore" className="px-6 py-2.5 border border-border text-text-secondary text-[14px] font-medium rounded-[8px] hover:border-[#8E6F5E] hover:text-[#8E6F5E] transition-colors duration-150">
+                    Retour à l&apos;accueil
                 </Link>
             </div>
         </main>

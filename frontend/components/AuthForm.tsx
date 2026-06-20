@@ -27,7 +27,7 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const urlError = searchParams.get("error");
 
-  const navigateAfterAuth = (destination: "/feed" | "/onboarding" = "/feed") => {
+  const navigateAfterAuth = (destination: "/explore" | "/onboarding" = "/explore") => {
     window.location.assign(destination);
   };
 
@@ -75,7 +75,7 @@ export default function AuthForm() {
 
         if (data.user && data.session) {
           showToast("Connexion réussie !", "success");
-          navigateAfterAuth('/feed');
+          navigateAfterAuth('/explore');
           return;
         }
       } else if (mode === "signup") {
@@ -108,7 +108,7 @@ export default function AuthForm() {
               method: "email",
             },
           });
-          // New accounts should land on onboarding directly instead of relying on /feed.
+          // New accounts should land on onboarding directly instead of relying on /explore.
           navigateAfterAuth('/onboarding');
           return;
         } else if (data.user) {

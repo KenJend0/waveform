@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { FeedEvent } from '@/app/actions/feed';
 import { getFollowActors } from '@/app/actions/feed';
-import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
 import { formatActors } from '@/components/feed/formatActors';
 import FeedActorsBottomSheet from '@/components/feed/FeedActorsBottomSheet';
+import { ActorLink } from './FeedActorLink';
+import { FeedAvatarCluster } from './FeedAvatarCluster';
+import { FeedTextLines } from './FeedTextLines';
 
 interface FeedCardUserFollowedProps {
   event: FeedEvent & { type: 'USER_FOLLOWED' };
@@ -23,59 +24,37 @@ export default function FeedCardUserFollowed({
   const isAggregate = event.actors_count && event.actors_count > 1 && event.actors;
   const needsFetch = isAggregate && event.actors_count! > event.actors!.length;
 
+  const context = currentUserId === event.actor.id ? (
+    <>
+      Tu as commencé à suivre{' '}
+      {event.followee ? (
+        <ActorLink username={event.followee.username} emphasis />
+      ) : (
+        'quelqu\'un'
+      )}
+    </>
+  ) : isAggregate ? (
+    <>
+      {formatActors(
+        event.actors!,
+        event.actors_count!,
+        needsFetch ? () => setSheetOpen(true) : undefined,
+      )}{' '}
+      vous ont suivi
+    </>
+  ) : (
+    <>
+      <ActorLink username={event.actor.username} />
+      {' '}a commencé à te suivre
+    </>
+  );
+
   return (
     <>
-      <div className="relative flex items-start gap-2 px-6 py-2">
-        <time className="absolute top-2 right-6 text-label text-text-disabled">
-          {timeAgo}
-        </time>
+      <div className="relative flex items-center gap-3 px-3 py-2">
+        <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="follow" />
 
-        {isAggregate ? (
-          <div className="flex -space-x-1 flex-shrink-0">
-            {event.actors!.slice(0, 3).map(a => (
-              <UserAvatar key={a.id} userId={a.id} src={a.avatar_url} size={18} />
-            ))}
-          </div>
-        ) : (
-          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={18} />
-        )}
-
-        <p className="flex-1 min-w-0 pr-16 text-label text-text-tertiary leading-relaxed">
-          {currentUserId === event.actor.id ? (
-            <>
-              Tu as commencé à suivre{' '}
-              {event.followee ? (
-                <Link
-                  href={`/u/${event.followee.username}`}
-                  className="hover:text-text-primary transition-colors duration-150"
-                >
-                  {event.followee.username}
-                </Link>
-              ) : (
-                'quelqu\'un'
-              )}
-            </>
-          ) : isAggregate ? (
-            <>
-              {formatActors(
-                event.actors!,
-                event.actors_count!,
-                needsFetch ? () => setSheetOpen(true) : undefined,
-              )}{' '}
-              vous ont suivi
-            </>
-          ) : (
-            <>
-              <Link
-                href={`/u/${event.actor.username}`}
-                className="text-text-secondary hover:text-text-primary transition-colors duration-150"
-              >
-                {event.actor.username}
-              </Link>
-              {' '}a commencé à te suivre
-            </>
-          )}
-        </p>
+        <FeedTextLines context={context} time={timeAgo} className="flex-1 min-w-0" />
       </div>
 
       {isAggregate && event.followee && (

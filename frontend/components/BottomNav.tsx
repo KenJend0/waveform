@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 import { useBottomSheet } from "@/lib/BottomSheetContext";
 import { useScrollNavState } from "@/lib/useScrollNavState";
@@ -54,20 +54,19 @@ export default function BottomNav() {
             }}
         >
             <motion.nav
-                layout
                 transition={transition}
                 style={{
                     // C'est cet élément (backdrop-blur + largeur animée) qu'iOS doit repeindre :
                     // l'isoler sur sa propre couche GPU et limiter la portée du repaint évite
                     // que la mutation interrompe le scroll momentum en cours.
                     transform: 'translateZ(0)',
-                    willChange: 'transform',
-                    contain: 'layout style paint',
+                    willChange: 'transform, opacity',
+                    contain: 'paint',
                 }}
                 className={`flex items-center min-h-11
                             bg-[#FAF8F4]/92 backdrop-blur-md border border-border
                             shadow-[0_8px_20px_-8px_rgba(60,40,20,0.18),0_1px_2px_rgba(0,0,0,0.04)]
-                            justify-around
+                            justify-around transition-[width,border-radius,padding] duration-300 ease-out
                             ${isCompact ? "w-[78%] max-w-[320px] rounded-full px-2 py-1.5" : "w-full rounded-[20px] px-2 py-2"}`}
             >
                 {navItems.map((item) => {
@@ -91,19 +90,17 @@ export default function BottomNav() {
                                       style={{ transform: 'rotate(-4deg)' }}>
                                     <Icon />
                                 </span>
-                                <AnimatePresence initial={false}>
-                                    {!isCompact && (
-                                        <motion.span
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={transition}
-                                            className="text-[9px] leading-none overflow-hidden"
-                                        >
-                                            Ajouter
-                                        </motion.span>
-                                    )}
-                                </AnimatePresence>
+                                <motion.span
+                                    animate={{
+                                        opacity: isCompact ? 0 : 1,
+                                        y: isCompact ? -2 : 0,
+                                        scale: isCompact ? 0.96 : 1,
+                                    }}
+                                    transition={transition}
+                                    className="text-[9px] leading-none overflow-hidden"
+                                >
+                                    Ajouter
+                                </motion.span>
                             </Link>
                         );
                     }
@@ -125,19 +122,17 @@ export default function BottomNav() {
                                     <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-accent rounded-full" />
                                 )}
                             </span>
-                            <AnimatePresence initial={false}>
-                                {!isCompact && (
-                                    <motion.span
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={transition}
-                                        className="text-[9px] leading-none overflow-hidden"
-                                    >
-                                        {item.label}
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
+                            <motion.span
+                                animate={{
+                                    opacity: isCompact ? 0 : 1,
+                                    y: isCompact ? -2 : 0,
+                                    scale: isCompact ? 0.96 : 1,
+                                }}
+                                transition={transition}
+                                className="text-[9px] leading-none overflow-hidden"
+                            >
+                                {item.label}
+                            </motion.span>
                         </Link>
                     );
                 })}
@@ -163,19 +158,17 @@ export default function BottomNav() {
                             <ProfileIcon />
                         )}
                     </span>
-                    <AnimatePresence initial={false}>
-                        {!isCompact && (
-                            <motion.span
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={transition}
-                                className="text-[9px] leading-none overflow-hidden"
-                            >
-                                Moi
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
+                    <motion.span
+                        animate={{
+                            opacity: isCompact ? 0 : 1,
+                            y: isCompact ? -2 : 0,
+                            scale: isCompact ? 0.96 : 1,
+                        }}
+                        transition={transition}
+                        className="text-[9px] leading-none overflow-hidden"
+                    >
+                        Moi
+                    </motion.span>
                 </Link>
             </motion.nav>
         </div>

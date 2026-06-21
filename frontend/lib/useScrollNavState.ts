@@ -10,7 +10,7 @@ const COMPACT_AFTER_Y = 80;
 // scroll en cours. Le timer est repoussé à CHAQUE événement de scroll qui
 // confirme la même valeur, pas seulement quand la valeur change — sinon il
 // peut se déclencher en plein milieu d'un scroll continu.
-const COMMIT_DELAY_MS = 140;
+const COMMIT_DELAY_MS = 80;
 
 export function useScrollNavState() {
     const [isCompact, setIsCompact] = useState(false);

@@ -9,6 +9,7 @@ import { showToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import BackButton from '@/components/BackButton';
 import EditTrackDiaryEntryButton from '@/components/EditTrackDiaryEntryButton';
+import LikesBottomSheet from '@/components/LikesBottomSheet';
 import { useAuth } from '@/lib/AuthContext';
 import {
   toggleTrackDiaryLike,
@@ -114,6 +115,7 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
 
   const [hasLiked, setHasLiked] = useState(entry.has_liked);
   const [likesCount, setLikesCount] = useState(entry.stats.likes_count);
+  const [showLikesSheet, setShowLikesSheet] = useState(false);
   const [comments, setComments] = useState<TrackDiaryComment[]>(entry.comments);
   const [newComment, setNewComment] = useState('');
   const [liking, setLiking] = useState(false);
@@ -317,15 +319,40 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
         <div className="h-px bg-[#C9C2B5] mt-5 opacity-70" />
         <div className="flex items-center gap-4 mt-3 text-[12px] text-text-tertiary">
           {currentUser ? (
-            <button onClick={handleLike} disabled={liking} className={`flex items-center gap-1.5 transition-colors duration-150 disabled:opacity-50 ${hasLiked ? 'text-[#C86C6C]' : 'hover:text-[#C86C6C]'}`}>
-              <Heart size={13} fill={hasLiked ? 'currentColor' : 'none'} />
-              <span>{likesCount} J&apos;aime</span>
-            </button>
+            <span className="flex items-center gap-1">
+              <button
+                onClick={handleLike}
+                disabled={liking}
+                className={`transition-colors duration-150 disabled:opacity-50 ${hasLiked ? 'text-[#C86C6C]' : 'hover:text-[#C86C6C]'}`}
+              >
+                <Heart size={15} fill={hasLiked ? 'currentColor' : 'none'} />
+              </button>
+              {likesCount > 0 ? (
+                <button onClick={() => setShowLikesSheet(true)} className={`flex items-baseline gap-2 hover:underline ${hasLiked ? 'text-[#C86C6C]' : ''}`}>
+                  <span>{likesCount}</span>
+                  <span>J&apos;aime</span>
+                </button>
+              ) : (
+                <span className="ml-1">J&apos;aime</span>
+              )}
+            </span>
           ) : (
-            <span className="flex items-center gap-1.5"><Heart size={13} />{likesCount} J&apos;aime</span>
+            <span className="flex items-center gap-1">
+              <Heart size={15} />
+              <span>{likesCount}</span>
+              <span className="ml-1">J&apos;aime</span>
+            </span>
           )}
         </div>
       </div>
+
+      <LikesBottomSheet
+        entryId={entry.id}
+        contentType="track_diary_entry"
+        isOpen={showLikesSheet}
+        onClose={() => setShowLikesSheet(false)}
+        count={likesCount}
+      />
 
       {/* ── CTA ────────────────────────────────────────────────── */}
       <Link href={`/tracks/${entry.track.id}#reviews`} className="mt-5 flex items-center justify-between gap-3 px-4 py-3.5 bg-[#ECE8E1] border border-[#D8D3CB] rounded-[10px] hover:border-accent hover:bg-[#FAF8F4] transition-all duration-150 group">

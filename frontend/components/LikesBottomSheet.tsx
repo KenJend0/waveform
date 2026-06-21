@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import BottomSheet from "@/components/BottomSheet";
 import { getEntryLikes } from "@/app/actions/diary";
+import { getTrackEntryLikes } from "@/app/actions/feed";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 
 type LikesBottomSheetProps = {
@@ -11,6 +12,7 @@ type LikesBottomSheetProps = {
   isOpen: boolean;
   onClose: () => void;
   count: number;
+  contentType?: 'diary_entry' | 'track_diary_entry';
 };
 
 type LikeUser = {
@@ -24,6 +26,7 @@ export default function LikesBottomSheet({
   isOpen,
   onClose,
   count,
+  contentType = 'diary_entry',
 }: LikesBottomSheetProps) {
   const [likes, setLikes] = useState<LikeUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +37,9 @@ export default function LikesBottomSheet({
     const loadLikes = async () => {
       setLoading(true);
       try {
-        const result = await getEntryLikes(entryId);
+        const result = contentType === 'track_diary_entry'
+          ? await getTrackEntryLikes(entryId)
+          : await getEntryLikes(entryId);
         setLikes(result);
       } catch (err) {
         console.error("Error loading likes:", err);
@@ -44,7 +49,7 @@ export default function LikesBottomSheet({
     };
 
     loadLikes();
-  }, [isOpen, entryId]);
+  }, [isOpen, entryId, contentType]);
 
   return (
     <BottomSheet

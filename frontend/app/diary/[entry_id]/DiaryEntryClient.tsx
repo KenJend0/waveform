@@ -354,26 +354,28 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
         <div className="h-px bg-[#C9C2B5] mt-5 opacity-70" />
         <div className="flex items-center gap-4 mt-3 text-[12px] text-text-tertiary">
           {currentUser ? (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1">
               <button
                 onClick={handleLike}
                 disabled={liking}
                 className={`transition-colors duration-150 disabled:opacity-50 ${hasLiked ? 'text-[#C86C6C]' : 'hover:text-[#C86C6C]'}`}
               >
-                <Heart size={13} fill={hasLiked ? 'currentColor' : 'none'} />
+                <Heart size={15} fill={hasLiked ? 'currentColor' : 'none'} />
               </button>
               {likesCount > 0 ? (
-                <button onClick={() => setShowLikesSheet(true)} className={`hover:underline ${hasLiked ? 'text-[#C86C6C]' : ''}`}>
-                  {likesCount} J&apos;aime
+                <button onClick={() => setShowLikesSheet(true)} className={`flex items-baseline gap-2 hover:underline ${hasLiked ? 'text-[#C86C6C]' : ''}`}>
+                  <span>{likesCount}</span>
+                  <span>J&apos;aime</span>
                 </button>
               ) : (
-                <span>{likesCount} J&apos;aime</span>
+                <span className="ml-1">J&apos;aime</span>
               )}
             </span>
           ) : (
-            <span className="flex items-center gap-1.5">
-              <Heart size={13} />
-              {likesCount} J&apos;aime
+            <span className="flex items-center gap-1">
+              <Heart size={15} />
+              <span>{likesCount}</span>
+              <span className="ml-1">J&apos;aime</span>
             </span>
           )}
 

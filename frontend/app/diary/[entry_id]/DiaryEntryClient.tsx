@@ -243,8 +243,8 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
   };
 
   return (
-    <div className="max-w-page mx-auto px-4 pt-4 pb-6">
-      <BackButton label="Journal" fallbackHref="/diary" />
+    <div className="max-w-page mx-auto px-4 pt-4 pb-24">
+      <BackButton label="Journal" fallbackHref="/me" />
 
       {/* ── Album hero ─────────────────────────────────────────── */}
       <div className="mt-4 pb-5 border-b border-[#D8D3CB]">

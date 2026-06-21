@@ -7,7 +7,6 @@ import BottomNav from '@/components/BottomNav';
 import { BottomSheetProvider } from '@/lib/BottomSheetContext';
 
 const NO_NAV_PATHS = ['/onboarding', '/auth/reset'];
-const MAIN_NAV_PAGES = ['/feed', '/explore', '/add', '/me'];
 
 type Props = {
   children: React.ReactNode;
@@ -22,7 +21,7 @@ export default function AuthenticatedLayout({ children }: Props) {
   const pathname = usePathname();
 
   const hideNav = NO_NAV_PATHS.some(path => pathname.startsWith(path));
-  const showBottomNav = !loading && MAIN_NAV_PAGES.includes(pathname);
+  const showBottomNav = !loading && !!user && !hideNav;
 
   return (
     <BottomSheetProvider>

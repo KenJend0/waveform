@@ -8,9 +8,7 @@ export const NAV_PREV_KEY = "wf_nav_prev";
 export function getNavLabel(pathname: string): string {
     if (pathname === "/feed") return "Activité";
     if (pathname === "/") return "Découvrir";
-    if (pathname === "/diary") return "Journal";
     if (pathname.startsWith("/diary/")) return "Journal";
-    if (pathname === "/track-diary") return "Journal";
     if (pathname.startsWith("/track-diary/")) return "Journal";
     if (pathname.startsWith("/search")) return "Recherche";
     if (pathname === "/explore") return "Découvrir";

@@ -16,10 +16,16 @@ export default function BottomNav() {
     const pathname = usePathname();
     const { user: authUser, profile, unseenActivity } = useAuth();
     const { openCount } = useBottomSheet();
-    const isCompact = useScrollNavState();
+    const isScrollCompact = useScrollNavState();
     const shouldReduceMotion = useReducedMotion();
 
     if (openCount > 0) return null;
+
+    const isMainPage = ["/feed", "/explore", "/add", "/me"].includes(pathname);
+    // Hors des 4 pages principales (fiches artiste/album/track, journal, etc.),
+    // la barre reste toujours compacte — ces pages sont denses et n'ont pas besoin
+    // d'une barre pleine largeur avec labels.
+    const isCompact = isScrollCompact || !isMainPage;
 
     const transition = shouldReduceMotion
         ? { duration: 0 }
@@ -28,8 +34,8 @@ export default function BottomNav() {
     const isActive = (route: string) => {
         if (route === "/feed") return pathname === "/feed";
         if (route === "/explore") return pathname === "/explore";
-        if (route === "/add") return pathname === "/add" || pathname === "/import" || pathname === "/diary";
-        if (route === "/me") return pathname === "/me" || pathname.startsWith("/u/");
+        if (route === "/add") return pathname === "/add";
+        if (route === "/me") return pathname === "/me";
         return false;
     };
 

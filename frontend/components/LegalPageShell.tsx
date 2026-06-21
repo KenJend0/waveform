@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BackButton from "@/components/BackButton";
 
 const footerLinks = [
     { href: "/legal", label: "Aide & support" },
@@ -22,12 +23,7 @@ export default function LegalPageShell({ children }: { children: React.ReactNode
         <div className="min-h-screen bg-background">
             <div className="max-w-2xl mx-auto px-6 py-12 pb-24">
                 <div className="mb-8">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 text-meta text-text-secondary hover:text-text-primary transition-colors duration-150 mb-6"
-                    >
-                        ← <span className="underline underline-offset-2">Retour</span>
-                    </Link>
+                    <BackButton className="mb-6" />
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-text-tertiary tracking-widest uppercase">Waveform</span>
                     </div>

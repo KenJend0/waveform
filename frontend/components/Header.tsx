@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
-import AddMenuClient from "@/components/AddMenuClient";
 import ProfileMenuClient from "@/components/ProfileMenuClient";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollow } from "@/app/actions/social";
 import { showToast } from "@/components/Toast";
+import { useAuth } from "@/lib/AuthContext";
 
 interface FollowButtonProps {
   userId: string;
@@ -19,10 +20,15 @@ export default function FollowButton({
   eventSource,
 }: FollowButtonProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleToggleFollow = async () => {
+    if (!user) {
+      showToast("Connecte-toi pour suivre cet utilisateur", "error");
+      return;
+    }
     try {
       setIsLoading(true);
       const result = await toggleFollow(userId, eventSource);

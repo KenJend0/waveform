@@ -192,14 +192,12 @@ export default async function PublicProfilePage({
                   <h1 className="text-[24px] lg:text-[22px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
                     @{username}
                   </h1>
-                  {authUser && authUser.id !== profile.id && (
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <FollowButton userId={profile.id} initialIsFollowing={isFollowing} />
-                      {isFollowingYou && (
-                        <span className="text-[11px] text-text-tertiary/60 italic">vous suit</span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <FollowButton userId={profile.id} initialIsFollowing={isFollowing} />
+                    {isFollowingYou && (
+                      <span className="text-[11px] text-text-tertiary/60 italic">vous suit</span>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -18,6 +19,32 @@ export default function BottomNav() {
     const { openCount } = useBottomSheet();
     const isScrollCompact = useScrollNavState();
     const shouldReduceMotion = useReducedMotion();
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    // Publie la distance réelle entre le bas de l'écran et le haut de la navbar
+    // (mesurée, pas devinée) via une variable CSS — les pages qui doivent ancrer
+    // du contenu juste au-dessus de la navbar (ex. /add) la consomment plutôt que
+    // de recalculer une estimation en dur qui se désynchronise selon l'appareil
+    // (safe-area) ou l'état compact/étendu de la barre.
+    useEffect(() => {
+        const el = wrapperRef.current;
+        if (!el) return;
+
+        const updateClearance = () => {
+            const rect = el.getBoundingClientRect();
+            const clearance = Math.max(0, window.innerHeight - rect.top);
+            document.documentElement.style.setProperty("--bottom-nav-clearance", `${clearance}px`);
+        };
+
+        updateClearance();
+        const observer = new ResizeObserver(updateClearance);
+        observer.observe(el);
+        window.addEventListener("resize", updateClearance);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener("resize", updateClearance);
+        };
+    }, []);
 
     if (openCount > 0) return null;
 
@@ -49,6 +76,7 @@ export default function BottomNav() {
 
     return (
         <div
+            ref={wrapperRef}
             className="fixed inset-x-0 px-9 md:hidden z-50 flex justify-center"
             style={{
                 bottom: 'calc(0.25rem + env(safe-area-inset-bottom))',

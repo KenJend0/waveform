@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/supabase/server";
-import { getDefaultListAlbums, getDefaultListTracks } from "@/app/actions/lists";
-import { getForYouSuggestions, getDiscoveryAlbums } from "@/app/actions/explore";
+import { getDefaultListAlbums, getDefaultListTracks, getUserLists, getUnratedSavedItems } from "@/app/actions/lists";
+import { getForYouSuggestions, getDiscoveryAlbums, getForYouTracks } from "@/app/actions/explore";
+import { buildAddQueue } from "@/lib/buildAddQueue";
 import AddPageClient from "./AddPageClient";
 import UnauthCTA from "@/components/UnauthCTA";
 
@@ -20,12 +21,24 @@ export default async function AddPage() {
         );
     }
 
-    const [defaultListItems, defaultListTracks, suggestions, discovery] = await Promise.all([
+    const [defaultListItems, defaultListTracks, suggestions, discovery, forYouTracks, userLists, unratedSaved] = await Promise.all([
         getDefaultListAlbums(8),
         getDefaultListTracks(8),
         getForYouSuggestions(),
         getDiscoveryAlbums(),
+        getForYouTracks(),
+        getUserLists(user.id),
+        getUnratedSavedItems(),
     ]);
+
+    const initialQueue = buildAddQueue({
+        unratedSaved,
+        listAlbums: defaultListItems,
+        listTracks: defaultListTracks,
+        forYouAlbums: suggestions,
+        forYouTracks,
+        discoveryAlbums: discovery.albums,
+    });
 
     return (
         <AddPageClient
@@ -33,6 +46,9 @@ export default async function AddPage() {
             defaultListTracks={defaultListTracks}
             initialSuggestions={suggestions}
             initialDiscovery={discovery.albums}
+            initialForYouTracks={forYouTracks}
+            userLists={userLists}
+            initialQueue={initialQueue}
         />
     );
 }

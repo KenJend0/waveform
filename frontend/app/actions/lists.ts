@@ -397,27 +397,46 @@ export async function getUserListsContainingTrack(trackId: string): Promise<stri
 }
 
 /**
- * Titres de la liste "À écouter" par défaut — pour la page /add.
+ * Résout l'id de la liste à utiliser : celle passée explicitement (après
+ * vérification d'appartenance) ou la liste "À écouter" par défaut.
  */
-export async function getDefaultListTracks(limit = 8): Promise<ListTrackItem[]> {
+async function resolveListId(userId: string, listId: string | undefined, supabase: any): Promise<string | null> {
+    if (listId) {
+        const { data: owned } = await supabase
+            .from('user_lists')
+            .select('id')
+            .eq('id', listId)
+            .eq('user_id', userId)
+            .maybeSingle();
+        return owned?.id ?? null;
+    }
+
+    const { data: defaultList } = await supabase
+        .from('user_lists')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_default', true)
+        .maybeSingle();
+
+    return defaultList?.id ?? null;
+}
+
+/**
+ * Titres d'une liste (par défaut si `listId` omis) — pour la page /add.
+ */
+export async function getDefaultListTracks(limit = 8, listId?: string): Promise<ListTrackItem[]> {
     const user = await getAuthUser();
     if (!user) return [];
 
     const supabase = await createSupabaseServer();
 
-    const { data: defaultList } = await supabase
-        .from('user_lists')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-
-    if (!defaultList) return [];
+    const targetListId = await resolveListId(user.id, listId, supabase);
+    if (!targetListId) return [];
 
     const { data: items } = await supabase
         .from('list_items')
         .select('id, track_id, added_at, tracks(id, title, album_id, artist_id, albums(id, title, cover_url), artists(name))')
-        .eq('list_id', defaultList.id)
+        .eq('list_id', targetListId)
         .not('track_id', 'is', null)
         .order('added_at', { ascending: false })
         .limit(limit);
@@ -436,27 +455,21 @@ export async function getDefaultListTracks(limit = 8): Promise<ListTrackItem[]> 
 }
 
 /**
- * Albums de la liste "À écouter" par défaut — pour la page /add.
+ * Albums d'une liste (par défaut si `listId` omis) — pour la page /add.
  */
-export async function getDefaultListAlbums(limit = 8): Promise<ListAlbumItem[]> {
+export async function getDefaultListAlbums(limit = 8, listId?: string): Promise<ListAlbumItem[]> {
     const user = await getAuthUser();
     if (!user) return [];
 
     const supabase = await createSupabaseServer();
 
-    const { data: defaultList } = await supabase
-        .from('user_lists')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-
-    if (!defaultList) return [];
+    const targetListId = await resolveListId(user.id, listId, supabase);
+    if (!targetListId) return [];
 
     const { data: items } = await supabase
         .from('list_items')
         .select('id, album_id, added_at, albums(id, title, cover_url, artists(name))')
-        .eq('list_id', defaultList.id)
+        .eq('list_id', targetListId)
         .not('album_id', 'is', null)
         .order('added_at', { ascending: false })
         .limit(limit);
@@ -469,6 +482,101 @@ export async function getDefaultListAlbums(limit = 8): Promise<ListAlbumItem[]> 
         cover_url: item.albums?.cover_url ?? null,
         added_at: item.added_at,
     }));
+}
+
+/**
+ * Albums + titres d'une liste donnée en un seul aller — pour le switch de
+ * liste sur /add (évite deux round-trips côté client).
+ */
+export async function getListContents(listId: string, limit = 8): Promise<{ albums: ListAlbumItem[]; tracks: ListTrackItem[] }> {
+    const [albums, tracks] = await Promise.all([
+        getDefaultListAlbums(limit, listId),
+        getDefaultListTracks(limit, listId),
+    ]);
+    return { albums, tracks };
+}
+
+export type UnratedItem =
+    | (ListAlbumItem & { kind: 'album' })
+    | (ListTrackItem & { kind: 'track' });
+
+/**
+ * Albums/titres présents dans une liste de l'utilisateur (toutes listes
+ * confondues) mais jamais notés dans son journal — source prioritaire de la
+ * file de triage sur /add.
+ */
+export async function getUnratedSavedItems(limit = 30): Promise<UnratedItem[]> {
+    const user = await getAuthUser();
+    if (!user) return [];
+
+    const supabase = await createSupabaseServer();
+
+    const { data: lists } = await supabase
+        .from('user_lists')
+        .select('id')
+        .eq('user_id', user.id);
+
+    if (!lists || lists.length === 0) return [];
+    const listIds = lists.map((l: any) => l.id);
+
+    const [albumItemsRes, trackItemsRes, ratedAlbumsRes, ratedTracksRes] = await Promise.all([
+        supabase
+            .from('list_items')
+            .select('id, album_id, added_at, albums(id, title, cover_url, artists(name))')
+            .in('list_id', listIds)
+            .not('album_id', 'is', null)
+            .order('added_at', { ascending: false }),
+        supabase
+            .from('list_items')
+            .select('id, track_id, added_at, tracks(id, title, album_id, artist_id, albums(id, title, cover_url), artists(name))')
+            .in('list_id', listIds)
+            .not('track_id', 'is', null)
+            .order('added_at', { ascending: false }),
+        supabase.from('diary_entries').select('album_id').eq('user_id', user.id),
+        supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id),
+    ]);
+
+    const ratedAlbumIds = new Set((ratedAlbumsRes.data || []).map((r: any) => r.album_id));
+    const ratedTrackIds = new Set((ratedTracksRes.data || []).map((r: any) => r.track_id));
+
+    const seenAlbums = new Set<string>();
+    const unratedAlbums: (ListAlbumItem & { kind: 'album'; added_at: string })[] = [];
+    for (const item of albumItemsRes.data || []) {
+        if (!item.album_id || ratedAlbumIds.has(item.album_id) || seenAlbums.has(item.album_id)) continue;
+        seenAlbums.add(item.album_id);
+        unratedAlbums.push({
+            kind: 'album',
+            id: item.id,
+            album_id: item.album_id,
+            album_title: item.albums?.title || 'Unknown',
+            artist_name: item.albums?.artists?.name || 'Unknown',
+            cover_url: item.albums?.cover_url ?? null,
+            added_at: item.added_at,
+        });
+    }
+
+    const seenTracks = new Set<string>();
+    const unratedTracks: (ListTrackItem & { kind: 'track'; added_at: string })[] = [];
+    for (const item of trackItemsRes.data || []) {
+        if (!item.track_id || ratedTrackIds.has(item.track_id) || seenTracks.has(item.track_id)) continue;
+        seenTracks.add(item.track_id);
+        unratedTracks.push({
+            kind: 'track',
+            id: item.id,
+            track_id: item.track_id,
+            track_title: item.tracks?.title || 'Unknown',
+            artist_name: item.tracks?.artists?.name || 'Unknown',
+            cover_url: item.tracks?.albums?.cover_url ?? null,
+            album_id: item.tracks?.album_id || '',
+            album_title: item.tracks?.albums?.title || '',
+            artist_id: item.tracks?.artist_id || '',
+            added_at: item.added_at,
+        });
+    }
+
+    return [...unratedAlbums, ...unratedTracks]
+        .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
+        .slice(0, limit);
 }
 
 /**

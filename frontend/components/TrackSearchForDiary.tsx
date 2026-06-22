@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { searchInternal, type SearchResultUI } from "@/app/actions/search";
 import { searchMusicBrainzRecordings, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
 import { mergeAndRank } from "@/lib/searchRanking";
@@ -9,6 +9,7 @@ import { CoverImage } from "@/components/CoverImage";
 import { Music, Search } from "lucide-react";
 
 const LIMIT = 6;
+const MAX_LIMIT = 20;
 
 export type TrackUI = {
     id: string;
@@ -26,28 +27,43 @@ type Props = {
 
 export default function TrackSearchForDiary({ onSelectTrack }: Props) {
     const [q, setQ] = useState("");
-    const [results, setResults] = useState<SearchResultUI[]>([]);
+    const [internalResults, setInternalResults] = useState<SearchResultUI[]>([]);
+    const [mbResults, setMbResults] = useState<SearchResultUI[]>([]);
+    const [displayLimit, setDisplayLimit] = useState(LIMIT);
     const [loading, setLoading] = useState(false);
     const [loadingExtended, setLoadingExtended] = useState(false);
     const [importingId, setImportingId] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    const results = useMemo(
+        () => mergeAndRank(internalResults, mbResults, q, displayLimit),
+        [internalResults, mbResults, q, displayLimit]
+    );
+    const totalAvailable = useMemo(
+        () => mergeAndRank(internalResults, mbResults, q, MAX_LIMIT).length,
+        [internalResults, mbResults, q]
+    );
+
     useEffect(() => {
         if (!q.trim()) {
-            setResults([]);
+            setInternalResults([]);
+            setMbResults([]);
+            setDisplayLimit(LIMIT);
             setLoading(false);
             setLoadingExtended(false);
             return;
         }
 
         let aborted = false;
+        setDisplayLimit(LIMIT);
 
         const run = async () => {
             await new Promise((r) => setTimeout(r, 300));
             if (aborted) return;
 
             setLoading(true);
-            setResults([]);
+            setInternalResults([]);
+            setMbResults([]);
 
             // Phase 2 — MB en parallèle
             const mbPromise = searchMusicBrainzRecordings(q, 20).catch(() => null);
@@ -60,7 +76,7 @@ export default function TrackSearchForDiary({ onSelectTrack }: Props) {
             } catch {}
             if (aborted) return;
 
-            setResults(mergeAndRank(internal, [], q, LIMIT));
+            setInternalResults(internal);
             setLoading(false);
 
             // Phase 2 — merge MB
@@ -85,7 +101,7 @@ export default function TrackSearchForDiary({ onSelectTrack }: Props) {
                     );
                 }
 
-                setResults(mergeAndRank(internal, mbList, q, LIMIT));
+                setMbResults(mbList);
             } catch {
             } finally {
                 if (!aborted) setLoadingExtended(false);
@@ -119,7 +135,6 @@ export default function TrackSearchForDiary({ onSelectTrack }: Props) {
                         coverUrl: item.coverUrl || null,
                     });
                     setQ("");
-                    setResults([]);
                 } else {
                     showToast("Erreur lors de l'import du titre", "error");
                 }
@@ -140,7 +155,6 @@ export default function TrackSearchForDiary({ onSelectTrack }: Props) {
                 coverUrl: item.coverUrl || null,
             });
             setQ("");
-            setResults([]);
         }
     };
 
@@ -217,6 +231,14 @@ export default function TrackSearchForDiary({ onSelectTrack }: Props) {
                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent opacity-40" />
                                     <span className="text-[11px] text-text-disabled">Recherche étendue…</span>
                                 </div>
+                            )}
+                            {!loadingExtended && displayLimit < MAX_LIMIT && totalAvailable > results.length && (
+                                <button
+                                    onClick={() => setDisplayLimit(MAX_LIMIT)}
+                                    className="w-full px-3 py-2 border-t border-[#ECE8E1] text-[12px] text-accent hover:text-accent-deep transition-colors duration-150 text-left"
+                                >
+                                    Voir plus de résultats
+                                </button>
                             )}
                         </div>
                     )}

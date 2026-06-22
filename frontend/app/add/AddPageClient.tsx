@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AlbumSearchForDiary from "@/components/AlbumSearchForDiary";
 import TrackSearchForDiary, { type TrackUI } from "@/components/TrackSearchForDiary";
 import StarRating from "@/components/StarRating";
 import { CoverImage } from "@/components/CoverImage";
+import ListSwitcher from "@/components/ListSwitcher";
+import AddQueueMobile from "@/components/add/AddQueueMobile";
 import { upsertDiaryEntry, getLatestDiaryEntryForAlbum } from "@/app/actions/diary";
 import { upsertTrackDiaryEntry, getLatestTrackDiaryEntry } from "@/app/actions/track-diary";
-import { type ListAlbumItem, type ListTrackItem } from "@/app/actions/lists";
-import { type ForYouAlbum, type DiscoveryAlbum } from "@/app/actions/explore";
+import { type ListAlbumItem, type ListTrackItem, type UserList, getListContents } from "@/app/actions/lists";
+import { type ForYouAlbum, type ForYouTrack, type DiscoveryAlbum } from "@/app/actions/explore";
+import { type AddQueueItem } from "@/lib/buildAddQueue";
+import { CLASSIC_ALBUMS } from "@/lib/classicAlbums";
 import { showToast } from "@/components/Toast";
-
-const CLASSIC_ALBUMS: { id: string; title: string; artist: string; coverUrl: string }[] = [
-    { id: "044150fe-fdef-42ad-85da-0ff9c38652db", title: "Thriller", artist: "Michael Jackson", coverUrl: "https://archive.org/download/mbid-e1b94ba6-c63c-4c2d-8928-9d1a525b7000/mbid-e1b94ba6-c63c-4c2d-8928-9d1a525b7000-22018478497.jpg" },
-    { id: "f10a17a5-f193-4805-8353-58bd74c5f657", title: "Abbey Road", artist: "The Beatles", coverUrl: "https://archive.org/download/mbid-31765b9f-e969-4257-855f-c7ea1f657b2a/mbid-31765b9f-e969-4257-855f-c7ea1f657b2a-39706767821.jpg" },
-    { id: "e2f98e07-20bf-4db6-a58e-5cb69e4221b1", title: "The Dark Side of the Moon", artist: "Pink Floyd", coverUrl: "https://archive.org/download/mbid-956fbc58-362d-43b8-b880-3779e0508559/mbid-956fbc58-362d-43b8-b880-3779e0508559-34025419985.jpg" },
-    { id: "7407d2b4-40ce-4a65-966e-d13a1c7df77a", title: "Nevermind", artist: "Nirvana", coverUrl: "https://archive.org/download/mbid-c771f7fc-9e62-4349-a2e3-ceaf7122bf5b/mbid-c771f7fc-9e62-4349-a2e3-ceaf7122bf5b-30501372565.jpg" },
-    { id: "a654e860-8efc-45c7-8378-c506883c2d72", title: "Random Access Memories", artist: "Daft Punk", coverUrl: "https://archive.org/download/mbid-5000a285-b67e-4cfc-b54b-2b98f1810d2e/mbid-5000a285-b67e-4cfc-b54b-2b98f1810d2e-32554171842.jpg" },
-    { id: "43132421-6ba3-4a6f-924e-a1dae799f8e7", title: "Back to Black", artist: "Amy Winehouse", coverUrl: "https://archive.org/download/mbid-ccf4da26-ea82-462f-b753-88bb976fd40e/mbid-ccf4da26-ea82-462f-b753-88bb976fd40e-36926439244.jpg" },
-    { id: "fd8c382d-7186-40a6-838a-8749f1f2fd68", title: "To Pimp a Butterfly", artist: "Kendrick Lamar", coverUrl: "https://archive.org/download/mbid-b4d6e526-4195-49bc-b660-b6df4c27686e/mbid-b4d6e526-4195-49bc-b660-b6df4c27686e-9896943304.jpg" },
-    { id: "b2207a0f-2b1c-4357-b6f2-5ae7dc032e0c", title: "folklore", artist: "Taylor Swift", coverUrl: "https://archive.org/download/mbid-0ca6db69-0719-4a00-99be-f87ef1cff6cb/mbid-0ca6db69-0719-4a00-99be-f87ef1cff6cb-26803653721.jpg" },
-];
 
 type EntityType = "album" | "track";
 
@@ -53,6 +46,17 @@ type Props = {
     defaultListTracks: ListTrackItem[];
     initialSuggestions: ForYouAlbum[];
     initialDiscovery: DiscoveryAlbum[];
+    initialForYouTracks: ForYouTrack[];
+    userLists: UserList[];
+    initialQueue: AddQueueItem[];
+};
+
+type SuggestionTile = {
+    key: string;
+    title: string;
+    artist: string;
+    coverUrl: string | null;
+    onSelect: () => void;
 };
 
 function CoverTile({
@@ -98,7 +102,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function AddPageClient({ defaultListItems, defaultListTracks, initialSuggestions, initialDiscovery }: Props) {
+export default function AddPageClient({
+    defaultListItems,
+    defaultListTracks,
+    initialSuggestions,
+    initialDiscovery,
+    initialForYouTracks,
+    userLists,
+    initialQueue,
+}: Props) {
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
 
@@ -111,6 +123,94 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
     const [listenedAt, setListenedAt] = useState(today);
     const [comment, setComment] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    const defaultList = userLists.find((l) => l.is_default) ?? userLists[0] ?? null;
+    const [selectedListId, setSelectedListId] = useState<string | null>(defaultList?.id ?? null);
+    const [listItems, setListItems] = useState<{ albums: ListAlbumItem[]; tracks: ListTrackItem[] }>({
+        albums: defaultListItems,
+        tracks: defaultListTracks,
+    });
+    const [listLoading, setListLoading] = useState(false);
+
+    const handleListChange = async (listId: string) => {
+        setSelectedListId(listId);
+        setListLoading(true);
+        try {
+            const result = await getListContents(listId, 8);
+            setListItems(result);
+        } catch {
+            showToast("Erreur lors du chargement de la liste", "error");
+        } finally {
+            setListLoading(false);
+        }
+    };
+
+    const selectedListTitle = userLists.find((l) => l.id === selectedListId)?.title ?? null;
+
+    const albumGrid = useMemo<SuggestionTile[]>(() => {
+        const tiles: SuggestionTile[] = [];
+        const seen = new Set<string>();
+
+        const push = (id: string, title: string, artist: string, coverUrl: string | null, year?: number | null) => {
+            if (!id || seen.has(id) || tiles.length >= 8) return;
+            seen.add(id);
+            tiles.push({
+                key: id,
+                title,
+                artist,
+                coverUrl,
+                onSelect: () => handleAlbumSelect({ id, title, artist_name: artist, coverUrl, year }),
+            });
+        };
+
+        for (const item of listItems.albums) push(item.album_id, item.album_title, item.artist_name, item.cover_url);
+        for (const item of initialSuggestions) push(item.album_id, item.title, item.artist, item.cover_url);
+        for (const item of initialDiscovery) push(item.album_id, item.title, item.artist, item.cover_url);
+        if (tiles.length === 0) {
+            for (const album of CLASSIC_ALBUMS) push(album.id, album.title, album.artist, album.coverUrl);
+        }
+        return tiles;
+    }, [listItems.albums, initialSuggestions, initialDiscovery]);
+
+    const trackGrid = useMemo<SuggestionTile[]>(() => {
+        const tiles: SuggestionTile[] = [];
+        const seen = new Set<string>();
+
+        const push = (id: string, title: string, artist: string, coverUrl: string | null, albumId: string, albumTitle: string, artistId: string) => {
+            if (!id || seen.has(id) || tiles.length >= 8) return;
+            seen.add(id);
+            tiles.push({
+                key: id,
+                title,
+                artist,
+                coverUrl,
+                onSelect: () =>
+                    handleTrackSelect({
+                        id,
+                        title,
+                        artist_name: artist,
+                        album_id: albumId,
+                        album_title: albumTitle,
+                        artist_id: artistId,
+                        coverUrl,
+                    }),
+            });
+        };
+
+        for (const item of listItems.tracks) push(item.track_id, item.track_title, item.artist_name, item.cover_url, item.album_id, item.album_title, item.artist_id);
+        for (const item of initialForYouTracks) push(item.track_id, item.track_title, item.artist, item.cover_url, item.album_id, "", item.artist_id);
+        return tiles;
+    }, [listItems.tracks, initialForYouTracks]);
+
+    const albumGridTitle = listItems.albums.length > 0
+        ? `À noter depuis « ${selectedListTitle ?? "ta liste"} »`
+        : albumGrid.length > 0
+            ? "Suggestions pour toi"
+            : "Par où commencer ?";
+
+    const trackGridTitle = listItems.tracks.length > 0
+        ? `À noter depuis « ${selectedListTitle ?? "ta liste"} »`
+        : "Suggestions pour toi";
 
     const resetForm = () => {
         setStep("select");
@@ -202,13 +302,11 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
         }
     };
 
-    const hasDefaultItems = defaultListItems.length > 0;
-    const hasDefaultTracks = defaultListTracks.length > 0;
-    const hasSuggestions = initialSuggestions.length > 0;
-    const hasDiscovery = initialDiscovery.length > 0;
-
     return (
         <>
+            <AddQueueMobile initialQueue={initialQueue} />
+
+            <div className="hidden lg:block">
             <div className="p-6 lg:px-8 pb-0">
                 <div>
                     <h1 className="text-h1 text-text-primary mb-2">
@@ -430,74 +528,30 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
 
                             {/* Colonne droite : suggestions — toujours visibles sur desktop */}
                             <div className={`mt-6 lg:mt-0 ${step === "form" ? "hidden lg:block" : ""}`}>
-                                {hasDefaultItems && entityType === "album" && (
+                                {userLists.length > 1 && (
+                                    <ListSwitcher
+                                        lists={userLists}
+                                        selectedListId={selectedListId}
+                                        onSelect={handleListChange}
+                                        isLoading={listLoading}
+                                    />
+                                )}
+                                {entityType === "album" && albumGrid.length > 0 && (
                                     <>
-                                        <SectionTitle>À noter depuis ta liste</SectionTitle>
+                                        <SectionTitle>{albumGridTitle}</SectionTitle>
                                         <div className="grid gap-4 grid-cols-3">
-                                            {defaultListItems.map((s) => (
-                                                <CoverTile
-                                                    key={s.id}
-                                                    title={s.album_title}
-                                                    artist={s.artist_name}
-                                                    coverUrl={s.cover_url}
-                                                    onClick={() =>
-                                                        handleAlbumSelect({
-                                                            id: s.album_id,
-                                                            title: s.album_title,
-                                                            artist_name: s.artist_name,
-                                                            coverUrl: s.cover_url,
-                                                        })
-                                                    }
-                                                />
+                                            {albumGrid.map((tile) => (
+                                                <CoverTile key={tile.key} title={tile.title} artist={tile.artist} coverUrl={tile.coverUrl} onClick={tile.onSelect} />
                                             ))}
                                         </div>
                                     </>
                                 )}
-                                {hasDefaultTracks && entityType === "track" && (
+                                {entityType === "track" && trackGrid.length > 0 && (
                                     <>
-                                        <SectionTitle>À noter depuis ta liste</SectionTitle>
+                                        <SectionTitle>{trackGridTitle}</SectionTitle>
                                         <div className="grid gap-4 grid-cols-3">
-                                            {defaultListTracks.map((t) => (
-                                                <CoverTile
-                                                    key={t.id}
-                                                    title={t.track_title}
-                                                    artist={t.artist_name}
-                                                    coverUrl={t.cover_url}
-                                                    onClick={() =>
-                                                        handleTrackSelect({
-                                                            id: t.track_id,
-                                                            title: t.track_title,
-                                                            artist_name: t.artist_name,
-                                                            album_id: t.album_id,
-                                                            album_title: t.album_title,
-                                                            artist_id: t.artist_id,
-                                                            coverUrl: t.cover_url,
-                                                        })
-                                                    }
-                                                />
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                                {!hasDefaultItems && entityType === "album" && (
-                                    <>
-                                        <SectionTitle>Par où commencer ?</SectionTitle>
-                                        <div className="grid gap-4 grid-cols-3">
-                                            {CLASSIC_ALBUMS.map((album) => (
-                                                <CoverTile
-                                                    key={album.id}
-                                                    title={album.title}
-                                                    artist={album.artist}
-                                                    coverUrl={album.coverUrl}
-                                                    onClick={() =>
-                                                        handleAlbumSelect({
-                                                            id: album.id,
-                                                            title: album.title,
-                                                            artist_name: album.artist,
-                                                            coverUrl: album.coverUrl,
-                                                        })
-                                                    }
-                                                />
+                                            {trackGrid.map((tile) => (
+                                                <CoverTile key={tile.key} title={tile.title} artist={tile.artist} coverUrl={tile.coverUrl} onClick={tile.onSelect} />
                                             ))}
                                         </div>
                                     </>
@@ -508,6 +562,7 @@ export default function AddPageClient({ defaultListItems, defaultListTracks, ini
 
                 </div>
             </main>
+            </div>
         </>
     );
 }

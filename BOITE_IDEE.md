@@ -42,6 +42,8 @@ l'idée de la fleche de retour, je suis de moins en moins convaincu, des fois on
 
 maintenant que /explore est devenue la page principale de l'app, est ce qu'il y a assez de contenu pour tout le monde (non c'est sur) comment changer ca et comment faire passer un cap au design de la page pour qu'elle fasse vraie entrée de l'app (prompt claude design).
 
+peut etre essayer de creer un github action qui check si on a importer des doublons, albums ou titres et qui supprime la mauvaise version en recuperant les reviews et notes si il y en a et en les reattribuant a la bonne et unique version du titre ou de l'album.
+
 ---
 
 ## Triage suite à un gros doc d'idées "engagement/addictif" (session redesign Explore/Activité)
@@ -69,4 +71,17 @@ maintenant que /explore est devenue la page principale de l'app, est ce qu'il y 
 
 ### À ne pas faire pour l'instant
 messagerie privée, ML lourd, refonte complète du feed, trop de badges/notifs push, marketplace de recommandations, playlists trop ambitieuses.
+
+---
+
+## Mis de côté pendant la refonte /explore (lots 1-7 + ajustements)
+
+- **Multi-curateurs pour "La sélection de [créateur]"** — aujourd'hui un seul curateur (toi), géré à la main via SQL. Ouvrir à d'autres personnes (influenceurs) demanderait une table d'allowlist + un vrai formulaire de soumission (piste évoquée : onglet dédié dans `/add`, toggle dans `/add`, ou entrée dans le menu hamburger de `/me`). Mis de côté car ça ouvre des questions non tranchées : qui peut devenir curateur, vérification, modération, cohabitation de plusieurs picks en même temps.
+- **Signal implicite "clic sans note" sur les recos "Pour toi"** — symétrique du bouton "Pas pour moi" (signal négatif explicite) mais pour un signal positif faible. L'infra de tracking existe déjà (`product_events`), mais logguer l'événement ne servirait à rien tant que le pipeline ML ne le lit pas dans son scoring — demande une passe supplémentaire.
+- **Raison affichée sur les recos "Pour toi"** ("comme La Femme", "tu as aimé Homework") — retiré du design final car aucune donnée de provenance n'est stockée aujourd'hui (le pipeline ML précalculé ne garde que album_id/score/rank). Le fallback Jaccard pourrait théoriquement la calculer, mais ce n'est pas branché.
+- **Note moyenne et compteur d'écoutes affichés sur "Tendances"** — volontairement absents : avec le volume actuel d'utilisateurs, ces chiffres ne seraient pas fiables/honnêtes. À reconsidérer quand la base grandira.
+- **% de compatibilité de goût affiché sur "Goûts similaires"** — calculé côté serveur et utilisé pour le tri, mais pas montré à l'écran pour la même raison (peu de données, risque de donner une impression fausse). À reconsidérer plus tard.
+- **Pastilles de contexte par genre sur "Hors de ta bulle"** ("genre rare chez toi", "classique jazz") — bloquées tant que les tags de genre ne sont pas peuplés en base (cf. item d'enrichissement des tags plus haut dans ce fichier).
+- **`is_saved` (sauvegarde de liste) non calculé dans `getUserLists`/`getPublicUserLists`** — seulement dans `getPublicLists` (utilisé par `/explore` et `/lists`). Pas un vrai manque sauf si on affiche un jour le bouton "sauvegarder" sur les listes depuis un profil public ou ses propres listes.
+- **Pagination réelle de la page "Listes" (`/lists`)** — plafonnée à 30 résultats pour l'instant, largement suffisant au volume actuel. À remplacer par une vraie pagination si on approche un jour ce plafond.
 

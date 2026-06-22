@@ -72,6 +72,7 @@ export type ForYouTrack = {
     track_title: string;
     artist: string;
     album_id: string;
+    artist_id: string;
     cover_url: string | null;
 };
 
@@ -517,7 +518,7 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
 
     const { data: rawData } = await (supabase as any)
         .from('user_track_recommendations')
-        .select('track_id, rank, tracks(id, title, album_id, albums(id, title, cover_url, artists(name)))')
+        .select('track_id, rank, tracks(id, title, album_id, artist_id, albums(id, title, cover_url, artists(name)))')
         .eq('user_id', user.id)
         .eq('method', 'cosine_cf')
         .order('rank')
@@ -535,6 +536,7 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
             track_title: track?.title || 'Unknown',
             artist: album?.artists?.name || 'Unknown',
             album_id: track?.album_id || '',
+            artist_id: track?.artist_id || '',
             cover_url: album?.cover_url ?? null,
         };
     });

@@ -1,31 +1,30 @@
 sur les cartes "critique" de la page Activité (FeedCardReviewCreated/FeedCardTrackReviewCreated), les boutons like/répondre ont été retirés (commentés dans le code, pas supprimés) pour la refonte ligne uniforme — la carte entière navigue déjà vers la critique complète où ces actions existent. Trouver une façon plus subtile de les réintroduire sur la carte du feed (icône discrète dans le coin, au survol, etc.) sans recharger la ligne.
 
-liker les titres sur les pages albums, ajouter les singles a la recherche
-creer une feed card en consequence : 'X aime 'titre' sur 'album.titre'
+
 version pc
-ameliorer encore les scores de pertinence dans la barre de recherche
-sur la page album ajouter si des amis ont dej aecouté
-ajouter les infos en general sur la page album et artiste, une bio, une description, des tags de genre, les autres albums de la disco ou les artistes / albums similaires
+
 trouver un moyen de mettre un peu des stats sur le profil (peut etre dans un autre onglet du hamburger menu)
-dans la page explorer ajouter une section pourtoi
-design et UX a fond avec agent special claude
-rate limiting partout ?
+
+
 preparer vps donc rest api, schema de bdd, migration des données
+
 gestion abus, signalement, bloquage
+
 compte privé/public
+
 supprimer page inutiles /diary /import etc
-sur le feed, quand on like, il faut refresh la page pour le voir s'activer, ca peut porter a confusion. 
-repnser les modals de commentaires et d'ecriture de review pour que plutot que former une carte au milieu, ca fasse comme une page qui monte et prend tout le bas en laissant de la place en haut
-changer la presentation du like, pour le moment c'est coeur X en coeur X j'aime et pouvoir cliker sur le 'j'aime' et avoir la liste des gens qui ont liké. 
-ajouter les liens spotify partout grace a la commu, et un ecran de modo pour valider les liens. faire participer la commu simplement c'est la clé
 
-si j'ai ecouté l'album, l'activté resau apparait dans le truc mon ecoute alors que ca devrit etre dans le hero juste en dessous des stats
+depuis la refonte de la page /feed en page secondaire /activité, il n'est plus possible de voir la liste des gens qui ont aimé que ce soit sur /diary ou /track-diary ou encore sur le profil dans la tab "critiques", on ne peut pas savoir qui a liké notre ecoute. 
 
-dans les du meme artiste de album, on prend ceux qui ont le plus de listeners
+voit l'affichage dans sur les pages albums et artistes si on a rien pour "albums similaires" ou "artistes similaires"
+
+l'enrichissement des albums fonctionne bien on couvre a 99% les liens streaming et les covers mais seulement 30% les tags. dans une appli ou on veut faire de la recommendation aux gens, il faut trouver une solution pour peupler ca. ca peut etre fait a la main, une IA, une source externe, on a deja mis en place les votes communautaires, mais je ne sais pas si c'est vraiment pris en compte.
+
+Concernant les votes de genres communautaires, il faut aider l'utilsateur a faire un choix, on ne connait pas tous les styles de musiques et on ne sait pas quoi choisir donc il faut reprenser un peu ca car pour le moment, beaucoup de monde prefere skipper le vote car il ne sait pas rpeondre plutot que proposer quelque chose 
 
 le signalement doit fonctionner dans le pannel admin. le signalement de tracks ne retourne pas le texte. signaler aussi les commentaires ? rate limit sur les signalements ? 
 
-revoir le feed entierement ? ou au moins les textes dans les cartes
+revoir les textes dans les cartes de /feed pour que ce soit parfait.
 
 taffer sur les listes : ajout rapide, enlever de la liste quand on note etc. 
 
@@ -39,7 +38,9 @@ voir le parcours utilisateur, est ce que c'est vraiment bien de faire / puis /au
 
 refaire /, /auth, /add avec claude design. 
 
+l'idée de la fleche de retour, je suis de moins en moins convaincu, des fois on peut un peu se "perdre" genre activité puis diary puis artiste puis un album puis un track puis le compte de quelqu'un et la pour revenir a activité, il faut faire 5 fois la fleche de retour. il faut soit reintroduire la navbar partout, soit trouver un moyen d'etre plus clair avec l'utilisateur.
 
+maintenant que /explore est devenue la page principale de l'app, est ce qu'il y a assez de contenu pour tout le monde (non c'est sur) comment changer ca et comment faire passer un cap au design de la page pour qu'elle fasse vraie entrée de l'app (prompt claude design).
 
 ---
 

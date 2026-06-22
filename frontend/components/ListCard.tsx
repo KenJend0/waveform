@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CoverImage } from "@/components/CoverImage";
 import { toggleSaveList, type UserList } from "@/app/actions/lists";
 import { useAuth } from "@/lib/AuthContext";
+import { showToast } from "@/components/Toast";
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
     return (
@@ -81,6 +82,10 @@ export default function ListCard({ list, href }: Props) {
     async function handleToggleSave(e: React.MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
+        if (!authUser) {
+            showToast("Connecte-toi pour sauvegarder une liste", "error");
+            return;
+        }
         if (loading) return;
         setLoading(true);
         setSaved((v) => !v);

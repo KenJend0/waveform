@@ -17,7 +17,7 @@ export default async function FeedPage() {
     return (
       <div className="px-3 md:px-5 lg:px-6 pb-28 lg:pb-12">
         <div className="pt-8 pb-6">
-          <h1 className="text-h1 text-text-primary mb-2">Feed</h1>
+          <h1 className="text-h1 text-text-primary mb-2">Activité</h1>
           <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
         </div>
 

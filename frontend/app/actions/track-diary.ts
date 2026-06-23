@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { fanoutEvent } from './feed';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
@@ -155,6 +156,9 @@ export async function deleteTrackDiaryEntry(entryId: string) {
       .eq('id', entryId);
 
     if (deleteError) return { success: false, error: 'Une erreur est survenue' };
+
+    revalidatePath('/me');
+    revalidatePath('/u/[username]', 'page');
 
     return { success: true };
   } catch (err) {

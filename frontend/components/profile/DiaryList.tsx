@@ -36,7 +36,8 @@ type Props = {
 
 export default function DiaryList({ entries, isMe, trackEntries, userId, ratingLabel = "Ma note" }: Props) {
   const showToggle = trackEntries !== undefined;
-  const [media, setMedia] = useState<MediaFilter>("albums");
+  const defaultMedia: MediaFilter = entries.length === 0 && (trackEntries?.length ?? 0) > 0 ? "titres" : "albums";
+  const [media, setMedia] = useState<MediaFilter>(defaultMedia);
 
   // Album state
   const [albumEntries, setAlbumEntries] = useState<DiaryEntryUI[]>(entries);

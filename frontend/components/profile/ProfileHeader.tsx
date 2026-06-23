@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, LogOut, Settings, Heart, LifeBuoy, Shield } from "lucide-react";
+import { Menu, LogOut, Settings, Heart, LifeBuoy, Shield, Flame } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
@@ -124,7 +124,8 @@ export default function ProfileHeader({ user, stats, streak, onFollowClick }: Pr
 
             {user.is_me && streak && streak.days >= 2 && (
               <span className="mt-1.5 inline-flex items-center gap-1 bg-paper-hi border border-border rounded-badge px-2 py-0.5 text-label text-accent-deep">
-                🔥 {streak.days} jours d&apos;affilée
+                <Flame size={12} />
+                {streak.days} jours d&apos;affilés
               </span>
             )}
 

@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { logAuthedProductEvent } from '@/lib/productEvents';
 import { fanoutEvent } from './feed';
@@ -220,6 +221,9 @@ export async function deleteDiaryEntry(entryId: string) {
     if (deleteError) {
       return { success: false, error: 'An error occurred' };
     }
+
+    revalidatePath('/me');
+    revalidatePath('/u/[username]', 'page');
 
     return { success: true };
   } catch (err) {

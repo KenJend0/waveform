@@ -64,7 +64,7 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
   ) : (
     <>
       <ActorLink username={event.actor.username} />
-      <span>{' a noté'}</span>
+      <span>{' a noté un titre'}</span>
     </>
   );
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enrichAlbumMetadata } from '@/app/actions/metadata';
-import { createSupabaseAdmin } from '@/lib/supabase/server';
+import { createSupabaseAdmin, getAuthUser } from '@/lib/supabase/server';
 import { applyRateLimit } from '@/lib/serverRateLimit';
 
 export const maxDuration = 60;
@@ -8,6 +8,11 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const limited = await applyRateLimit(req);
   if (limited) return limited;
+
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const { albumId, mbid, title, artist } = await req.json();

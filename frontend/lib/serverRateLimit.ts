@@ -33,7 +33,7 @@ const ratelimit = redis
   : null;
 
 // Server actions: per-user limits keyed by action type
-type ActionKey = "like" | "follow" | "comment" | "diary_write" | "report" | "block";
+type ActionKey = "like" | "follow" | "comment" | "diary_write" | "report" | "block" | "list_write" | "save";
 
 const ACTION_LIMITS: Record<ActionKey, { requests: number; window: string }> = {
   like:        { requests: 60, window: "60 s" },
@@ -42,6 +42,8 @@ const ACTION_LIMITS: Record<ActionKey, { requests: number; window: string }> = {
   diary_write: { requests: 20, window: "60 s" },
   report:      { requests: 10, window: "60 s" },
   block:       { requests: 10, window: "60 s" },
+  list_write:  { requests: 30, window: "60 s" },
+  save:        { requests: 60, window: "60 s" },
 };
 
 const actionLimiters = redis

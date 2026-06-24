@@ -17,6 +17,10 @@ type Props = {
     isAuthenticated: boolean;
 };
 
+function errorMessage(err: unknown, fallback: string): string {
+    return err instanceof Error && err.message ? err.message : fallback;
+}
+
 function RemoveButton({ onRemove }: { onRemove: () => void }) {
     return (
         <button
@@ -116,8 +120,8 @@ function EditListForm({
             showToast("Liste mise à jour", "success");
             router.refresh();
             onClose();
-        } catch {
-            showToast("Erreur lors de la mise à jour", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur lors de la mise à jour"), "error");
         } finally {
             setSaving(false);
         }
@@ -129,8 +133,8 @@ function EditListForm({
             await deleteList(list.id);
             showToast("Liste supprimée", "success");
             router.push("/me?tab=lists");
-        } catch {
-            showToast("Erreur lors de la suppression", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
             setDeleting(false);
             setConfirmDelete(false);
         }
@@ -231,10 +235,10 @@ function LikeButton({ listId, initialLiked, initialCount }: { listId: string; in
         setCount((v) => liked ? v - 1 : v + 1);
         try {
             await toggleListLike(listId);
-        } catch {
+        } catch (err) {
             setLiked((v) => !v);
             setCount((v) => liked ? v + 1 : v - 1);
-            showToast("Erreur", "error");
+            showToast(errorMessage(err, "Erreur"), "error");
         } finally {
             setLoading(false);
         }
@@ -268,9 +272,9 @@ export default function ListPageContent({ list, items, isOwner, isAuthenticated 
         setLocalItems((prev) => prev.filter((i) => i.id !== itemId));
         try {
             await removeListItem(itemId);
-        } catch {
+        } catch (err) {
             setLocalItems(items); // revert
-            showToast("Erreur lors de la suppression", "error");
+            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
         }
     };
 

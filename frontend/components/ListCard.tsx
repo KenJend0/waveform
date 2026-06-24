@@ -20,6 +20,10 @@ type Props = {
     href: string;
 };
 
+function errorMessage(err: unknown, fallback: string): string {
+    return err instanceof Error && err.message ? err.message : fallback;
+}
+
 function CoverCollage({ urls }: { urls: (string | null)[] }) {
     const filled = [...urls, null, null, null, null].slice(0, 4);
     const hasCovers = filled.some((u) => u !== null);
@@ -91,8 +95,9 @@ export default function ListCard({ list, href }: Props) {
         setSaved((v) => !v);
         try {
             await toggleSaveList(list.id);
-        } catch {
+        } catch (err) {
             setSaved((v) => !v);
+            showToast(errorMessage(err, "Impossible de sauvegarder cette liste"), "error");
         } finally {
             setLoading(false);
         }

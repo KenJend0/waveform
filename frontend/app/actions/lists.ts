@@ -2,6 +2,7 @@
 
 import { getAuthUser, createSupabaseServer, createSupabaseAnon } from '@/lib/supabase/server';
 import { logAuthedProductEvent } from '@/lib/productEvents';
+import { checkActionRateLimit } from '@/lib/serverRateLimit';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -276,6 +277,9 @@ export async function toggleListLike(listId: string): Promise<{ liked: boolean }
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
 
+    const rlError = await checkActionRateLimit(user.id, 'save');
+    if (rlError) throw new Error(rlError);
+
     const supabase = await createSupabaseServer();
 
     const { data: existing } = await supabase
@@ -301,6 +305,9 @@ export async function toggleListLike(listId: string): Promise<{ liked: boolean }
 export async function toggleSaveList(listId: string): Promise<{ saved: boolean }> {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
+
+    const rlError = await checkActionRateLimit(user.id, 'save');
+    if (rlError) throw new Error(rlError);
 
     const supabase = await createSupabaseServer();
 
@@ -741,6 +748,9 @@ export async function createList(data: {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
 
+    const rlError = await checkActionRateLimit(user.id, 'list_write');
+    if (rlError) throw new Error(rlError);
+
     const supabase = await createSupabaseServer();
 
     const { data: list, error } = await supabase
@@ -774,6 +784,9 @@ export async function toggleListItem(
 ): Promise<{ added: boolean }> {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
+
+    const rlError = await checkActionRateLimit(user.id, 'list_write');
+    if (rlError) throw new Error(rlError);
 
     const supabase = await createSupabaseServer();
 
@@ -824,6 +837,9 @@ export async function removeListItem(itemId: string): Promise<void> {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
 
+    const rlError = await checkActionRateLimit(user.id, 'list_write');
+    if (rlError) throw new Error(rlError);
+
     const supabase = await createSupabaseServer();
 
     // Récupère le list_id de l'item pour vérifier que l'user en est propriétaire
@@ -854,6 +870,9 @@ export async function deleteList(listId: string): Promise<void> {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
 
+    const rlError = await checkActionRateLimit(user.id, 'list_write');
+    if (rlError) throw new Error(rlError);
+
     const supabase = await createSupabaseServer();
 
     const { error } = await supabase
@@ -875,6 +894,9 @@ export async function updateList(
 ): Promise<void> {
     const user = await getAuthUser();
     if (!user) throw new Error('Not authenticated');
+
+    const rlError = await checkActionRateLimit(user.id, 'list_write');
+    if (rlError) throw new Error(rlError);
 
     const supabase = await createSupabaseServer();
 

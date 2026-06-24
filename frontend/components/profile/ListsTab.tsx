@@ -14,6 +14,10 @@ type Props = {
     userId?: string;
 };
 
+function errorMessage(err: unknown, fallback: string): string {
+    return err instanceof Error && err.message ? err.message : fallback;
+}
+
 type ListFilter = "mine" | "saved" | "all";
 
 function CreateListForm({ onCreated }: { onCreated: () => void }) {
@@ -32,8 +36,8 @@ function CreateListForm({ onCreated }: { onCreated: () => void }) {
             setTitle("");
             router.refresh();
             onCreated();
-        } catch {
-            showToast("Erreur lors de la création", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur lors de la création"), "error");
         } finally {
             setSaving(false);
         }
@@ -100,8 +104,8 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             await updateList(list.id, { title: t });
             showToast("Renommée", "success");
             router.refresh();
-        } catch {
-            showToast("Erreur", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur"), "error");
         } finally {
             setSaving(false);
             setRenaming(false);
@@ -114,8 +118,8 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             await updateList(list.id, { isPublic: !list.is_public });
             showToast(list.is_public ? "Liste rendue privée" : "Liste rendue publique", "success");
             router.refresh();
-        } catch {
-            showToast("Erreur", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur"), "error");
         }
     };
 
@@ -125,8 +129,8 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             await deleteList(list.id);
             showToast("Liste supprimée", "success");
             router.refresh();
-        } catch {
-            showToast("Erreur lors de la suppression", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
             setDeleting(false);
             setConfirmDelete(false);
         }

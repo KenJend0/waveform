@@ -14,6 +14,10 @@ type Props = {
     initialListsContaining: string[];
 };
 
+function errorMessage(err: unknown, fallback: string): string {
+    return err instanceof Error && err.message ? err.message : fallback;
+}
+
 export default function AddToListButton({
     albumId,
     trackId,
@@ -74,7 +78,7 @@ export default function AddToListButton({
         try {
             await toggleListItem(listId, { albumId, trackId });
             router.refresh();
-        } catch {
+        } catch (err) {
             // Revert on error
             setListsContaining((prev) => {
                 const next = new Set(prev);
@@ -82,7 +86,7 @@ export default function AddToListButton({
                 else next.delete(listId);
                 return next;
             });
-            showToast("Erreur, réessaie", "error");
+            showToast(errorMessage(err, "Erreur, réessaie"), "error");
         } finally {
             setLoadingListId(null);
         }
@@ -100,8 +104,8 @@ export default function AddToListButton({
             setNewTitle("");
             showToast(`Ajouté à "${title}"`, "success");
             router.refresh();
-        } catch {
-            showToast("Erreur lors de la création", "error");
+        } catch (err) {
+            showToast(errorMessage(err, "Erreur lors de la création"), "error");
         } finally {
             setIsSubmittingCreate(false);
         }

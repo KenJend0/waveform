@@ -11,6 +11,10 @@ type SaveAlbumButtonProps = {
   userId?: string;
 };
 
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
 export default function SaveAlbumButton({
   albumId,
   initialSaved = false,
@@ -32,7 +36,7 @@ export default function SaveAlbumButton({
       router.refresh();
     } catch (err) {
       console.error("Error toggling save:", err);
-      showToast("Impossible de sauvegarder cet album", "error");
+      showToast(errorMessage(err, "Impossible de sauvegarder cet album"), "error");
     } finally {
       setLoading(false);
     }

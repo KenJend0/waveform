@@ -1,6 +1,7 @@
 'use server';
 
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
+import { checkActionRateLimit } from '@/lib/serverRateLimit';
 
 export type SavedAlbumUI = {
   id: string;
@@ -82,6 +83,9 @@ export async function toggleSaveAlbum(albumId: string): Promise<{ saved: boolean
   if (!user) {
     throw new Error('Not authenticated');
   }
+
+  const rlError = await checkActionRateLimit(user.id, 'save');
+  if (rlError) throw new Error(rlError);
 
   const supabase = await createSupabaseServer();
 

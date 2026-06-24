@@ -1,6 +1,7 @@
 'use server';
 
 import { createSupabaseAdmin, getAuthUser } from '@/lib/supabase/server';
+import sharp from 'sharp';
 
 export async function uploadAvatar(
   userId: string,
@@ -26,13 +27,23 @@ export async function uploadAvatar(
     }
 
     const arrayBuffer = await file.arrayBuffer();
+    let jpegBuffer: Buffer;
+    try {
+      jpegBuffer = await sharp(Buffer.from(arrayBuffer))
+        .rotate()
+        .resize(512, 512, { fit: 'cover' })
+        .jpeg({ quality: 90, mozjpeg: true })
+        .toBuffer();
+    } catch {
+      throw new Error('Invalid image file');
+    }
 
     // Use admin client to bypass Storage RLS
     const admin = createSupabaseAdmin();
 
     const { error: uploadError } = await admin.storage
       .from('avatars')
-      .upload(`${userId}.jpg`, arrayBuffer, {
+      .upload(`${userId}.jpg`, jpegBuffer, {
         upsert: true,
         contentType: 'image/jpeg',
       });

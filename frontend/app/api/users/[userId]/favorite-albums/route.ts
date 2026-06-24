@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { createSupabaseServer } from "@/lib/supabase/server";
 import { applyRateLimit } from "@/lib/serverRateLimit";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,8 +17,7 @@ export async function GET(
     return NextResponse.json({ albums: [] });
   }
 
-  // Use admin client (service role) helper to bypass RLS — favorite albums are public profile data
-  const supabase = createSupabaseAdmin();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("user_favorite_albums")

@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/server";
-import { getAuthUser, createSupabaseAdmin } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 
 export async function generateMetadata({ params }: any) {
   const resolvedParams = params && typeof params.then === "function" ? await params : params;
@@ -68,7 +68,6 @@ export default async function PublicProfilePage({
     redirect("/me");
   }
 
-  const adminClient = createSupabaseAdmin();
   const [
     { count: followersCount },
     { count: followingCount },
@@ -83,7 +82,7 @@ export default async function PublicProfilePage({
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
     getUserDiary(profile.id),
     getPublicUserLists(profile.id),
-    adminClient
+    supabase
       .from("user_favorite_albums")
       .select("position, album_id, albums (id, title, cover_url, artists (name))")
       .eq("user_id", profile.id)

@@ -398,8 +398,8 @@ CREATE POLICY "saved_albums_delete_owner" ON saved_albums FOR DELETE USING ((SEL
 
 -- ── user_favorite_albums ──────────────────────────────────────
 ALTER TABLE user_favorite_albums ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "favorites_select_owner" ON user_favorite_albums FOR SELECT
-  USING ((SELECT auth.uid()) = user_id);
+CREATE POLICY "favorites_select_public" ON user_favorite_albums FOR SELECT
+  USING (true);
 CREATE POLICY "favorites_insert_owner" ON user_favorite_albums FOR INSERT
   WITH CHECK ((SELECT auth.uid()) = user_id);
 CREATE POLICY "favorites_update_owner" ON user_favorite_albums FOR UPDATE

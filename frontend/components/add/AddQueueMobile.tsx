@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import StarRating from "@/components/StarRating";
 import { CoverImage } from "@/components/CoverImage";
@@ -81,6 +82,8 @@ export default function AddQueueMobile({ initialQueue }: Props) {
     const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
     const current = queue[index] ?? null;
+    const currentHref = current ? (current.kind === "album" ? `/albums/${current.id}` : `/tracks/${current.id}`) : "#";
+    const currentSeeLabel = current?.kind === "album" ? "voir l'album" : "voir le titre";
     const upcoming = queue.slice(index + 1, index + 3);
     const remaining = queue.length - index;
     const peekCount = Math.min(upcoming.length, 2);
@@ -655,13 +658,21 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                                                     )}
                                                 </div>
 
-                                                <button
-                                                    onClick={toggleComment}
-                                                    className="flex items-center gap-1 text-[13px] text-text-tertiary hover:text-text-secondary transition-colors duration-150 w-full mb-2 flex-shrink-0"
-                                                >
-                                                    <ChevronUp size={14} />
-                                                    Ajouter un commentaire…
-                                                </button>
+                                                <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+                                                    <button
+                                                        onClick={toggleComment}
+                                                        className="flex items-center gap-1 text-[13px] text-text-tertiary hover:text-text-secondary transition-colors duration-150"
+                                                    >
+                                                        <ChevronUp size={14} />
+                                                        Écrire une critique…
+                                                    </button>
+                                                    <Link
+                                                        href={currentHref}
+                                                        className="flex-shrink-0 font-display italic lowercase text-[13px] text-accent border-b border-accent pb-px hover:text-accent-deep hover:border-accent-deep transition-colors duration-150"
+                                                    >
+                                                        {currentSeeLabel}
+                                                    </Link>
+                                                </div>
 
                                                 <div className="flex-1 min-h-0 mb-3">
                                                     <textarea
@@ -757,13 +768,21 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                                                         )}
                                                     </div>
 
-                                                    <button
-                                                        onClick={toggleComment}
-                                                        className="flex items-center gap-1 text-[13px] text-text-tertiary hover:text-text-secondary transition-colors duration-150 w-full"
-                                                    >
-                                                        <ChevronDown size={14} />
-                                                        Ajouter un commentaire…
-                                                    </button>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <button
+                                                            onClick={toggleComment}
+                                                            className="flex items-center gap-1 text-[13px] text-text-tertiary hover:text-text-secondary transition-colors duration-150"
+                                                        >
+                                                            <ChevronDown size={14} />
+                                                            Écrire une critique
+                                                        </button>
+                                                        <Link
+                                                            href={currentHref}
+                                                            className="flex-shrink-0 font-display italic lowercase text-[13px] text-accent border-b border-accent pb-px hover:text-accent-deep hover:border-accent-deep transition-colors duration-150"
+                                                        >
+                                                            {currentSeeLabel}
+                                                        </Link>
+                                                    </div>
 
                                                     <button
                                                         onClick={handleNext}

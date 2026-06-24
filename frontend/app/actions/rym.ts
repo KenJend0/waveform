@@ -6,12 +6,20 @@ import type { RawExternalItem } from '@/lib/externalImport';
 
 const COOLDOWN_HOURS = 24;
 const DEFAULT_ROWS = 500;
+const MAX_RYM_CSV_BYTES = 3 * 1024 * 1024;
 // Garde-fou contre un upload pathologique — pas une limite "normale" : les vrais gros
 // catalogues (700-1000+ écoutes) doivent pouvoir tout importer via le champ côté UI.
 const ABSOLUTE_MAX_ROWS = 2000;
 
 /** Parse le fichier sans rien créer — permet à l'UI d'afficher le nombre réel d'écoutes avant de lancer l'import. */
 export async function countRymCsvRows(fileContent: string) {
+  const user = await getAuthUser();
+  if (!user) return { success: false as const, error: 'Not authenticated' };
+
+  if (Buffer.byteLength(fileContent, 'utf8') > MAX_RYM_CSV_BYTES) {
+    return { success: false as const, error: 'Fichier CSV trop lourd — taille max 3MB.' };
+  }
+
   try {
     const parsed = parseRymCsv(fileContent);
     return { success: true as const, total: parsed.length, defaultLimit: Math.min(parsed.length, DEFAULT_ROWS), maxLimit: ABSOLUTE_MAX_ROWS };
@@ -23,6 +31,10 @@ export async function countRymCsvRows(fileContent: string) {
 export async function startRymImport(fileContent: string, fileName: string, requestedLimit?: number) {
   const user = await getAuthUser();
   if (!user) return { success: false as const, error: 'Not authenticated' };
+
+  if (Buffer.byteLength(fileContent, 'utf8') > MAX_RYM_CSV_BYTES) {
+    return { success: false as const, error: 'Fichier CSV trop lourd — taille max 3MB.' };
+  }
 
   // `external_imports` n'est pas encore dans les types générés (migration récente) — cast en any.
   const admin = createSupabaseAdmin() as any;

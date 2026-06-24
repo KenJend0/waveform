@@ -363,6 +363,7 @@ export default function ProfileSettings() {
     const [rymPending, setRymPending] = useState<{ fileContent: string; fileName: string; total: number; maxLimit: number } | null>(null);
     const [rymLimitInput, setRymLimitInput] = useState("");
     const [rymCounting, setRymCounting] = useState(false);
+    const MAX_RYM_CSV_BYTES = 3 * 1024 * 1024;
 
     const handleRymFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -374,6 +375,11 @@ export default function ProfileSettings() {
         setRymPending(null);
         setRymCounting(true);
         try {
+            if (file.size > MAX_RYM_CSV_BYTES) {
+                setRymError("Fichier CSV trop lourd — taille max 3MB.");
+                return;
+            }
+
             const fileContent = await file.text();
             const counted = await countRymCsvRows(fileContent);
             if (!counted.success) {

@@ -146,12 +146,20 @@ def build_rows(user_id: str, scored: list[dict], method: str, now: str) -> list[
     return rows
 
 
-def upsert_in_batches(rows: list[dict], dry_run: bool) -> None:
-    if not rows or dry_run:
+def replace_recommendations(
+    user_ids: list[str], rows: list[dict], method: str, dry_run: bool
+) -> None:
+    """Delete each processed user's previous rows for this method, then insert
+    the freshly computed ones — an upsert alone never removes albums that fell
+    out of the new top-N, leaving stale ranked rows that never rotate out."""
+    if dry_run:
         return
     client = get_client()
+    for i in range(0, len(user_ids), BATCH_SIZE):
+        batch = user_ids[i : i + BATCH_SIZE]
+        client.table("user_track_recommendations").delete().eq("method", method).in_("user_id", batch).execute()
     for i in range(0, len(rows), BATCH_SIZE):
-        client.table("user_track_recommendations").upsert(rows[i: i + BATCH_SIZE]).execute()
+        client.table("user_track_recommendations").insert(rows[i: i + BATCH_SIZE]).execute()
 
 
 def main(dry_run: bool, method: str, limit: int) -> None:
@@ -190,7 +198,7 @@ def main(dry_run: bool, method: str, limit: int) -> None:
         return
 
     print("Writing to Supabase...")
-    upsert_in_batches(all_rows, dry_run)
+    replace_recommendations(user_ids, all_rows, method, dry_run)
     print("Done.")
 
 

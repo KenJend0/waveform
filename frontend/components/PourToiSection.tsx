@@ -5,12 +5,13 @@ import Link from "next/link";
 import { type ForYouAlbum, type ForYouTrack, dismissRecommendation, dismissTrackRecommendation } from "@/app/actions/explore";
 import { CoverImage } from "@/components/CoverImage";
 
-function AlbumCard({ album, onDismiss }: { album: ForYouAlbum; onDismiss: (albumId: string) => void }) {
-    function handleDismiss(e: React.MouseEvent) {
+function AlbumCard({ album, onDismiss, onDismissFailed }: { album: ForYouAlbum; onDismiss: (albumId: string) => void; onDismissFailed: (albumId: string) => void }) {
+    async function handleDismiss(e: React.MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
         onDismiss(album.album_id);
-        dismissRecommendation(album.album_id);
+        const { success } = await dismissRecommendation(album.album_id);
+        if (!success) onDismissFailed(album.album_id);
     }
 
     return (
@@ -45,12 +46,13 @@ function AlbumCard({ album, onDismiss }: { album: ForYouAlbum; onDismiss: (album
     );
 }
 
-function TrackCard({ track, onDismiss }: { track: ForYouTrack; onDismiss: (trackId: string) => void }) {
-    function handleDismiss(e: React.MouseEvent) {
+function TrackCard({ track, onDismiss, onDismissFailed }: { track: ForYouTrack; onDismiss: (trackId: string) => void; onDismissFailed: (trackId: string) => void }) {
+    async function handleDismiss(e: React.MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
         onDismiss(track.track_id);
-        dismissTrackRecommendation(track.track_id);
+        const { success } = await dismissTrackRecommendation(track.track_id);
+        if (!success) onDismissFailed(track.track_id);
     }
 
     return (
@@ -111,8 +113,24 @@ export default function PourToiSection({ albums, tracks }: Props) {
         setDismissedIds((prev) => new Set(prev).add(albumId));
     }
 
+    function handleDismissFailed(albumId: string) {
+        setDismissedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(albumId);
+            return next;
+        });
+    }
+
     function handleDismissTrack(trackId: string) {
         setDismissedTrackIds((prev) => new Set(prev).add(trackId));
+    }
+
+    function handleDismissTrackFailed(trackId: string) {
+        setDismissedTrackIds((prev) => {
+            const next = new Set(prev);
+            next.delete(trackId);
+            return next;
+        });
     }
 
     return (
@@ -148,7 +166,7 @@ export default function PourToiSection({ albums, tracks }: Props) {
                 visibleAlbums.length > 0 ? (
                     <div className="grid grid-cols-3 gap-3 lg:gap-4">
                         {visibleAlbums.map((album) => (
-                            <AlbumCard key={album.album_id} album={album} onDismiss={handleDismiss} />
+                            <AlbumCard key={album.album_id} album={album} onDismiss={handleDismiss} onDismissFailed={handleDismissFailed} />
                         ))}
                     </div>
                 ) : allDismissed ? (
@@ -162,7 +180,7 @@ export default function PourToiSection({ albums, tracks }: Props) {
                 visibleTracks.length > 0 ? (
                     <div className="grid grid-cols-3 gap-3 lg:gap-4">
                         {visibleTracks.map((track) => (
-                            <TrackCard key={track.track_id} track={track} onDismiss={handleDismissTrack} />
+                            <TrackCard key={track.track_id} track={track} onDismiss={handleDismissTrack} onDismissFailed={handleDismissTrackFailed} />
                         ))}
                     </div>
                 ) : allTracksDismissed ? (

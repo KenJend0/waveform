@@ -16,6 +16,7 @@ type AddToDiaryButtonProps = {
   initialSaved?: boolean;
   existingEntriesCount?: number;
   autoOpen?: boolean;
+  source?: string;
   albumHasGenres?: boolean;
   onSuccess?: () => void;
 };
@@ -26,6 +27,7 @@ export default function AddToDiaryButton({
   initialSaved = false,
   existingEntriesCount = 0,
   autoOpen = false,
+  source,
   albumHasGenres = true,
   onSuccess,
 }: AddToDiaryButtonProps) {
@@ -79,6 +81,7 @@ export default function AddToDiaryButton({
         rating: rating ?? 0,
         reviewBody: body || undefined,
         relisten: hasExistingEntry,
+        source,
       });
 
       if (result.success) {

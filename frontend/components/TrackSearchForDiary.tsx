@@ -19,6 +19,7 @@ export type TrackUI = {
     album_title: string;
     artist_id: string;
     coverUrl?: string | null;
+    source?: string;
 };
 
 type Props = {

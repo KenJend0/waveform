@@ -15,7 +15,7 @@ function AlbumCard({ album, onDismiss, onDismissFailed }: { album: ForYouAlbum; 
     }
 
     return (
-        <Link href={`/albums/${album.album_id}`} className="block group">
+        <Link href={`/albums/${album.album_id}?source=for_you`} className="block group">
             <div className="rounded-[10px] overflow-hidden bg-background-secondary mb-2 aspect-square relative">
                 {album.cover_url ? (
                     <CoverImage
@@ -56,7 +56,7 @@ function TrackCard({ track, onDismiss, onDismissFailed }: { track: ForYouTrack; 
     }
 
     return (
-        <Link href={`/tracks/${track.track_id}`} className="block group">
+        <Link href={`/tracks/${track.track_id}?source=for_you`} className="block group">
             <div className="rounded-[10px] overflow-hidden bg-background-secondary mb-2 aspect-square relative">
                 {track.cover_url ? (
                     <CoverImage

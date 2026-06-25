@@ -15,10 +15,12 @@ import { createSupabaseServer, getAuthUser } from '@/lib/supabase/server';
 import TrackNetworkListeners from '@/components/TrackNetworkListeners';
 import AddToListButton from '@/components/AddToListButton';
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ source?: string }> };
 
-export default async function TrackPage({ params }: PageProps) {
+export default async function TrackPage({ params, searchParams }: PageProps) {
     const { id } = await params;
+    const resolvedSearchParams = searchParams ? await searchParams : {};
+    const recSource = resolvedSearchParams?.source;
 
     const t = await getTrack(id);
     if (!t) notFound();
@@ -170,6 +172,7 @@ export default async function TrackPage({ params }: PageProps) {
                     artistId={t.artist_id}
                     userId={user?.id}
                     existingEntry={userEntry ?? null}
+                    source={recSource}
                 />
                 <AddToListButton
                     trackId={id}

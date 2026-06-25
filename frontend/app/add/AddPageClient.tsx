@@ -24,6 +24,7 @@ type SelectedAlbum = {
     artist_name: string;
     coverUrl?: string | null;
     year?: number | null;
+    source?: string;
 };
 
 type SelectedTrack = {
@@ -34,6 +35,7 @@ type SelectedTrack = {
     album_title: string;
     artist_id: string;
     coverUrl?: string | null;
+    source?: string;
 };
 
 type PreviousEntry = {
@@ -151,7 +153,7 @@ export default function AddPageClient({
         const tiles: SuggestionTile[] = [];
         const seen = new Set<string>();
 
-        const push = (id: string, title: string, artist: string, coverUrl: string | null, year?: number | null) => {
+        const push = (id: string, title: string, artist: string, coverUrl: string | null, year?: number | null, source?: string) => {
             if (!id || seen.has(id) || tiles.length >= 8) return;
             seen.add(id);
             tiles.push({
@@ -159,12 +161,12 @@ export default function AddPageClient({
                 title,
                 artist,
                 coverUrl,
-                onSelect: () => handleAlbumSelect({ id, title, artist_name: artist, coverUrl, year }),
+                onSelect: () => handleAlbumSelect({ id, title, artist_name: artist, coverUrl, year, source }),
             });
         };
 
         for (const item of listItems.albums) push(item.album_id, item.album_title, item.artist_name, item.cover_url);
-        for (const item of initialSuggestions) push(item.album_id, item.title, item.artist, item.cover_url);
+        for (const item of initialSuggestions) push(item.album_id, item.title, item.artist, item.cover_url, undefined, "for_you");
         for (const item of initialDiscovery) push(item.album_id, item.title, item.artist, item.cover_url);
         if (tiles.length === 0) {
             for (const album of CLASSIC_ALBUMS) push(album.id, album.title, album.artist, album.coverUrl);
@@ -176,7 +178,7 @@ export default function AddPageClient({
         const tiles: SuggestionTile[] = [];
         const seen = new Set<string>();
 
-        const push = (id: string, title: string, artist: string, coverUrl: string | null, albumId: string, albumTitle: string, artistId: string) => {
+        const push = (id: string, title: string, artist: string, coverUrl: string | null, albumId: string, albumTitle: string, artistId: string, source?: string) => {
             if (!id || seen.has(id) || tiles.length >= 8) return;
             seen.add(id);
             tiles.push({
@@ -193,12 +195,13 @@ export default function AddPageClient({
                         album_title: albumTitle,
                         artist_id: artistId,
                         coverUrl,
+                        source,
                     }),
             });
         };
 
         for (const item of listItems.tracks) push(item.track_id, item.track_title, item.artist_name, item.cover_url, item.album_id, item.album_title, item.artist_id);
-        for (const item of initialForYouTracks) push(item.track_id, item.track_title, item.artist, item.cover_url, item.album_id, "", item.artist_id);
+        for (const item of initialForYouTracks) push(item.track_id, item.track_title, item.artist, item.cover_url, item.album_id, "", item.artist_id, "for_you");
         return tiles;
     }, [listItems.tracks, initialForYouTracks]);
 
@@ -245,6 +248,7 @@ export default function AddPageClient({
             album_title: track.album_title,
             artist_id: track.artist_id,
             coverUrl: track.coverUrl,
+            source: track.source,
         });
         setStep("form");
     };
@@ -260,6 +264,7 @@ export default function AddPageClient({
                 reviewBody: comment.trim() || undefined,
                 isPublic: true,
                 relisten: previousEntry !== null,
+                source: selectedAlbum.source,
             });
 
             if (result.success) {
@@ -287,6 +292,7 @@ export default function AddPageClient({
                 rating: rating ?? undefined,
                 reviewBody: comment.trim() || undefined,
                 isPublic: true,
+                source: selectedTrack.source,
             });
 
             if (result.success) {

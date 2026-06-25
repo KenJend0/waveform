@@ -16,6 +16,8 @@ export interface UpsertTrackDiaryEntryInput {
   reviewTitle?: string;
   reviewBody?: string;
   isPublic?: boolean;
+  /** Provenance de la note — 'for_you' si l'utilisateur arrive d'une suggestion "Pour toi" */
+  source?: string;
 }
 
 export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
@@ -62,6 +64,7 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
       review_title: input.reviewTitle || null,
       review_body: input.reviewBody || null,
       is_public: input.isPublic ?? true,
+      rec_source: input.source ?? null,
     };
 
     const { data, error } = await (supabase as any)
@@ -136,6 +139,7 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
         album_id: input.albumId,
         rating: input.rating ?? null,
         has_review: !!(input.reviewBody),
+        rec_source: input.source ?? null,
       },
     });
 

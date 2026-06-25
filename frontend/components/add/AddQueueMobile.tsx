@@ -121,6 +121,7 @@ export default function AddQueueMobile({ initialQueue }: Props) {
     // L'utilisateur a déjà vu la carte passer à la suivante au moment où ça
     // résout ; une erreur ne peut donc être signalée qu'après coup via toast.
     const saveInBackground = (item: AddQueueItem, ratingValue: number, commentValue: string) => {
+        const source = item.source === "foryou" ? "for_you" : undefined;
         const promise = item.kind === "album"
             ? upsertDiaryEntry({
                 albumId: item.id,
@@ -128,6 +129,7 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                 rating: ratingValue,
                 reviewBody: commentValue.trim() || undefined,
                 isPublic: true,
+                source,
             })
             : upsertTrackDiaryEntry({
                 trackId: item.id,
@@ -137,6 +139,7 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                 rating: ratingValue,
                 reviewBody: commentValue.trim() || undefined,
                 isPublic: true,
+                source,
             });
 
         promise

@@ -25,7 +25,7 @@ import NetworkListenersSection from "@/components/NetworkListenersSection";
 
 type PageProps = {
     params: Promise<{ id: string }>;
-    searchParams?: Promise<{ addToDiary?: string }>;
+    searchParams?: Promise<{ addToDiary?: string; source?: string }>;
 };
 
 export async function generateMetadata({ params }: any) {
@@ -63,6 +63,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     const { id } = await params;
     const resolvedSearchParams = searchParams ? await searchParams : {};
     const autoOpenDiary = resolvedSearchParams?.addToDiary === "1" || resolvedSearchParams?.addToDiary === "true";
+    const recSource = resolvedSearchParams?.source;
     const supabase = await createSupabaseServer();
 
     // [1] Fetch album — bloque tout, obligatoire en premier
@@ -327,6 +328,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                     listsContaining={listsContaining}
                     myEntriesCount={myEntries.length}
                     autoOpenDiary={autoOpenDiary}
+                    recSource={recSource}
                     albumHasGenres={hasGenres}
                     genres={hasPills ? genres : undefined}
                     genreWeights={genreWeights}

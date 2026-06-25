@@ -18,9 +18,10 @@ type Props = {
         reviewBody: string | null;
         listenedAt: string;
     } | null;
+    source?: string;
 };
 
-export default function TrackDiaryInline({ trackId, albumId, artistId, userId, existingEntry }: Props) {
+export default function TrackDiaryInline({ trackId, albumId, artistId, userId, existingEntry, source }: Props) {
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
 
@@ -49,6 +50,7 @@ export default function TrackDiaryInline({ trackId, albumId, artistId, userId, e
                 rating: rating ?? undefined,
                 reviewBody: comment.trim() || undefined,
                 isPublic: true,
+                source,
             });
             if (result.success) {
                 showToast(existingEntry ? "Note mise à jour" : "Écoute enregistrée", "success");

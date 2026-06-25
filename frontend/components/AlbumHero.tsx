@@ -23,6 +23,7 @@ type AlbumHeroProps = {
     listsContaining?: string[];
     myEntriesCount?: number;
     autoOpenDiary?: boolean;
+    recSource?: string;
     albumHasGenres?: boolean;
     genres?: string[];
     genreWeights?: Record<string, number>;
@@ -37,6 +38,7 @@ export default function AlbumHero({
     listsContaining = [],
     myEntriesCount = 0,
     autoOpenDiary = false,
+    recSource,
     albumHasGenres = true,
     genres,
     genreWeights,
@@ -103,6 +105,7 @@ export default function AlbumHero({
                     initialSaved={listsContaining.some((id) => userLists.find((l) => l.id === id)?.is_default)}
                     existingEntriesCount={myEntriesCount}
                     autoOpen={autoOpenDiary}
+                    source={recSource}
                     albumHasGenres={albumHasGenres}
                 />
                 <AddToListButton

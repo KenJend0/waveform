@@ -16,6 +16,8 @@ export interface UpsertDiaryEntryInput {
   relisten?: boolean;
   isPublic?: boolean;
   avatarUrl?: string | null;
+  /** Provenance de la note — 'for_you' si l'utilisateur arrive d'une suggestion "Pour toi" */
+  source?: string;
 }
 
 /**
@@ -66,6 +68,7 @@ export async function upsertDiaryEntry(input: UpsertDiaryEntryInput) {
       rating: input.rating ?? null,
       re_listen: input.relisten || false,
       is_public: input.isPublic ?? true,
+      rec_source: input.source ?? null,
     };
 
     let data: any;
@@ -127,6 +130,7 @@ export async function upsertDiaryEntry(input: UpsertDiaryEntryInput) {
         has_rating: input.rating !== undefined && input.rating !== null,
         is_relisten: Boolean(input.relisten),
         is_public: input.isPublic ?? true,
+        rec_source: input.source ?? null,
       },
     });
 

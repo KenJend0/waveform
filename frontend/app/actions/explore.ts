@@ -532,24 +532,108 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
         .order('rank')
         .limit(limit + dismissedTrackIds.size + ratedTrackIds.size);
 
-    const data = (rawData || [])
+    const precomputed = (rawData || [])
         .filter((row: any) => !dismissedTrackIds.has(row.track_id) && !ratedTrackIds.has(row.track_id))
         .slice(0, limit);
 
-    if (!data || data.length === 0) return [];
+    if (precomputed.length > 0) {
+        return precomputed.map((row: any) => {
+            const track = row.tracks as any;
+            const album = track?.albums as any;
+            return {
+                track_id: row.track_id,
+                track_title: track?.title || 'Unknown',
+                artist: album?.artists?.name || 'Unknown',
+                album_id: track?.album_id || '',
+                artist_id: track?.artist_id || '',
+                cover_url: album?.cover_url ?? null,
+            };
+        });
+    }
 
-    return data.map((row: any) => {
-        const track = row.tracks as any;
-        const album = track?.albums as any;
-        return {
-            track_id: row.track_id,
-            track_title: track?.title || 'Unknown',
-            artist: album?.artists?.name || 'Unknown',
-            album_id: track?.album_id || '',
-            artist_id: track?.artist_id || '',
-            cover_url: album?.cover_url ?? null,
-        };
-    });
+    // Fallback Jaccard — actif tant que le batch ML n'a pas de candidats pour cet user
+    // (pas assez de notes de titres chez les voisins). Miroir du fallback albums ci-dessus.
+    const [{ data: myEntries }, { data: myAllEntries }] = await Promise.all([
+        supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id).gte('rating', 8),
+        supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id),
+    ]);
+
+    const myLikedTrackIds = (myEntries || []).map((e) => e.track_id).filter(Boolean) as string[];
+    if (myLikedTrackIds.length === 0) return [];
+
+    const { data: intersectionEntries } = await supabase
+        .from('track_diary_entries')
+        .select('user_id, track_id')
+        .in('track_id', myLikedTrackIds)
+        .neq('user_id', user.id)
+        .gte('rating', 8);
+
+    const intersectionSizes = new Map<string, number>();
+    for (const e of intersectionEntries || []) {
+        if (!e.user_id) continue;
+        intersectionSizes.set(e.user_id, (intersectionSizes.get(e.user_id) ?? 0) + 1);
+    }
+
+    const neighborIds = [...intersectionSizes.entries()]
+        .filter(([, size]) => size >= 3)
+        .map(([userId]) => userId);
+
+    if (neighborIds.length === 0) return [];
+
+    const myAllTrackIds = new Set((myAllEntries || []).map((e) => e.track_id).filter(Boolean));
+
+    const { data: recommendations } = await supabase
+        .from('track_diary_entries')
+        .select('user_id, track_id, rating, tracks(id, title, album_id, artist_id, albums(id, title, cover_url, artists(name)))')
+        .in('user_id', neighborIds)
+        .gte('rating', 8)
+        .limit(500);
+
+    const scores = new Map<
+        string,
+        { neighborCount: number; total: number; title: string; artist: string; albumId: string; artistId: string; cover: string | null }
+    >();
+
+    for (const entry of recommendations || []) {
+        if (!entry.track_id || myAllTrackIds.has(entry.track_id) || dismissedTrackIds.has(entry.track_id)) continue;
+        const track = entry.tracks as any;
+        if (!track?.id) continue;
+        const album = track.albums as any;
+        const existing = scores.get(track.id);
+        if (existing) {
+            existing.neighborCount += 1;
+            existing.total += entry.rating || 0;
+        } else {
+            scores.set(track.id, {
+                neighborCount: 1,
+                total: entry.rating || 0,
+                title: track.title || 'Unknown',
+                artist: album?.artists?.name || 'Unknown',
+                albumId: track.album_id || '',
+                artistId: track.artist_id || '',
+                cover: album?.cover_url ?? null,
+            });
+        }
+    }
+
+    if (scores.size === 0) return [];
+
+    const topScores = [...scores.entries()]
+        .sort(
+            (a, b) =>
+                b[1].neighborCount - a[1].neighborCount ||
+                b[1].total / b[1].neighborCount - a[1].total / a[1].neighborCount
+        )
+        .slice(0, limit);
+
+    return topScores.map(([trackId, info]) => ({
+        track_id: trackId,
+        track_title: info.title,
+        artist: info.artist,
+        album_id: info.albumId,
+        artist_id: info.artistId,
+        cover_url: info.cover,
+    }));
 }
 
 /**

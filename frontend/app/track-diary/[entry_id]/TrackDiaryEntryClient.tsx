@@ -126,6 +126,23 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
 
   const totalComments = comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
 
+  useEffect(() => {
+    if (!['#comments', '#commentaires'].includes(window.location.hash)) return;
+
+    let attempts = 0;
+    const scrollToComments = () => {
+      const target = document.getElementById('comments') ?? document.getElementById('commentaires');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 10) setTimeout(scrollToComments, 100);
+    };
+
+    setTimeout(scrollToComments, 0);
+  }, []);
+
   const handleLike = async () => {
     if (!currentUser) { showToast('Connecte-toi pour aimer cette entrée', 'error'); return; }
     if (liking) return;
@@ -375,7 +392,8 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
       </Link>
 
       {/* ── Réponses ───────────────────────────────────────────── */}
-      <section className="mt-7 mb-20">
+      <section id="comments" className="mt-7 mb-20 scroll-mt-24">
+        <span id="commentaires" className="sr-only" aria-hidden="true" />
         <div className="flex items-baseline gap-2 mb-4">
           <h2 className="font-display font-normal text-[24px] text-text-warm leading-none">Réponses</h2>
           <span className="font-display italic text-[16px] leading-none" style={{ color: '#8E6F5E' }}>· {totalComments}</span>

@@ -51,7 +51,7 @@ export function FeedTextLines({
         return (
           <div key={i} className={`flex items-baseline gap-1 ${line.cls}`} title={line.text}>
             <p className="truncate min-w-0">{line.content}</p>
-            {isLast && (
+            {isLast && time && (
               <span className="flex-shrink-0 font-sans not-italic text-text-disabled" suppressHydrationWarning>{'· '}{time}</span>
             )}
           </div>

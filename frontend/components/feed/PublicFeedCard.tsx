@@ -7,6 +7,7 @@ import { getTimeAgo } from '@/lib/utils/formatDate';
 import type { PublicFeedEntry } from '@/app/actions/feed';
 import { ActorLink } from './cards/FeedActorLink';
 import { FeedRightCluster } from './cards/FeedRightCluster';
+import { FeedInlineReviewExcerpt, formatReviewExcerpt } from './cards/FeedReviewExcerpt';
 import { FeedTextLines } from './cards/FeedTextLines';
 
 export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
@@ -14,9 +15,8 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
   const hasWords = !!entry.review_body;
   const router = useRouter();
 
-  const albumHref = `/albums/${entry.album.id}`;
   const entryHref = `/diary/${entry.id}`;
-  const verb = entry.rating != null ? 'noté' : 'écouté';
+  const verb = hasWords ? 'écrit une critique' : entry.rating != null ? 'noté' : 'écouté';
 
   const handleCardNavigation = (target: EventTarget | null) => {
     const element = target instanceof HTMLElement ? target : null;
@@ -33,9 +33,13 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
   );
 
   const title = (
-    <Link href={albumHref} className="hover:text-accent-deep transition-colors duration-150">
+    <Link href={entryHref} className="hover:text-accent-deep transition-colors duration-150">
       {entry.album.title}
     </Link>
+  );
+  const reviewExcerpt = formatReviewExcerpt(entry.review_body);
+  const excerptLine = reviewExcerpt && (
+    <FeedInlineReviewExcerpt text={entry.review_body} />
   );
 
   const textBlock = (
@@ -43,8 +47,8 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
       context={context}
       title={title}
       titleText={entry.album.title}
-      artist={entry.album.artist_name}
-      artistText={entry.album.artist_name}
+      artist={hasWords ? excerptLine : entry.album.artist_name}
+      artistText={hasWords ? reviewExcerpt ?? undefined : entry.album.artist_name}
       time={timeAgo}
       className="flex-1 min-w-0"
     />
@@ -64,12 +68,14 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
         role="link"
         tabIndex={0}
       >
-        <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={32} />
+        <Link href={`/u/${entry.author.username}`} className="flex-shrink-0">
+          <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={entry.rating}
           coverUrl={entry.album.cover_url}
-          coverHref={albumHref}
+          coverHref={entryHref}
           coverAlt={entry.album.title}
         />
       </div>
@@ -94,12 +100,14 @@ export default function PublicFeedCard({ entry }: { entry: PublicFeedEntry }) {
       </span>
 
       <div className="flex items-center gap-3">
-        <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={32} />
+        <Link href={`/u/${entry.author.username}`} className="flex-shrink-0">
+          <UserAvatar userId={entry.author.id} src={entry.author.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={entry.rating}
           coverUrl={entry.album.cover_url}
-          coverHref={albumHref}
+          coverHref={entryHref}
           coverAlt={entry.album.title}
         />
       </div>

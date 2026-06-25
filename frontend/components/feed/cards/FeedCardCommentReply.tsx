@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FeedEvent } from '@/app/actions/feed';
 import { getTimeAgo } from '@/lib/utils/formatDate';
 import { ActorLink } from './FeedActorLink';
@@ -14,6 +15,7 @@ interface FeedCardCommentReplyProps {
 
 export default function FeedCardCommentReply({ event }: FeedCardCommentReplyProps) {
   const timeAgo = getTimeAgo(event.created_at);
+  const router = useRouter();
 
   const entryLink = event.entry_id
     ? `/diary/${event.entry_id}${event.comment_id ? `?reply=${event.comment_id}` : ''}`
@@ -34,9 +36,30 @@ export default function FeedCardCommentReply({ event }: FeedCardCommentReplyProp
     </Link>
   );
 
+  const handleCardNavigation = (target: EventTarget | null) => {
+    if (!entryLink) return;
+    const element = target instanceof HTMLElement ? target : null;
+    if (element?.closest('a, button')) return;
+    router.push(entryLink);
+  };
+
   return (
-    <div className="relative flex items-center gap-3 px-3 py-2">
-      <FeedAvatarGlyph userId={event.actor.id} avatarUrl={event.actor.avatar_url} size={32} glyph="reply" />
+    <div
+      className={`relative flex items-center gap-3 px-3 py-2 ${entryLink ? 'cursor-pointer' : ''}`}
+      onClick={(e) => handleCardNavigation(e.target)}
+      onKeyDown={(e) => {
+        if (entryLink && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleCardNavigation(e.target);
+        }
+      }}
+      role={entryLink ? 'link' : undefined}
+      tabIndex={entryLink ? 0 : undefined}
+      data-feed-nav-href={entryLink ?? undefined}
+    >
+      <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+        <FeedAvatarGlyph userId={event.actor.id} avatarUrl={event.actor.avatar_url} size={32} glyph="reply" />
+      </Link>
 
       <FeedTextLines
         context={context}

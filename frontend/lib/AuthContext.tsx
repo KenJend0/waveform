@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ex. refresh de token) — on le rafraîchit aussi à chaque navigation pour
   // qu'il reste synchronisé avec l'activité réelle.
   // Exception : /feed gère déjà son propre marquage + rafraîchissement
-  // (MarkActivitySeen) — le faire aussi ici créerait une course entre les
+  // après exposition de l'onglet "Pour moi" — le faire aussi ici créerait une course entre les
   // deux appels (l'un avec l'ancienne donnée, l'autre avec la nouvelle) qui
   // peut ré-afficher le badge juste après qu'il ait été effacé.
   useEffect(() => {

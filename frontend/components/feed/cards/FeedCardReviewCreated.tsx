@@ -10,6 +10,8 @@ import { getTimeAgo } from '@/lib/utils/formatDate';
 // import { showToast } from '@/components/Toast';
 import { ActorLink } from './FeedActorLink';
 import { FeedRightCluster } from './FeedRightCluster';
+import { FeedInlineReviewExcerpt, formatReviewExcerpt } from './FeedReviewExcerpt';
+import { FeedReviewActions } from './FeedReviewActions';
 import { FeedTextLines } from './FeedTextLines';
 
 interface FeedCardReviewCreatedProps {
@@ -68,10 +70,6 @@ export default function FeedCardReviewCreated({
   const entryHref = event.entry_id
     ? `/diary/${event.entry_id}`
     : `/albums/${event.album?.id}`;
-  const artistHref = event.album?.artist_id
-    ? `/artists/${event.album.artist_id}`
-    : null;
-
   const handleCardNavigation = (target: EventTarget | null) => {
     if (!entryHref) return;
 
@@ -82,11 +80,11 @@ export default function FeedCardReviewCreated({
   };
 
   const context = currentUserId === event.actor.id ? (
-    <span>Tu as noté</span>
+    <span>{hasWords ? 'Tu as écrit une critique' : 'Tu as noté'}</span>
   ) : (
     <>
       <ActorLink username={event.actor.username} />
-      <span>{' a noté un album'}</span>
+      <span>{hasWords ? ' a écrit une critique' : ' a noté un album'}</span>
     </>
   );
 
@@ -97,13 +95,11 @@ export default function FeedCardReviewCreated({
   );
 
   const artist = event.album?.artist_name && (
-    artistHref ? (
-      <Link href={artistHref} className="hover:text-text-primary transition-colors duration-150">
-        {event.album.artist_name}
-      </Link>
-    ) : (
-      event.album.artist_name
-    )
+    event.album.artist_name
+  );
+  const reviewExcerpt = formatReviewExcerpt(event.review_excerpt);
+  const excerptLine = reviewExcerpt && (
+    <FeedInlineReviewExcerpt text={event.review_excerpt} />
   );
 
   const textBlock = (
@@ -111,9 +107,9 @@ export default function FeedCardReviewCreated({
       context={context}
       title={title}
       titleText={event.album?.title}
-      artist={artist}
-      artistText={event.album?.artist_name ?? undefined}
-      time={timeAgo}
+      artist={hasWords ? excerptLine : artist}
+      artistText={hasWords ? reviewExcerpt ?? undefined : event.album?.artist_name ?? undefined}
+      time={hasWords ? '' : timeAgo}
       className="flex-1 min-w-0"
     />
   );
@@ -131,8 +127,11 @@ export default function FeedCardReviewCreated({
         }}
         role="link"
         tabIndex={0}
+        data-feed-nav-href={entryHref}
       >
-        <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={event.rating}
@@ -156,13 +155,16 @@ export default function FeedCardReviewCreated({
       }}
       role="link"
       tabIndex={0}
+      data-feed-nav-href={entryHref}
     >
       <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 bg-background font-display italic text-[12px] leading-none text-accent">
         critique
       </span>
 
       <div className="flex items-center gap-3">
-        <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={event.rating}
@@ -171,6 +173,17 @@ export default function FeedCardReviewCreated({
           coverAlt={event.album?.title}
         />
       </div>
+
+      <FeedReviewActions
+        entryId={event.entry_id}
+        entryHref={entryHref}
+        type="album"
+        currentUserId={currentUserId}
+        isLiked={event.is_liked}
+        likesCount={event.likes_count}
+        commentsCount={event.comments_count}
+        time={timeAgo}
+      />
 
       {/* Actions like/répondre retirées pour le moment — la carte entière navigue déjà vers
           la critique complète (like + réponse y restent possibles). Voir BOITE_IDEE.md pour

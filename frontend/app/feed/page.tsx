@@ -1,10 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getMyFeed, getPublicFeed } from '@/app/actions/feed';
-import { getAuthUser, userNeedsOnboarding } from '@/lib/supabase/server';
+import { createSupabaseServer, getAuthUser, userNeedsOnboarding } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 import PublicFeedCard from '@/components/feed/PublicFeedCard';
-import MarkActivitySeen from '@/components/feed/MarkActivitySeen';
 import UnauthCTA from '@/components/UnauthCTA';
 
 export default async function FeedPage() {
@@ -45,15 +44,27 @@ export default async function FeedPage() {
     redirect('/onboarding');
   }
 
-  const feedResult = await getMyFeed({ limit: 20 });
-  if (!feedResult.success) console.error('Feed error:', feedResult.error);
+  const supabase = await createSupabaseServer();
+  const [{ data: profile }, notificationsResult, activityResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('last_seen_activity_at')
+      .eq('id', user.id)
+      .maybeSingle(),
+    getMyFeed({ limit: 20, scope: 'notifications' }),
+    getMyFeed({ limit: 20, scope: 'activity' }),
+  ]);
 
-  const events = feedResult.events;
-  const hasEvents = events.length > 0;
+  if (!notificationsResult.success) console.error('Feed notifications error:', notificationsResult.error);
+  if (!activityResult.success) console.error('Feed activity error:', activityResult.error);
+
+  const notificationEvents = notificationsResult.events;
+  const activityEvents = activityResult.events;
+  const hasEvents = notificationEvents.length > 0 || activityEvents.length > 0;
+  const lastSeenActivityAt = (profile as any)?.last_seen_activity_at ?? null;
 
   return (
     <div className="px-3 md:px-5 lg:px-6 pb-28 lg:pb-12">
-      <MarkActivitySeen />
       <div className="pt-8 pb-6">
         <h1 className="text-h1 text-text-primary mb-2">Activité</h1>
         <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
@@ -61,9 +72,12 @@ export default async function FeedPage() {
 
       {hasEvents ? (
         <FeedInfiniteList
-          initialEvents={events}
-          initialCursor={feedResult.nextCursor ?? null}
+          initialNotifications={notificationEvents}
+          initialNotificationsCursor={notificationsResult.nextCursor ?? null}
+          initialActivity={activityEvents}
+          initialActivityCursor={activityResult.nextCursor ?? null}
           currentUserId={user.id}
+          lastSeenActivityAt={lastSeenActivityAt}
         />
       ) : (
         <div className="py-4">

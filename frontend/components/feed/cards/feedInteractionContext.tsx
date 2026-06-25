@@ -15,6 +15,7 @@ interface InteractionContextParams {
   entryOwnerId?: string;
   /** Current user already reacted the same way on this entry — only meaningful for comments today. */
   alsoActed?: boolean;
+  targetHasReview?: boolean;
 }
 
 /**
@@ -33,16 +34,21 @@ export function buildInteractionContext({
   onShowMore,
   entryOwnerId,
   alsoActed,
+  targetHasReview,
 }: InteractionContextParams): ReactNode {
+  const genericTarget = targetHasReview ? 'une critique' : 'une note';
+  const ownedTarget = targetHasReview ? 'ta critique' : 'ta note';
+  const demonstrativeTarget = targetHasReview ? 'cette critique' : 'cette note';
+
   if (currentUserId === actor.id) {
-    return <span>{`Tu as ${verb} une écoute`}</span>;
+    return <span>{`Tu as ${verb} ${genericTarget}`}</span>;
   }
 
   if (isAggregate && actors && actorsCount) {
     return (
       <>
         {formatActors(actors, actorsCount, onShowMore)}{' '}
-        {`ont ${verb} ton écoute`}
+        {`ont ${verb} ${ownedTarget}`}
       </>
     );
   }
@@ -51,7 +57,7 @@ export function buildInteractionContext({
     return (
       <>
         <ActorLink username={actor.username} />
-        {` a ${verb} ton écoute`}
+        {` a ${verb} ${ownedTarget}`}
       </>
     );
   }
@@ -60,7 +66,7 @@ export function buildInteractionContext({
     return (
       <>
         <ActorLink username={actor.username} />
-        {` a aussi ${verb} l'écoute`}
+        {` a aussi ${verb} ${demonstrativeTarget}`}
       </>
     );
   }
@@ -68,7 +74,7 @@ export function buildInteractionContext({
   return (
     <>
       <ActorLink username={actor.username} />
-      {` a ${verb} une écoute`}
+      {` a ${verb} ${genericTarget}`}
     </>
   );
 }

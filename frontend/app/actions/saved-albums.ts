@@ -1,6 +1,6 @@
 'use server';
 
-import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
+import { getAuthUser, createSupabaseServer } from '@/lib/supabase/server';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
 
 export type SavedAlbumUI = {
@@ -112,10 +112,6 @@ export async function toggleSaveAlbum(albumId: string): Promise<{ saved: boolean
       album_id: albumId,
     });
 
-    // Fan-out discovery event to followers
-    const { fanoutEvent } = await import('./feed');
-    await fanoutEvent('discover', { albumId: albumId, userId: user.id });
-
     return { saved: true };
   }
 }
@@ -142,8 +138,6 @@ export async function saveAlbumOnce(albumId: string): Promise<void> {
       user_id: user.id,
       album_id: albumId,
     });
-    const { fanoutEvent } = await import('./feed');
-    await fanoutEvent('discover', { albumId, userId: user.id }).catch(console.error);
   }
 }
 

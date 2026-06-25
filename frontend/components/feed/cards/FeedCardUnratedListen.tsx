@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FeedEvent } from '@/app/actions/feed';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import { getTimeAgo } from '@/lib/utils/formatDate';
@@ -18,10 +19,10 @@ export default function FeedCardUnratedListen({
   currentUserId,
 }: FeedCardUnratedListenProps) {
   const timeAgo = getTimeAgo(event.created_at);
+  const router = useRouter();
   const entryHref = event.entry_id
     ? `/diary/${event.entry_id}`
     : `/albums/${event.album?.id}`;
-  const artistHref = event.album?.artist_id ? `/artists/${event.album.artist_id}` : null;
   const isMe = currentUserId === event.actor.id;
 
   const context = isMe ? (
@@ -39,19 +40,34 @@ export default function FeedCardUnratedListen({
     </Link>
   );
 
+  const handleCardNavigation = (target: EventTarget | null) => {
+    if (!entryHref) return;
+    const element = target instanceof HTMLElement ? target : null;
+    if (element?.closest('a, button')) return;
+    router.push(entryHref);
+  };
+
   const artist = event.album?.artist_name && (
-    artistHref ? (
-      <Link href={artistHref} className="hover:text-text-primary transition-colors duration-150">
-        {event.album.artist_name}
-      </Link>
-    ) : (
-      event.album.artist_name
-    )
+    event.album.artist_name
   );
 
   return (
-    <div className="relative flex items-center gap-3 px-3 py-2">
-      <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+    <div
+      className="relative flex items-center gap-3 px-3 py-2 cursor-pointer"
+      onClick={(e) => handleCardNavigation(e.target)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardNavigation(e.target);
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      data-feed-nav-href={entryHref}
+    >
+      <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+        <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+      </Link>
 
       <FeedTextLines
         context={context}

@@ -5,9 +5,10 @@ import { getAuthUser } from '@/lib/supabase/server';
 
 /**
  * Frontend event types (MVP, no DB change)
- * Mapped from DB types: diary/follow/discover/like/comment
+ * Mapped from DB types: diary/follow/like/comment
  */
-export type FeedEventType = 'REVIEW_CREATED' | 'UNRATED_LISTEN' | 'REVIEW_LIKED' | 'ALBUM_SAVED' | 'USER_FOLLOWED' | 'COMMENT_CREATED' | 'COMMENT_REPLY' | 'TRACK_REVIEW_CREATED' | 'TRACK_REVIEW_LIKED' | 'TRACK_COMMENT_CREATED';
+export type FeedEventType = 'REVIEW_CREATED' | 'UNRATED_LISTEN' | 'REVIEW_LIKED' | 'USER_FOLLOWED' | 'COMMENT_CREATED' | 'COMMENT_REPLY' | 'TRACK_REVIEW_CREATED' | 'TRACK_REVIEW_LIKED' | 'TRACK_COMMENT_CREATED';
+export type FeedScope = 'all' | 'notifications' | 'activity';
 
 export type FeedActor = {
   id: string;
@@ -39,6 +40,7 @@ export interface FeedEvent {
   is_liked?: boolean; // For REVIEW_CREATED
   comments_count?: number; // For REVIEW_CREATED
   entry_owner_id?: string; // Owner of the liked/commented diary entry
+  target_has_review?: boolean; // Whether the liked/commented entry has review text
   current_user_also_commented?: boolean; // For COMMENT_CREATED: current user has also commented on same entry
   comment_id?: string; // For COMMENT_REPLY: ID of the reply comment (used for deep-linking)
   track?: {
@@ -70,10 +72,12 @@ export interface FeedEvent {
 export async function getMyFeed({
   limit = 20,
   cursor = null,
+  scope = 'all',
 }: {
   limit?: number;
   /** ISO timestamp of the last event seen — pass to fetch the next page */
   cursor?: string | null;
+  scope?: FeedScope;
 } = {}) {
   try {
     const user = await getAuthUser();
@@ -92,6 +96,8 @@ export async function getMyFeed({
 
     // Feed is fan-out at write time, so we only read events where user_id = auth.uid()
     // No need to fetch followers or use .in() — all relevant events are already here
+
+    const queryLimit = scope === 'all' ? limit : Math.max(limit * 5, 100);
 
     // Fetch feed_events for current user, with joins
     let query = supabase
@@ -148,9 +154,10 @@ export async function getMyFeed({
       `
       )
       .eq('user_id', user.id)
+      .neq('type', 'discover')
       .neq('actor_id', user.id) // Don't show own actions — user already knows what they did
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(queryLimit);
 
     // Exclude events from blocked users
     if (blockedIds.length > 0) {
@@ -220,12 +227,18 @@ export async function getMyFeed({
       .filter((e: any) => e.type === 'track_diary_entry' && e.payload?.trackEntryId)
       .map((e: any) => e.payload.trackEntryId);
 
+    const allTrackInteractionEntryIds = Array.from(new Set(
+      (rawEvents || [])
+        .filter((e: any) => ['track_diary_entry', 'track_like', 'track_comment'].includes(e.type) && e.payload?.trackEntryId)
+        .map((e: any) => e.payload.trackEntryId)
+    ));
+
     // Track entries commented on by others (for TRACK_COMMENT_CREATED "also commented" flag)
     const trackCommentEventEntryIds = (rawEvents || [])
       .filter((e: any) => e.type === 'track_comment' && e.payload?.trackEntryId)
       .map((e: any) => e.payload.trackEntryId);
 
-    const [{ data: trackStatsData }, { data: trackLikedData }, { data: trackCommentedData }] = await Promise.all([
+    const [{ data: trackStatsData }, { data: trackLikedData }, { data: trackCommentedData }, { data: trackEntryReviewData }] = await Promise.all([
       trackEntryIds.length > 0
         ? (supabase as any).from('track_diary_entry_stats').select('entry_id, likes_count, comments_count').in('entry_id', trackEntryIds)
         : Promise.resolve({ data: [] }),
@@ -235,11 +248,15 @@ export async function getMyFeed({
       trackCommentEventEntryIds.length > 0
         ? (supabase as any).from('track_diary_comments').select('entry_id').in('entry_id', trackCommentEventEntryIds).eq('user_id', user.id)
         : Promise.resolve({ data: [] }),
+      allTrackInteractionEntryIds.length > 0
+        ? (supabase as any).from('track_diary_entries').select('id, rating, review_body').in('id', allTrackInteractionEntryIds)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const trackStatsMap = new Map((trackStatsData || []).map((s: any) => [s.entry_id, s]));
     const trackLikedIds = new Set((trackLikedData || []).map((l: any) => l.entry_id));
     const trackCommentedEntryIds = new Set((trackCommentedData || []).map((c: any) => c.entry_id));
+    const trackEntryMap = new Map((trackEntryReviewData || []).map((entry: any) => [entry.id, entry]));
 
     // Map DB events to frontend types
     const events: FeedEvent[] = (rawEvents || [])
@@ -259,6 +276,13 @@ export async function getMyFeed({
           mapped.comments_count = stats?.comments_count ?? 0;
           mapped.is_liked = trackLikedIds.has(mapped.entry_id);
         }
+        if (mapped && (mapped.type === 'TRACK_REVIEW_LIKED' || mapped.type === 'TRACK_COMMENT_CREATED') && mapped.entry_id) {
+          const trackEntry = trackEntryMap.get(mapped.entry_id) as any;
+          mapped.target_has_review = Boolean(String(trackEntry?.review_body ?? '').trim());
+          if (mapped.type === 'TRACK_REVIEW_LIKED') {
+            mapped.rating = trackEntry?.rating ?? undefined;
+          }
+        }
         // Attach "also commented" flag for comment events from other users
         if (mapped && mapped.type === 'COMMENT_CREATED' && mapped.entry_id && mapped.actor.id !== user.id) {
           mapped.current_user_also_commented = commentedEntryIds.has(mapped.entry_id);
@@ -270,10 +294,17 @@ export async function getMyFeed({
       })
       .filter(Boolean) as FeedEvent[];
 
-    const aggregated = aggregateFeedEvents(events, user.id);
+    const scopedEvents = events
+      .filter((event) => eventMatchesScope(event, scope, user.id))
+      .slice(0, limit);
 
-    // Cursor for the next page: created_at of the oldest event in this batch
-    const nextCursor = events.length > 0 ? events[events.length - 1].created_at : null;
+    const aggregated = aggregateFeedEvents(scopedEvents, user.id);
+
+    // Cursor for the next page: created_at of the oldest raw event scanned.
+    // For scoped tabs, this prevents looping over events filtered out from the tab.
+    const nextCursor = rawEvents.length === queryLimit
+      ? rawEvents[rawEvents.length - 1].created_at
+      : null;
 
     return { success: true, events: aggregated, nextCursor };
   } catch (err) {
@@ -290,13 +321,31 @@ export async function getMyFeed({
  *
  * Handles:
  *   - USER_FOLLOWED  (followee === currentUser)
- *   - REVIEW_LIKED   (entry_owner === currentUser) — grouped per liked_entry_id
- *   - COMMENT_CREATED (entry_owner === currentUser) — grouped per entry_id
+ *   - REVIEW_LIKED / TRACK_REVIEW_LIKED (entry_owner === currentUser) — grouped per entry
+ *   - COMMENT_CREATED / TRACK_COMMENT_CREATED (entry_owner === currentUser) — grouped per entry
  *
  * Single-actor events are left untouched.
  * Events are sorted desc by created_at; the aggregate inherits the most-recent
  * timestamp (first in group).
  */
+function isNotificationFeedEvent(event: FeedEvent, currentUserId: string): boolean {
+  if (event.type === 'USER_FOLLOWED') return event.followee?.id === currentUserId;
+  if (event.type === 'COMMENT_REPLY') return true;
+  if (event.type === 'REVIEW_LIKED' || event.type === 'TRACK_REVIEW_LIKED') {
+    return event.entry_owner_id === currentUserId;
+  }
+  if (event.type === 'COMMENT_CREATED' || event.type === 'TRACK_COMMENT_CREATED') {
+    return event.entry_owner_id === currentUserId;
+  }
+  return false;
+}
+
+function eventMatchesScope(event: FeedEvent, scope: FeedScope, currentUserId: string): boolean {
+  if (scope === 'all') return true;
+  const isNotification = isNotificationFeedEvent(event, currentUserId);
+  return scope === 'notifications' ? isNotification : !isNotification;
+}
+
 function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEvent[] {
   const MS_24H = 24 * 60 * 60 * 1000;
   const result: FeedEvent[] = [];
@@ -330,6 +379,7 @@ function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEv
     // REVIEW_LIKED targeting currentUser's entry — consecutive likes on the same entry
     if (e.type === 'REVIEW_LIKED' && e.entry_owner_id === currentUserId && e.liked_entry_id && e.actor.id !== currentUserId) {
       const group = [e];
+      const seenActors = new Set<string>([e.actor.id]);
       const anchor = new Date(e.created_at).getTime();
       let j = i + 1;
       while (
@@ -340,7 +390,11 @@ function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEv
         events[j].actor.id !== currentUserId &&
         anchor - new Date(events[j].created_at).getTime() < MS_24H
       ) {
-        group.push(events[j++]);
+        if (!seenActors.has(events[j].actor.id)) {
+          seenActors.add(events[j].actor.id);
+          group.push(events[j]);
+        }
+        j++;
       }
       result.push(group.length > 1
         ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-like-${e.liked_entry_id}` }
@@ -381,6 +435,7 @@ function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEv
     // TRACK_REVIEW_LIKED targeting currentUser's entry — consecutive likes on the same track entry
     if (e.type === 'TRACK_REVIEW_LIKED' && e.entry_owner_id === currentUserId && e.liked_entry_id && e.actor.id !== currentUserId) {
       const group = [e];
+      const seenActors = new Set<string>([e.actor.id]);
       const anchor = new Date(e.created_at).getTime();
       let j = i + 1;
       while (
@@ -391,7 +446,11 @@ function aggregateFeedEvents(events: FeedEvent[], currentUserId: string): FeedEv
         events[j].actor.id !== currentUserId &&
         anchor - new Date(events[j].created_at).getTime() < MS_24H
       ) {
-        group.push(events[j++]);
+        if (!seenActors.has(events[j].actor.id)) {
+          seenActors.add(events[j].actor.id);
+          group.push(events[j]);
+        }
+        j++;
       }
       result.push(group.length > 1
         ? { ...e, actors: group.slice(0, 5).map(ev => ev.actor), actors_count: group.length, _dedup_key: `agg-track-like-${e.liked_entry_id}` }
@@ -455,7 +514,7 @@ function mapFeedEvent(raw: any): FeedEvent | null {
     created_at: raw.created_at,
   };
 
-  // Map types: diary_entry -> REVIEW_CREATED, follow -> USER_FOLLOWED, discover -> ALBUM_SAVED, like -> REVIEW_LIKED
+  // Map types: diary_entry -> REVIEW_CREATED, follow -> USER_FOLLOWED, like -> REVIEW_LIKED
   switch (raw.type) {
     case 'diary':
     case 'diary_entry': {
@@ -507,19 +566,6 @@ function mapFeedEvent(raw: any): FeedEvent | null {
         } : undefined,
       };
 
-    case 'discover':
-      return {
-        ...baseEvent,
-        type: 'ALBUM_SAVED',
-        album: raw.album ? {
-          id: raw.album.id,
-          title: raw.album.title,
-          cover_url: raw.album.cover_url,
-          artist_id: raw.album.artist_id ?? undefined,
-          artist_name: raw.album.artist?.name ?? undefined,
-        } : undefined,
-      };
-
     case 'like': {
       // Simple: actor liked entry → album via entry
       const likeAlbum = raw.entry?.album || (raw.album ? { id: raw.album.id, title: raw.album.title, cover_url: raw.album.cover_url } : null);
@@ -530,6 +576,8 @@ function mapFeedEvent(raw: any): FeedEvent | null {
           type: 'REVIEW_LIKED',
           liked_entry_id: raw.entry.id,
           entry_owner_id: raw.entry.user_id ?? undefined,
+          rating: raw.entry.rating ?? undefined,
+          target_has_review: Boolean(String(raw.entry.review_body ?? '').trim()),
           album: {
             id: likeAlbum.id,
             title: likeAlbum.title,
@@ -553,6 +601,7 @@ function mapFeedEvent(raw: any): FeedEvent | null {
           type: 'COMMENT_CREATED',
           entry_id: raw.entry.id,
           entry_owner_id: raw.entry.user_id ?? undefined,
+          target_has_review: Boolean(String(raw.entry.review_body ?? '').trim()),
           album: {
             id: commentAlbum.id,
             title: commentAlbum.title,
@@ -803,7 +852,7 @@ export async function backfillFolloweeEvents(followerId: string, followeeId: str
 }
 
 export async function fanoutEvent(
-  type: 'diary_entry' | 'like' | 'comment' | 'comment_reply' | 'follow' | 'discover' | 'track_diary_entry' | 'track_like' | 'track_comment',
+  type: 'diary_entry' | 'like' | 'comment' | 'comment_reply' | 'follow' | 'track_diary_entry' | 'track_like' | 'track_comment',
   payload: Record<string, unknown>,
   targets?: string[]
 ) {
@@ -1038,15 +1087,31 @@ export async function hasUnseenActivity(): Promise<boolean> {
 
     const since = (profile as any)?.last_seen_activity_at ?? new Date(0).toISOString();
 
-    const { count } = await supabase
+    const { data: recentEvents } = await supabase
       .from('feed_events')
-      .select('id', { count: 'exact', head: true })
+      .select(`
+        id,
+        type,
+        followee_id,
+        payload,
+        entry:diary_entries (
+          user_id
+        )
+      `)
       .eq('user_id', user.id)
+      .neq('type', 'discover')
       .neq('actor_id', user.id)
       .gt('created_at', since)
-      .limit(1);
+      .order('created_at', { ascending: false })
+      .limit(100);
 
-    return (count ?? 0) > 0;
+    return (recentEvents ?? []).some((event: any) => {
+      if (event.type === 'follow') return event.followee_id === user.id;
+      if (event.type === 'comment_reply') return true;
+      if (event.type === 'like' || event.type === 'comment') return event.entry?.user_id === user.id;
+      if (event.type === 'track_like' || event.type === 'track_comment') return event.payload?.entryOwnerId === user.id;
+      return false;
+    });
   } catch (err) {
     console.error('hasUnseenActivity error:', err);
     return false;

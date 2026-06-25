@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { FeedEvent } from '@/app/actions/feed';
 import { getFollowActors } from '@/app/actions/feed';
 import { getTimeAgo } from '@/lib/utils/formatDate';
@@ -23,6 +24,10 @@ export default function FeedCardUserFollowed({
   const timeAgo = getTimeAgo(event.created_at);
   const isAggregate = event.actors_count && event.actors_count > 1 && event.actors;
   const needsFetch = isAggregate && event.actors_count! > event.actors!.length;
+  const canOpenActors = Boolean(isAggregate && event.followee);
+  const avatarCluster = (
+    <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="follow" />
+  );
 
   const context = currentUserId === event.actor.id ? (
     <>
@@ -52,7 +57,20 @@ export default function FeedCardUserFollowed({
   return (
     <>
       <div className="relative flex items-center gap-3 px-3 py-2">
-        <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="follow" />
+        {canOpenActors ? (
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label="Voir les personnes"
+            className="flex-shrink-0 p-0"
+          >
+            {avatarCluster}
+          </button>
+        ) : (
+          <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+            {avatarCluster}
+          </Link>
+        )}
 
         <FeedTextLines context={context} time={timeAgo} className="flex-1 min-w-0" />
       </div>

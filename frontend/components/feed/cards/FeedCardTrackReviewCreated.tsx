@@ -11,6 +11,8 @@ import { getTimeAgo } from '@/lib/utils/formatDate';
 // import { showToast } from '@/components/Toast';
 import { ActorLink } from './FeedActorLink';
 import { FeedRightCluster } from './FeedRightCluster';
+import { FeedInlineReviewExcerpt, formatReviewExcerpt } from './FeedReviewExcerpt';
+import { FeedReviewActions } from './FeedReviewActions';
 import { FeedTextLines } from './FeedTextLines';
 
 interface Props {
@@ -49,7 +51,6 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
   const track = event.track;
   const trackHref = track ? `/tracks/${track.id}` : undefined;
   const entryHref = event.entry_id ? `/track-diary/${event.entry_id}` : trackHref;
-  const artistHref = track?.artist_id ? `/artists/${track.artist_id}` : undefined;
   const coverUrl = track?.cover_url ?? event.album?.cover_url ?? null;
 
   const handleCardNavigation = (target: EventTarget | null) => {
@@ -60,11 +61,11 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
   };
 
   const context = currentUserId === event.actor.id ? (
-    <span>Tu as noté</span>
+    <span>{hasWords ? 'Tu as écrit une critique' : 'Tu as noté'}</span>
   ) : (
     <>
       <ActorLink username={event.actor.username} />
-      <span>{' a noté un titre'}</span>
+      <span>{hasWords ? ' a écrit une critique' : ' a noté un titre'}</span>
     </>
   );
 
@@ -75,13 +76,11 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
   );
 
   const artist = track?.artist_name && (
-    artistHref ? (
-      <Link href={artistHref} className="hover:text-text-primary transition-colors duration-150">
-        {track.artist_name}
-      </Link>
-    ) : (
-      track.artist_name
-    )
+    track.artist_name
+  );
+  const reviewExcerpt = formatReviewExcerpt(event.review_excerpt);
+  const excerptLine = reviewExcerpt && (
+    <FeedInlineReviewExcerpt text={event.review_excerpt} />
   );
 
   const textBlock = (
@@ -89,9 +88,9 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
       context={context}
       title={title}
       titleText={track?.title}
-      artist={artist}
-      artistText={track?.artist_name ?? undefined}
-      time={timeAgo}
+      artist={hasWords ? excerptLine : artist}
+      artistText={hasWords ? reviewExcerpt ?? undefined : track?.artist_name ?? undefined}
+      time={hasWords ? '' : timeAgo}
       className="flex-1 min-w-0"
     />
   );
@@ -109,8 +108,11 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
         }}
         role="link"
         tabIndex={0}
+        data-feed-nav-href={entryHref}
       >
-        <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={event.rating}
@@ -134,13 +136,16 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
       }}
       role="link"
       tabIndex={0}
+      data-feed-nav-href={entryHref}
     >
       <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 bg-background font-display italic text-[12px] leading-none text-accent">
         critique
       </span>
 
       <div className="flex items-center gap-3">
-        <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        <Link href={`/u/${event.actor.username}`} className="flex-shrink-0">
+          <UserAvatar userId={event.actor.id} src={event.actor.avatar_url} size={32} />
+        </Link>
         {textBlock}
         <FeedRightCluster
           rating={event.rating}
@@ -149,6 +154,19 @@ export default function FeedCardTrackReviewCreated({ event, currentUserId }: Pro
           coverAlt={track?.title}
         />
       </div>
+
+      {entryHref && (
+        <FeedReviewActions
+          entryId={event.entry_id}
+          entryHref={entryHref}
+          type="track"
+          currentUserId={currentUserId}
+          isLiked={event.is_liked}
+          likesCount={event.likes_count}
+          commentsCount={event.comments_count}
+          time={timeAgo}
+        />
+      )}
 
       {/* Actions like/répondre retirées pour le moment — la carte entière navigue déjà vers
           la critique complète (like + réponse y restent possibles). Voir BOITE_IDEE.md pour

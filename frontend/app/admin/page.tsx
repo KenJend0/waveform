@@ -15,7 +15,14 @@ const RANGE_OPTIONS = {
   '90d': { label: '90 jours', days: 90 },
 } as const;
 
+const TAB_OPTIONS = {
+  dashboard: { label: 'Dashboard' },
+  enrichment: { label: 'Enrichissement' },
+  reports: { label: 'Signalements' },
+} as const;
+
 type RangeKey = keyof typeof RANGE_OPTIONS;
+type TabKey = keyof typeof TAB_OPTIONS;
 type SearchParamsInput = Promise<Record<string, string | string[] | undefined>> | undefined;
 
 type Album = {
@@ -70,6 +77,26 @@ type ProductSignals = {
   searchBySurface: Array<{ label: string; count: number }>;
 };
 
+/**
+ * Supabase PostgREST plafonne les réponses à 1000 lignes par défaut, même sans
+ * `.limit()` explicite. Au-delà, les résultats sont silencieusement tronqués —
+ * pas d'erreur, juste un échantillon partiel. Cette fonction pagine via `.range()`
+ * pour récupérer l'intégralité des lignes (cf. même pattern dans enrich-missing.mjs).
+ */
+async function fetchAllPages<T>(buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
+  const PAGE = 1000;
+  const rows: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await buildQuery(from, from + PAGE - 1);
+    if (error) throw error;
+    if (data?.length) rows.push(...data);
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return rows;
+}
+
 const EMPTY_WINDOW: WindowMetrics = {
   signups: 0,
   onboardings: 0,
@@ -88,6 +115,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const range = resolveRange(resolvedSearchParams?.range);
+  const tab = resolveTab(resolvedSearchParams?.tab);
 
   const supabase = createSupabaseAdmin();
 
@@ -99,9 +127,11 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     { count: followCount },
     { count: commentCount },
     { count: reviewCount },
-    { data: rawAlbums },
-    { data: genreData },
-    { data: metaData },
+    { count: trackCount },
+    { count: trackMetadataCount },
+    rawAlbums,
+    genreData,
+    metaData,
     { data: rawReports },
     { data: cronHealthData },
     productSignals,
@@ -113,9 +143,17 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     supabase.from('follows').select('*', { count: 'exact', head: true }),
     supabase.from('diary_comments').select('*', { count: 'exact', head: true }),
     supabase.from('diary_entries').select('*', { count: 'exact', head: true }).not('review_body', 'is', null),
-    supabase.from('albums').select('id, title, mbid, cover_url, release_date, artists(name)').order('title'),
-    supabase.from('album_genres').select('album_id'),
-    (supabase as any).from('album_metadata').select('album_id, description, fetched_at, spotify_url, apple_music_url, deezer_url, streaming_attempts').order('fetched_at', { ascending: false }),
+    supabase.from('tracks').select('*', { count: 'exact', head: true }),
+    (supabase as any).from('track_metadata').select('*', { count: 'exact', head: true }),
+    fetchAllPages<any>((from, to) =>
+      supabase.from('albums').select('id, title, mbid, cover_url, release_date, artists(name)').order('title').range(from, to)
+    ),
+    fetchAllPages<{ album_id: string }>((from, to) =>
+      supabase.from('album_genres').select('album_id').range(from, to)
+    ),
+    fetchAllPages<AlbumMeta>((from, to) =>
+      (supabase as any).from('album_metadata').select('album_id, description, fetched_at, spotify_url, apple_music_url, deezer_url, streaming_attempts').order('fetched_at', { ascending: false }).range(from, to)
+    ),
     (supabase as any).from('content_reports').select('id, content_type, content_id, reason, created_at, reporter_id').order('created_at', { ascending: false }).limit(50),
     (supabase as any).from('cron_health').select('job_name, status, last_run_at'),
     getProductSignals(supabase, range.days),
@@ -182,19 +220,24 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const noMbid = albums.filter((album) => !album.mbid);
   const noStreaming = albums.filter((album) => !album.hasStreaming);
   const notEnriched = albums.filter((album) => !album.hasTags);
+  const neverTriedStreaming = noStreaming.filter((a) => a.streamingAttempts === 0);
+  const retryingStreaming = noStreaming.filter((a) => a.streamingAttempts > 0 && a.streamingAttempts < 5);
+  const exhaustedStreaming = noStreaming.filter((a) => a.streamingAttempts >= 5);
+  const trackMetadataCoverage = coveragePercent(trackMetadataCount ?? 0, trackCount ?? 0);
 
   const recentMeta = ((metaData ?? []) as AlbumMeta[])
     .filter((meta) => meta.fetched_at && Date.now() - new Date(meta.fetched_at).getTime() < range.days * DAY_MS)
     .slice(0, 8);
 
   // Résout l'importateur pour chaque enrichissement récent via product_events
-  const { data: importEventsRaw } = await (supabase as any)
-    .from('product_events')
-    .select('user_id, properties')
-    .eq('event_name', 'album_import_started')
-    .gte('created_at', new Date(Date.now() - 60 * DAY_MS).toISOString());
-
-  const importEvents = (importEventsRaw ?? []) as Array<{ user_id: string; properties: Record<string, string> }>;
+  const importEvents = await fetchAllPages<{ user_id: string; properties: Record<string, string> }>((from, to) =>
+    (supabase as any)
+      .from('product_events')
+      .select('user_id, properties')
+      .eq('event_name', 'album_import_started')
+      .gte('created_at', new Date(Date.now() - 60 * DAY_MS).toISOString())
+      .range(from, to)
+  );
   const importerByMbid = new Map<string, string>();
   for (const evt of importEvents) {
     const mbid = evt.properties?.mbid;
@@ -215,6 +258,31 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     <main className="min-h-screen bg-background pb-24">
       <div className="mx-auto max-w-page px-6 py-6 lg:py-8 space-y-6">
 
+        {/* ── Navigation par onglets ──────────────────────────────────── */}
+        <nav className="flex flex-wrap gap-2">
+          {(Object.entries(TAB_OPTIONS) as Array<[TabKey, { label: string }]>).map(([key, option]) => {
+            const badgeCount = key === 'enrichment'
+              ? notEnriched.length + noStreaming.length
+              : key === 'reports'
+                ? reports.length
+                : 0;
+            return (
+              <Link
+                key={key}
+                href={key === 'dashboard' ? '/admin' : `/admin?tab=${key}`}
+                className={`rounded-full px-4 py-2 text-[13px] font-medium transition-colors ${
+                  tab === key
+                    ? 'bg-text-primary text-background'
+                    : 'border border-border bg-background-secondary text-text-secondary hover:border-text-tertiary hover:text-text-primary'
+                }`}
+              >
+                {option.label}
+                {badgeCount > 0 && <span className="ml-1.5 opacity-60">({badgeCount})</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
         {/* ── 0. Alerte cron ───────────────────────────────────────────── */}
         {unhealthyCrons.length > 0 && (
           <section className="rounded-[20px] border border-[#E0A399] bg-[#FBEEEC] p-5">
@@ -234,7 +302,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           </section>
         )}
 
-        {/* ── 1. Header ───────────────────────────────────────────────── */}
+        {/* ── 1. Header (commun à tous les onglets) ────────────────────── */}
         <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -248,10 +316,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
                 </Tag>
               </div>
               <h1 className="text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[34px]">
-                Tableau de bord admin
+                {TAB_OPTIONS[tab].label}
               </h1>
               <p className="mt-3 max-w-2xl text-[15px] leading-7 text-text-secondary">
-                Vue unifiee du catalogue, des signaux produit et des actions de maintenance prioritaires.
+                {tab === 'dashboard' && 'Vue unifiée du catalogue, des signaux produit et des actions de maintenance prioritaires.'}
+                {tab === 'enrichment' && 'Contrôle fin des tags, covers, liens de streaming et de la santé des jobs cron.'}
+                {tab === 'reports' && 'Contenus signalés par les utilisateurs, à traiter en priorité.'}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -275,7 +345,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
           </div>
         </section>
 
-        {/* ── 2. Santé catalogue ───────────────────────────────────────── */}
+        {/* ── 2. Santé catalogue (dashboard) ────────────────────────────── */}
+        {tab === 'dashboard' && (
         <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
           <Panel title="Vue d'ensemble plateforme" subtitle="Volumes globaux et couverture qualite catalogue">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -310,8 +381,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             </div>
           </Panel>
         </section>
+        )}
 
-        {/* ── 3. Signaux produit ───────────────────────────────────────── */}
+        {/* ── 3. Signaux produit (dashboard) ────────────────────────────── */}
+        {tab === 'dashboard' && (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <Panel title="Signaux produit" subtitle={`Metriques calculees sur ${range.label.toLowerCase()} depuis product_events`} tone={productSignals.available ? 'neutral' : 'warning'}>
             {productSignals.available ? (
@@ -374,36 +447,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             )}
           </Panel>
         </section>
+        )}
 
-        {/* ── 4. Enrichissements recents ───────────────────────────────── */}
-        <section>
-          <Panel title="Enrichissements recents" subtitle={`Metadonnees recuperees sur ${range.label.toLowerCase()}`}>
-            {recentMeta.length > 0 ? (
-              <div className="space-y-2">
-                {recentMeta.map((meta) => {
-                  const album = albums.find((item) => item.id === meta.album_id);
-                  if (!album) return null;
-                  const importerUsername = album.mbid
-                    ? usernameById.get(importerByMbid.get(album.mbid) ?? '')
-                    : undefined;
-                  return (
-                    <AlbumTaskRow key={meta.album_id} album={album} meta={meta}>
-                      <div className="flex items-center gap-2 flex-wrap justify-end">
-                        <Tag tone={genreSet.has(album.id) ? 'success' : 'warning'}>{genreSet.has(album.id) ? 'tags OK' : 'sans tags'}</Tag>
-                        {importerUsername && <span className="text-[11px] text-text-tertiary">@{importerUsername}</span>}
-                        <span className="text-[11px] text-text-tertiary">{meta.fetched_at ? new Date(meta.fetched_at).toLocaleDateString('fr-FR') : '—'}</span>
-                      </div>
-                    </AlbumTaskRow>
-                  );
-                })}
-              </div>
-            ) : (
-              <EmptyState message="Pas d'enrichissement recent detecte cette periode." />
-            )}
-          </Panel>
-        </section>
-
-        {/* ── 7. Decisions rapides ─────────────────────────────────────── */}
+        {/* ── 7. Decisions rapides (dashboard) ──────────────────────────── */}
+        {tab === 'dashboard' && (
         <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
           <div className="mb-6">
             <h2 className="text-[20px] font-medium tracking-[-0.02em] text-text-primary">Decisions rapides</h2>
@@ -432,8 +479,51 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             />
           </div>
         </section>
+        )}
 
-        {/* ── Modération — signalements ────────────────────────────────── */}
+        {/* ── Onglet Enrichissement ──────────────────────────────────────── */}
+        {tab === 'enrichment' && (
+        <>
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <GlassMetric label="Jamais tenté (streaming)" value={String(neverTriedStreaming.length)} subtitle="Aucune recherche lancée encore" tone={neverTriedStreaming.length > 0 ? 'warning' : 'success'} />
+          <GlassMetric label="En cours de retry" value={String(retryingStreaming.length)} subtitle="< 5 tentatives, repassera au cron" tone={retryingStreaming.length > 0 ? 'warning' : 'success'} />
+          <GlassMetric label="Introuvable" value={String(exhaustedStreaming.length)} subtitle="5 tentatives, le cron a abandonné" tone={exhaustedStreaming.length > 0 ? 'warning' : 'success'} />
+          <GlassMetric label="Titres avec liens" value={trackMetadataCoverage} subtitle={`${trackMetadataCount ?? 0}/${trackCount ?? 0} titres (Phase 4, 300/nuit)`} tone={(trackMetadataCount ?? 0) < (trackCount ?? 0) ? 'warning' : 'success'} />
+        </section>
+
+        <section>
+          <Panel title="Enrichissements recents" subtitle={`Metadonnees recuperees sur ${range.label.toLowerCase()}`}>
+            {recentMeta.length > 0 ? (
+              <div className="space-y-2">
+                {recentMeta.map((meta) => {
+                  const album = albums.find((item) => item.id === meta.album_id);
+                  if (!album) return null;
+                  const importerUsername = album.mbid
+                    ? usernameById.get(importerByMbid.get(album.mbid) ?? '')
+                    : undefined;
+                  return (
+                    <AlbumTaskRow key={meta.album_id} album={album} meta={meta}>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <Tag tone={genreSet.has(album.id) ? 'success' : 'warning'}>{genreSet.has(album.id) ? 'tags OK' : 'sans tags'}</Tag>
+                        {importerUsername && <span className="text-[11px] text-text-tertiary">@{importerUsername}</span>}
+                        <span className="text-[11px] text-text-tertiary">{meta.fetched_at ? new Date(meta.fetched_at).toLocaleDateString('fr-FR') : '—'}</span>
+                      </div>
+                    </AlbumTaskRow>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState message="Pas d'enrichissement recent detecte cette periode." />
+            )}
+          </Panel>
+        </section>
+
+        <CatalogueAlbums albums={albums} noCoverIds={noCover.map((a) => a.id)} />
+        </>
+        )}
+
+        {/* ── Onglet Signalements ──────────────────────────────────────── */}
+        {tab === 'reports' && (
         <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-[20px] font-medium text-text-primary tracking-[-0.01em]">Signalements</h2>
@@ -519,9 +609,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
             </div>
           )}
         </section>
-
-        {/* ── Catalogue albums ─────────────────────────────────────────── */}
-        <CatalogueAlbums albums={albums} />
+        )}
 
       </div>
     </main>
@@ -533,17 +621,14 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 async function getProductSignals(supabase: any, rangeDays: number): Promise<ProductSignals> {
   try {
     const cutoff = new Date(Date.now() - (rangeDays * 2) * DAY_MS).toISOString();
-    const { data, error } = await (supabase as any)
-      .from('product_events')
-      .select('created_at, event_name, surface, user_id')
-      .gte('created_at', cutoff)
-      .order('created_at', { ascending: false });
-
-    if (error || !data) {
-      return { available: false, current: EMPTY_WINDOW, previous: EMPTY_WINDOW, recentEvents: [], frictionByEvent: [], searchBySurface: [] };
-    }
-
-    const rows = data as ProductEventRow[];
+    const rows = await fetchAllPages<ProductEventRow>((from, to) =>
+      (supabase as any)
+        .from('product_events')
+        .select('created_at, event_name, surface, user_id')
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
     const currentBoundary = Date.now() - rangeDays * DAY_MS;
     const currentRows = rows.filter((row) => new Date(row.created_at).getTime() >= currentBoundary);
     const previousRows = rows.filter((row) => new Date(row.created_at).getTime() < currentBoundary);
@@ -567,6 +652,12 @@ function resolveRange(rawValue: string | string[] | undefined): { key: RangeKey;
     return { key: normalized, ...RANGE_OPTIONS[normalized] };
   }
   return { key: '7d', ...RANGE_OPTIONS['7d'] };
+}
+
+function resolveTab(rawValue: string | string[] | undefined): TabKey {
+  const normalized = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+  if (normalized === 'enrichment' || normalized === 'reports') return normalized;
+  return 'dashboard';
 }
 
 function computeWindowMetrics(rows: ProductEventRow[]): WindowMetrics {

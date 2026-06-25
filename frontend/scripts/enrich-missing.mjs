@@ -506,20 +506,27 @@ async function upsertGenresAndAlbumGenres(albumId, tagMap) {
 async function runPhase1() {
   console.log('── Phase 1 : enrichissement complet (tags + streaming) ──────────');
 
-  // Albums without any album_metadata row
-  const { data: albums, error } = await supabase
-    .from('albums')
-    .select('id, mbid, title, artists(name)')
-    .not('mbid', 'is', null)
-    .limit(10_000);
-
-  if (error) { console.error('  ❌ Query error:', error.message); return; }
-
-  // Filter to albums that truly have no album_metadata row
-  const { data: existingMeta } = await supabase
-    .from('album_metadata')
-    .select('album_id, fetched_at')
-    .not('fetched_at', 'is', null);
+  // Albums without any album_metadata row.
+  // fetchAllPages est indispensable ici : sans .range(), PostgREST plafonne le
+  // résultat à 1000 lignes quel que soit le .limit() demandé (cf. commentaire de
+  // fetchAllPages plus haut). Avec un catalogue > 1000 albums, comparer deux
+  // requêtes tronquées à 1000 lignes chacune (albums vs album_metadata) ne donne
+  // qu'un résidu de recouvrement sans rapport avec le vrai backlog — observé en
+  // prod : "7 à enrichir" alors que ~400 albums étaient réellement orphelins.
+  let albums, existingMeta;
+  try {
+    [albums, existingMeta] = await Promise.all([
+      fetchAllPages((from, to) =>
+        supabase.from('albums').select('id, mbid, title, artists(name)').not('mbid', 'is', null).range(from, to)
+      ),
+      fetchAllPages((from, to) =>
+        supabase.from('album_metadata').select('album_id, fetched_at').not('fetched_at', 'is', null).range(from, to)
+      ),
+    ]);
+  } catch (error) {
+    console.error('  ❌ Query error:', error.message);
+    return;
+  }
 
   const enrichedIds = new Set((existingMeta ?? []).map((m) => m.album_id));
   const toEnrich = (albums ?? [])

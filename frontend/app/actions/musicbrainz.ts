@@ -1,8 +1,10 @@
 'use server';
 
+import { after } from 'next/server';
 import { logAuthedProductEvent } from '@/lib/productEvents';
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { uploadCoverToSupabase } from '@/lib/storage';
+import { enrichAlbumMetadata } from './metadata';
 import type { SearchResultUI } from './search';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
@@ -997,6 +999,15 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       });
       return { success: false, error: externalError.message };
     }
+
+    // Enrichit en tâche de fond (tags/bio/streaming) sans bloquer la réponse —
+    // after() garantit l'exécution même une fois la réponse renvoyée (Vercel tue
+    // sinon les promesses non-attendues dès la fin de la requête). L'EnrichmentPoller
+    // sur la page album guettait déjà ce signal, mais rien ne le déclenchait jamais
+    // avant — l'album restait "en cours d'enrichissement" jusqu'au cron nocturne.
+    after(() => enrichAlbumMetadata(newAlbumId, canonicalMbid, preview.title, preview.artist).catch((err) => {
+      console.error('[importAlbumFromMusicBrainz] enrichissement à la volée échoué:', err);
+    }));
 
     const firstTrackId = isSingle ? (trackRows[0]?.id ?? null) : null;
     return {

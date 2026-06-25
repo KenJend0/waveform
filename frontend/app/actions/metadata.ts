@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createSupabaseAdmin, createSupabaseServer, getAuthUser } from '@/lib/supabase/server';
 import { findGenreBySlug } from '@/lib/genre-families';
 
@@ -425,15 +426,21 @@ export async function fetchAlbumStreamingLinks(
   // Sauvegarde uniquement si au moins un lien trouvé
   if (links.spotify || links.appleMusic || links.deezer) {
     const supabase = createSupabaseAdmin();
-    await supabase.from('album_metadata').upsert(
+    const { error } = await supabase.from('album_metadata').upsert(
       {
         album_id: albumId,
         spotify_url: links.spotify,
         apple_music_url: links.appleMusic,
         deezer_url: links.deezer,
+        fetched_at: new Date().toISOString(),
       },
       { onConflict: 'album_id' }
     );
+    if (error) {
+      console.error('[fetchAlbumStreamingLinks] upsert error:', error.message);
+    } else {
+      revalidatePath('/admin');
+    }
   }
 
   return links;

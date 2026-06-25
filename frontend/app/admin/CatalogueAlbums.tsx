@@ -17,7 +17,10 @@ type Album = {
   hasStreaming: boolean;
   hasDescription: boolean;
   fetched_at: string | null;
+  streamingAttempts: number;
 };
+
+const MAX_STREAMING_ATTEMPTS = 5;
 
 type FilterKey = 'all' | 'no-tags' | 'no-streaming' | 'incomplete';
 
@@ -123,8 +126,18 @@ export default function CatalogueAlbums({ albums }: { albums: Album[] }) {
                     {!album.hasTags && (
                       <span className="rounded-full bg-[#F7EEDB] text-[#8A6A27] px-2 py-0.5 text-[10px] font-medium">sans tags</span>
                     )}
-                    {!album.hasStreaming && (
-                      <span className="rounded-full bg-[#F7EEDB] text-[#8A6A27] px-2 py-0.5 text-[10px] font-medium">sans streaming</span>
+                    {!album.hasStreaming && album.streamingAttempts >= MAX_STREAMING_ATTEMPTS && (
+                      <span className="rounded-full bg-[#F5E5E1] text-[#9A5A4D] px-2 py-0.5 text-[10px] font-medium">
+                        introuvable ({album.streamingAttempts} tentatives)
+                      </span>
+                    )}
+                    {!album.hasStreaming && album.streamingAttempts > 0 && album.streamingAttempts < MAX_STREAMING_ATTEMPTS && (
+                      <span className="rounded-full bg-[#F7EEDB] text-[#8A6A27] px-2 py-0.5 text-[10px] font-medium">
+                        sans streaming ({album.streamingAttempts}/{MAX_STREAMING_ATTEMPTS})
+                      </span>
+                    )}
+                    {!album.hasStreaming && album.streamingAttempts === 0 && (
+                      <span className="rounded-full bg-[#F7EEDB] text-[#8A6A27] px-2 py-0.5 text-[10px] font-medium">jamais tenté</span>
                     )}
                   </div>
                   <button

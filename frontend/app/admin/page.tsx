@@ -29,6 +29,7 @@ type Album = {
   hasStreaming: boolean;
   hasDescription: boolean;
   fetched_at: string | null;
+  streamingAttempts: number;
 };
 
 type AlbumMeta = {
@@ -38,6 +39,7 @@ type AlbumMeta = {
   spotify_url: string | null;
   apple_music_url: string | null;
   deezer_url: string | null;
+  streaming_attempts: number | null;
 };
 
 type ProductEventRow = {
@@ -101,6 +103,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     { data: genreData },
     { data: metaData },
     { data: rawReports },
+    { data: cronHealthData },
     productSignals,
   ] = await Promise.all([
     supabase.from('albums').select('*', { count: 'exact', head: true }),
@@ -112,10 +115,25 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
     supabase.from('diary_entries').select('*', { count: 'exact', head: true }).not('review_body', 'is', null),
     supabase.from('albums').select('id, title, mbid, cover_url, release_date, artists(name)').order('title'),
     supabase.from('album_genres').select('album_id'),
-    supabase.from('album_metadata').select('album_id, description, fetched_at, spotify_url, apple_music_url, deezer_url').order('fetched_at', { ascending: false }),
+    (supabase as any).from('album_metadata').select('album_id, description, fetched_at, spotify_url, apple_music_url, deezer_url, streaming_attempts').order('fetched_at', { ascending: false }),
     (supabase as any).from('content_reports').select('id, content_type, content_id, reason, created_at, reporter_id').order('created_at', { ascending: false }).limit(50),
+    (supabase as any).from('cron_health').select('job_name, status, last_run_at'),
     getProductSignals(supabase, range.days),
   ]);
+
+  const CRON_FRESHNESS_HOURS: Record<string, number> = {
+    'daily-enrich': 36,
+    'process-external-imports': 2,
+  };
+  const cronWarnings = Object.entries(CRON_FRESHNESS_HOURS).map(([jobName, maxHours]) => {
+    const row = (cronHealthData as Array<{ job_name: string; status: string; last_run_at: string }> ?? [])
+      .find((r) => r.job_name === jobName);
+    const staleMs = maxHours * 60 * 60 * 1000;
+    const isStale = !row || Date.now() - new Date(row.last_run_at).getTime() > staleMs;
+    const isFailing = row?.status === 'failure';
+    return { jobName, row, isStale, isFailing, healthy: row && !isStale && !isFailing };
+  });
+  const unhealthyCrons = cronWarnings.filter((c) => !c.healthy);
 
   // Enrich reports with reporter usernames + content text
   const reports = (rawReports ?? []) as Array<{ id: string; content_type: string; content_id: string; reason: string; created_at: string; reporter_id: string }>;
@@ -141,7 +159,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
 
 
   const genreSet = new Set((genreData ?? []).map((row) => row.album_id));
-  const metaMap = new Map<string, AlbumMeta>((metaData ?? []).map((row) => [row.album_id, row as AlbumMeta]));
+  const metaMap = new Map<string, AlbumMeta>(((metaData ?? []) as AlbumMeta[]).map((row) => [row.album_id, row]));
 
   const albums: Album[] = ((rawAlbums ?? []) as any[]).map((album) => {
     const meta = metaMap.get(album.id);
@@ -156,6 +174,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
       hasStreaming: !!(meta?.spotify_url || meta?.apple_music_url || meta?.deezer_url),
       hasDescription: !!(meta?.description),
       fetched_at: meta?.fetched_at ?? null,
+      streamingAttempts: meta?.streaming_attempts ?? 0,
     };
   });
 
@@ -164,9 +183,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   const noStreaming = albums.filter((album) => !album.hasStreaming);
   const notEnriched = albums.filter((album) => !album.hasTags);
 
-  const recentMeta = (metaData ?? [])
+  const recentMeta = ((metaData ?? []) as AlbumMeta[])
     .filter((meta) => meta.fetched_at && Date.now() - new Date(meta.fetched_at).getTime() < range.days * DAY_MS)
-    .slice(0, 8) as AlbumMeta[];
+    .slice(0, 8);
 
   // Résout l'importateur pour chaque enrichissement récent via product_events
   const { data: importEventsRaw } = await (supabase as any)
@@ -195,6 +214,25 @@ export default async function AdminPage({ searchParams }: { searchParams?: Searc
   return (
     <main className="min-h-screen bg-background pb-24">
       <div className="mx-auto max-w-page px-6 py-6 lg:py-8 space-y-6">
+
+        {/* ── 0. Alerte cron ───────────────────────────────────────────── */}
+        {unhealthyCrons.length > 0 && (
+          <section className="rounded-[20px] border border-[#E0A399] bg-[#FBEEEC] p-5">
+            <div className="flex flex-wrap items-start gap-3">
+              <Tag tone="critical">Cron en souffrance</Tag>
+              <div className="space-y-1">
+                {unhealthyCrons.map(({ jobName, row, isStale, isFailing }) => (
+                  <p key={jobName} className="text-[13px] text-[#7A3C32]">
+                    <span className="font-medium">{jobName}</span>
+                    {!row && ' — aucun ping reçu (jamais exécuté depuis l\'ajout du monitoring, ou échec avant l\'étape de reporting).'}
+                    {row && isFailing && ` — dernière exécution en échec (${new Date(row.last_run_at).toLocaleString('fr-FR')}).`}
+                    {row && !isFailing && isStale && ` — dernier succès il y a trop longtemps (${new Date(row.last_run_at).toLocaleString('fr-FR')}).`}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── 1. Header ───────────────────────────────────────────────── */}
         <section className="rounded-[20px] border border-border bg-background-secondary p-6 sm:p-8">

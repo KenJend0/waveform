@@ -48,3 +48,20 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
           node scripts/enrich-missing.mjs $ARGS
+
+      # Étape séparée (curl, pas de dépendance npm) : survit même si "Install
+      # dependencies" plante avant que le script Node ne démarre — c'est ce qui
+      # s'est produit silencieusement 5 nuits de suite en juin 2026 (lockfile
+      # désynchronisé). L'admin affiche un avertissement si ce ping est absent
+      # ou en échec depuis plus de 36h.
+      - name: Report cron health
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" != "success" ]; then STATUS="failure"; fi
+          curl -s -o /dev/null -X POST "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/cron_health" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "{\"job_name\": \"daily-enrich\", \"status\": \"$STATUS\", \"last_run_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"

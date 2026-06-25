@@ -24,6 +24,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { looseNormalize, isArtistMatch, searchReleaseGroupCascade, pickCandidate } from '../lib/musicbrainzMatch.mjs';
+import { enrichOneAlbum } from '../lib/albumEnrichment.mjs';
 
 const MB_API = 'https://musicbrainz.org/ws/2';
 const MB_UA = 'Waveform/1.0 (https://waveformapp.online)';
@@ -252,6 +253,22 @@ async function importAlbum(mbid) {
     source: 'musicbrainz',
     value: mbid,
   });
+
+  // Enrichit immédiatement (genres + bio + streaming) au lieu d'attendre le cron
+  // nocturne — sinon un gros import (RYM/Last.fm) reste sans métadonnées jusqu'à
+  // 3h du matin. Best-effort : un échec ici ne doit jamais faire échouer l'import.
+  await delay(DELAY_MS);
+  const enrichResult = await enrichOneAlbum(supabase, {
+    id: newAlbum.id,
+    mbid: canonicalMbid,
+    title: preview.title,
+    artistName: preview.artist,
+  }).catch((err) => ({ ok: false, error: err.message }));
+  if (enrichResult.ok) {
+    console.log(`    ↳ enrichi à la volée (${enrichResult.genreCount} genre(s))`);
+  } else {
+    console.log(`    ↳ enrichissement à la volée échoué (${enrichResult.error}) — repris par le cron nocturne`);
+  }
 
   return newAlbum.id;
 }

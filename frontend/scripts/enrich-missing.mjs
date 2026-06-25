@@ -37,6 +37,8 @@ const LFM_API = 'https://ws.audioscrobbler.com/2.0';
 const CAA_URL = 'https://coverartarchive.org/release-group';
 const DELAY_MS = 1250; // safely above MB's 1 req/s limit
 const STREAMING_RETRY_DAYS = 7;
+const MAX_STREAMING_ATTEMPTS = 5; // au-delà, on arrête de retenter (probable absence réelle sur ces plateformes)
+const PHASE4_DAILY_CAP = 300; // lot quotidien pour Phase 4 — reste largement sous le timeout de 60 min du cron
 
 const DRY_RUN      = process.argv.includes('--dry-run');
 const PHASE4_ONLY  = process.argv.includes('--phase4-only');
@@ -598,10 +600,11 @@ async function runPhase2() {
   // Albums enriched but with at least one streaming link still null + fetched_at older than N days
   const { data: rows, error } = await supabase
     .from('album_metadata')
-    .select('album_id, spotify_url, apple_music_url, deezer_url, albums(id, mbid, title, artists(name))')
+    .select('album_id, spotify_url, apple_music_url, deezer_url, streaming_attempts, albums(id, mbid, title, artists(name))')
     .or('spotify_url.is.null,apple_music_url.is.null,deezer_url.is.null')
     .not('fetched_at', 'is', null)
     .lt('fetched_at', cutoff)
+    .lt('streaming_attempts', MAX_STREAMING_ATTEMPTS)
     .limit(LIMIT === Infinity ? 10_000 : LIMIT);
 
   if (error) { console.error('  ❌ Query error:', error.message); return; }
@@ -629,7 +632,10 @@ async function runPhase2() {
       ]);
 
       // Only patch columns that were actually null
-      const patch = { fetched_at: new Date().toISOString() };
+      const patch = {
+        fetched_at: new Date().toISOString(),
+        streaming_attempts: (row.streaming_attempts ?? 0) + 1,
+      };
       if (!row.spotify_url)     patch.spotify_url     = spot ?? null;
       if (!row.apple_music_url) patch.apple_music_url = apl  ?? null;
       if (!row.deezer_url)      patch.deezer_url      = dz   ?? null;
@@ -648,7 +654,9 @@ async function runPhase2() {
         console.log(`    ✅ Ajouté: ${newLinks}${DRY_RUN ? ' [dry-run]' : ''}`);
         found++;
       } else {
-        console.log(`    — aucun nouveau lien trouvé${DRY_RUN ? ' [dry-run]' : ''}`);
+        const attemptsLeft = MAX_STREAMING_ATTEMPTS - patch.streaming_attempts;
+        console.log(`    — aucun nouveau lien trouvé (tentative ${patch.streaming_attempts}/${MAX_STREAMING_ATTEMPTS})${DRY_RUN ? ' [dry-run]' : ''}`);
+        if (attemptsLeft <= 0) console.log(`    ⏹ Abandon — plafond de tentatives atteint.`);
         empty++;
       }
     } catch (err) {
@@ -798,7 +806,7 @@ async function fetchSpotifyAlbumTracks(spotifyAlbumId, token) {
   return { byPosition, byTitle };
 }
 
-async function runPhase4() {
+async function runPhase4(effectiveLimit = LIMIT) {
   console.log('── Phase 4 : liens de streaming par titre ──────────────────────');
 
   let allTracks, existingMeta, albumMetas;
@@ -834,7 +842,7 @@ async function runPhase4() {
   const enrichedIds = new Set((existingMeta ?? []).map((m) => m.track_id));
   const toEnrich = (allTracks ?? [])
     .filter((t) => !enrichedIds.has(t.id))
-    .slice(0, LIMIT === Infinity ? 50_000 : LIMIT);
+    .slice(0, effectiveLimit === Infinity ? 50_000 : effectiveLimit);
 
   if (!toEnrich.length) {
     console.log('  ✅ Aucun titre à enrichir.\n');
@@ -944,8 +952,12 @@ async function main() {
     await runPhase1();
     await runPhase2();
     await runPhase3();
-    // Phase 4 (track streaming links) runs via backfill-track-streaming.yml (6h timeout).
-    // Once the initial backfill is complete, re-enable it here — daily cost will be minimal.
+    // Le gros du backlog historique se rattrape via workflow_dispatch sur
+    // backfill-track-streaming.yml (timeout 6h, sans plafond). Ici, dans le cron
+    // quotidien (timeout 60 min), on ne traite qu'un lot raisonnable pour que les
+    // titres des NOUVEAUX albums importés ne s'accumulent plus indéfiniment en
+    // attendant un futur rattrapage manuel.
+    await runPhase4(PHASE4_DAILY_CAP);
   }
 
   console.log('✅  Enrichissement terminé.');

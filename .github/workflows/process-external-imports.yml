@@ -40,8 +40,23 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
           node scripts/process-external-imports.mjs $ARGS
+
+      - name: Report cron health
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" != "success" ]; then STATUS="failure"; fi
+          curl -s -o /dev/null -X POST "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/cron_health" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "{\"job_name\": \"process-external-imports\", \"status\": \"$STATUS\", \"last_run_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"

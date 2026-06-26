@@ -10,8 +10,12 @@ function AlbumCard({ album, onDismiss, onDismissFailed }: { album: ForYouAlbum; 
         e.preventDefault();
         e.stopPropagation();
         onDismiss(album.album_id);
-        const { success } = await dismissRecommendation(album.album_id);
-        if (!success) onDismissFailed(album.album_id);
+        try {
+            const { success } = await dismissRecommendation(album.album_id);
+            if (!success) onDismissFailed(album.album_id);
+        } catch {
+            onDismissFailed(album.album_id);
+        }
     }
 
     return (
@@ -51,8 +55,12 @@ function TrackCard({ track, onDismiss, onDismissFailed }: { track: ForYouTrack; 
         e.preventDefault();
         e.stopPropagation();
         onDismiss(track.track_id);
-        const { success } = await dismissTrackRecommendation(track.track_id);
-        if (!success) onDismissFailed(track.track_id);
+        try {
+            const { success } = await dismissTrackRecommendation(track.track_id);
+            if (!success) onDismissFailed(track.track_id);
+        } catch {
+            onDismissFailed(track.track_id);
+        }
     }
 
     return (

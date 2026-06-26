@@ -29,7 +29,7 @@ export async function getFollowingList(username: string) {
       return { success: false, error: followsError.message };
     }
 
-    const followeeIds = (follows || []).map((f: any) => f.followee_id);
+    const followeeIds = (follows || []).map((f) => f.followee_id);
 
     if (followeeIds.length === 0) {
       return { success: true, items: [] };
@@ -50,21 +50,21 @@ export async function getFollowingList(username: string) {
     let followingIds = new Set<string>();
 
     if (currentUserId && profiles && profiles.length > 0) {
-      const profileIds = profiles.map((p: any) => p.id);
+      const profileIds = profiles.map((p) => p.id);
       const { data: following } = await supabase
         .from("follows")
         .select("followee_id")
         .eq("follower_id", currentUserId)
         .in("followee_id", profileIds);
 
-      followingIds = new Set((following || []).map((f: any) => f.followee_id));
+      followingIds = new Set((following || []).map((f) => f.followee_id));
     }
 
-    const items = (profiles || []).map((p: any) => ({
+    const items = (profiles || []).map((p) => ({
       id: p.id,
-      username: p.username,
+      username: p.username || '',
       display_name: p.display_name,
-      picture_url: p.avatar_url,
+      picture_url: p.avatar_url ?? undefined,
       is_following: currentUserId ? followingIds.has(p.id) : false,
       is_me: currentUserId ? p.id === currentUserId : false,
     }));

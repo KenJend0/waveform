@@ -29,6 +29,7 @@ export type TrackDetail = {
 export async function getTrack(id: string): Promise<TrackDetail | null> {
   const supabase = await createSupabaseServer();
 
+  // albums.type n'est pas dans les types générés (colonne ajoutée hors migration suivie) — cast en any.
   const { data, error } = await (supabase as any)
     .from('tracks')
     .select(`
@@ -57,8 +58,8 @@ export async function getTrack(id: string): Promise<TrackDetail | null> {
 
   if (error || !data) return null;
 
-  const album = data.albums as any;
-  const artist = album?.artists as any;
+  const album = data.albums as { id: string; title: string; cover_url: string | null; release_date: string | null; type: string | null; artist_id: string; artists?: { id: string; name: string } } | null;
+  const artist = album?.artists;
 
   return {
     id: data.id,

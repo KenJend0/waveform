@@ -86,7 +86,11 @@ export async function getTrendingThisWeek(limit = 10): Promise<TrendingAlbum[]> 
     });
 
     if (!rpcError && rpcRows) {
-        return rpcRows.map((row: any) => ({
+        const trendingRows = rpcRows as Array<{
+            album_id: string; album_title: string | null; artist_name: string | null;
+            cover_url: string | null; activity_count: number | null; delta: number | null;
+        }>;
+        return trendingRows.map((row) => ({
             id: `trending-${row.album_id}`,
             album_id: row.album_id,
             album_title: row.album_title || 'Unknown',
@@ -120,7 +124,7 @@ export async function getTrendingThisWeek(limit = 10): Promise<TrendingAlbum[]> 
 
     const albumScores = new Map<string, { score: number; title: string; artist_name: string; cover_url: string | null }>();
     for (const entry of [...(currEntries || []), ...(currSaves || [])]) {
-        const album = entry.albums as any;
+        const album = entry.albums;
         if (!album?.id) continue;
         const existing = albumScores.get(album.id);
         if (existing) existing.score += 1;
@@ -176,7 +180,7 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
             .eq('user_id', user.id),
         supabase.from('diary_entries').select('album_id').eq('user_id', user.id),
     ]);
-    const dismissedIds = new Set((feedback || []).map((f: any) => f.album_id as string));
+    const dismissedIds = new Set(((feedback ?? []) as Array<{ album_id: string | null }>).map((f) => f.album_id).filter((id): id is string => id != null));
     const ratedAlbumIds = new Set((ratedAlbums || []).map((r) => r.album_id).filter(Boolean));
 
     // Priorité : recommandations pré-calculées par le pipeline ML
@@ -195,7 +199,7 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
 
     if (precomputed && precomputed.length > 0) {
         return precomputed.map((row) => {
-            const album = row.albums as any;
+            const album = row.albums;
             return {
                 album_id: row.album_id,
                 title: album?.title || 'Unknown',
@@ -256,7 +260,7 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
 
     for (const entry of recommendations || []) {
         if (!entry.album_id || myAllAlbumIds.has(entry.album_id) || dismissedIds.has(entry.album_id)) continue;
-        const album = entry.albums as any;
+        const album = entry.albums;
         if (!album?.id) continue;
         const existing = scores.get(album.id);
         if (existing) {
@@ -267,7 +271,7 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
                 neighborCount: 1,
                 total: entry.rating || 0,
                 title: album.title || 'Unknown',
-                artist: (album.artists as any)?.name || 'Unknown',
+                artist: album.artists?.name || 'Unknown',
                 cover: album.cover_url || '',
             });
         }
@@ -352,11 +356,11 @@ export async function getDiscoveryAlbums(limit = 6): Promise<DiscoveryResult> {
                     .not('album_id', 'is', null),
             ]);
             for (const e of myAlbums || []) {
-                const album = e.albums as any;
+                const album = e.albums;
                 if (album?.artist_id) knownArtistIds.add(album.artist_id);
             }
             followedIds = (following || []).map((f) => f.followee_id).filter(Boolean) as string[];
-            dismissedIds = new Set((feedback || []).map((f: any) => f.album_id as string));
+            dismissedIds = new Set(((feedback ?? []) as Array<{ album_id: string | null }>).map((f) => f.album_id).filter((id): id is string => id != null));
         }
     } catch {
         // Non authentifié — on continue sans filtre
@@ -383,7 +387,7 @@ export async function getDiscoveryAlbums(limit = 6): Promise<DiscoveryResult> {
         const seenAlbumIds = new Set<string>();
         const socialAlbums: DiscoveryAlbum[] = [];
         for (const entry of followedEntries || []) {
-            const album = entry.albums as any;
+            const album = entry.albums;
             if (!album?.id || seenAlbumIds.has(album.id)) continue;
             if (knownArtistIds.has(album.artist_id)) continue;
             if (dismissedIds.has(album.id)) continue;
@@ -436,7 +440,7 @@ export async function getDiscoveryAlbums(limit = 6): Promise<DiscoveryResult> {
         .map(({ album }) => ({
             album_id: album.id,
             title: album.title,
-            artist: (album.artists as any)?.name || 'Unknown',
+            artist: album.artists?.name || 'Unknown',
             cover_url: album.cover_url || '',
         }));
 
@@ -543,7 +547,7 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
             .not('track_id', 'is', null),
         supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id),
     ]);
-    const dismissedTrackIds = new Set((feedback || []).map((f: any) => f.track_id as string));
+    const dismissedTrackIds = new Set(((feedback ?? []) as Array<{ track_id: string | null }>).map((f) => f.track_id).filter((id): id is string => id != null));
     const ratedTrackIds = new Set((ratedTracks || []).map((r) => r.track_id).filter(Boolean));
 
     const { data: rawData } = await (supabase as any)
@@ -554,14 +558,22 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
         .order('rank')
         .limit(limit + dismissedTrackIds.size + ratedTrackIds.size);
 
-    const precomputed = (rawData || [])
-        .filter((row: any) => !dismissedTrackIds.has(row.track_id) && !ratedTrackIds.has(row.track_id))
+    interface RecommendedTrackRow {
+        track_id: string;
+        tracks: {
+            id: string; title: string; album_id: string | null; artist_id: string | null;
+            albums: { id: string; title: string; cover_url: string | null; artists: { name: string } | null } | null;
+        } | null;
+    }
+
+    const precomputed = ((rawData ?? []) as RecommendedTrackRow[])
+        .filter((row) => !dismissedTrackIds.has(row.track_id) && !ratedTrackIds.has(row.track_id))
         .slice(0, limit);
 
     if (precomputed.length > 0) {
-        return precomputed.map((row: any) => {
-            const track = row.tracks as any;
-            const album = track?.albums as any;
+        return precomputed.map((row) => {
+            const track = row.tracks;
+            const album = track?.albums;
             return {
                 track_id: row.track_id,
                 track_title: track?.title || 'Unknown',
@@ -618,9 +630,9 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
 
     for (const entry of recommendations || []) {
         if (!entry.track_id || myAllTrackIds.has(entry.track_id) || dismissedTrackIds.has(entry.track_id)) continue;
-        const track = entry.tracks as any;
+        const track = entry.tracks;
         if (!track?.id) continue;
-        const album = track.albums as any;
+        const album = track.albums;
         const existing = scores.get(track.id);
         if (existing) {
             existing.neighborCount += 1;

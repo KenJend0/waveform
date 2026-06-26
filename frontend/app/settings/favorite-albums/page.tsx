@@ -9,6 +9,7 @@ import SearchAlbumModal from "@/components/profile/SearchAlbumModal";
 import { useAuth } from "@/lib/AuthContext";
 import BackButton from "@/components/BackButton";
 import { showToast } from "@/components/Toast";
+import { toastErrorMessageFromStatus } from "@/lib/toastErrors";
 
 type Album = {
   id: string;
@@ -99,7 +100,16 @@ export default function EditFavoriteAlbumsPage() {
 
       if (res.ok) {
         router.push("/me");
+        return;
       }
+
+      let payload: unknown = null;
+      try {
+        payload = await res.json();
+      } catch {
+        // Keep fallback message.
+      }
+      showToast(toastErrorMessageFromStatus(res.status, payload, "Impossible d'enregistrer la sélection"), "error");
     } catch (e) {
       console.error("Error saving favorite albums:", e);
       showToast("Impossible d'enregistrer la sélection", "error");

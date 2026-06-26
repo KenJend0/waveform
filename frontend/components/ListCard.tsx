@@ -6,6 +6,7 @@ import { CoverImage } from "@/components/CoverImage";
 import { toggleSaveList, type UserList } from "@/app/actions/lists";
 import { useAuth } from "@/lib/AuthContext";
 import { showToast } from "@/components/Toast";
+import { toastErrorMessage } from "@/lib/toastErrors";
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
     return (
@@ -19,10 +20,6 @@ type Props = {
     list: UserList;
     href: string;
 };
-
-function errorMessage(err: unknown, fallback: string): string {
-    return err instanceof Error && err.message ? err.message : fallback;
-}
 
 function CoverCollage({ urls }: { urls: (string | null)[] }) {
     const filled = [...urls, null, null, null, null].slice(0, 4);
@@ -97,7 +94,7 @@ export default function ListCard({ list, href }: Props) {
             await toggleSaveList(list.id);
         } catch (err) {
             setSaved((v) => !v);
-            showToast(errorMessage(err, "Impossible de sauvegarder cette liste"), "error");
+            showToast(toastErrorMessage(err, "Impossible de sauvegarder cette liste"), "error");
         } finally {
             setLoading(false);
         }

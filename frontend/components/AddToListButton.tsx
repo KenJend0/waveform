@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toggleListItem, createList, getOrCreateDefaultList } from "@/app/actions/lists";
 import { showToast } from "@/components/Toast";
 import { type UserList } from "@/app/actions/lists";
+import { toastErrorMessage } from "@/lib/toastErrors";
 
 type Props = {
     albumId?: string;
@@ -13,10 +14,6 @@ type Props = {
     userLists: Pick<UserList, "id" | "title" | "is_default">[];
     initialListsContaining: string[];
 };
-
-function errorMessage(err: unknown, fallback: string): string {
-    return err instanceof Error && err.message ? err.message : fallback;
-}
 
 export default function AddToListButton({
     albumId,
@@ -86,7 +83,7 @@ export default function AddToListButton({
                 else next.delete(listId);
                 return next;
             });
-            showToast(errorMessage(err, "Erreur, réessaie"), "error");
+            showToast(toastErrorMessage(err, "Erreur, réessaie"), "error");
         } finally {
             setLoadingListId(null);
         }
@@ -105,7 +102,7 @@ export default function AddToListButton({
             showToast(`Ajouté à "${title}"`, "success");
             router.refresh();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur lors de la création"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la création"), "error");
         } finally {
             setIsSubmittingCreate(false);
         }

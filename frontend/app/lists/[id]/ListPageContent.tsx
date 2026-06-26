@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CoverImage } from "@/components/CoverImage";
 import { updateList, deleteList, toggleListLike, removeListItem } from "@/app/actions/lists";
 import { showToast } from "@/components/Toast";
+import { toastErrorMessage } from "@/lib/toastErrors";
 import type { ListItem, UserList } from "@/app/actions/lists";
 
 type Tab = "tous" | "albums" | "titres";
@@ -16,10 +17,6 @@ type Props = {
     isOwner: boolean;
     isAuthenticated: boolean;
 };
-
-function errorMessage(err: unknown, fallback: string): string {
-    return err instanceof Error && err.message ? err.message : fallback;
-}
 
 function RemoveButton({ onRemove }: { onRemove: () => void }) {
     return (
@@ -121,7 +118,7 @@ function EditListForm({
             router.refresh();
             onClose();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur lors de la mise à jour"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la mise à jour"), "error");
         } finally {
             setSaving(false);
         }
@@ -134,7 +131,7 @@ function EditListForm({
             showToast("Liste supprimée", "success");
             router.push("/me?tab=lists");
         } catch (err) {
-            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la suppression"), "error");
             setDeleting(false);
             setConfirmDelete(false);
         }
@@ -238,7 +235,7 @@ function LikeButton({ listId, initialLiked, initialCount }: { listId: string; in
         } catch (err) {
             setLiked((v) => !v);
             setCount((v) => liked ? v + 1 : v - 1);
-            showToast(errorMessage(err, "Erreur"), "error");
+            showToast(toastErrorMessage(err, "Erreur"), "error");
         } finally {
             setLoading(false);
         }
@@ -274,7 +271,7 @@ export default function ListPageContent({ list, items, isOwner, isAuthenticated 
             await removeListItem(itemId);
         } catch (err) {
             setLocalItems(items); // revert
-            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la suppression"), "error");
         }
     };
 

@@ -6,6 +6,14 @@ import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/su
 import { uploadCoverToSupabase } from '@/lib/storage';
 import { enrichAlbumMetadata } from './metadata';
 import type { SearchResultUI } from './search';
+import {
+  arrayValue,
+  isRecord,
+  logInvalidExternalResponse,
+  numberValue,
+  recordValue,
+  stringValue,
+} from '@/lib/externalValidation';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
@@ -54,13 +62,21 @@ interface MBRelease {
   'release-group'?: { id: string; 'primary-type'?: string };
 }
 
+interface MBRelation {
+  type: string;
+  url?: { resource?: string };
+}
+
 interface MBReleaseGroup {
   id: string;
   title: string;
   'first-release-date'?: string;
-  'artist-credit': Array<{ artist: { id: string; name: string } }>;
+  'artist-credit': Array<{ artist: { id: string; name: string }; name?: string }>;
   'primary-type'?: string;
-  relations?: any[];
+  'secondary-types'?: string[];
+  'release-count'?: number;
+  score?: number;
+  relations?: MBRelation[];
 }
 
 interface MBReleaseGroupSearchResult {
@@ -95,6 +111,7 @@ interface MBReleaseDetail {
   title: string;
   date?: string;
   'artist-credit': Array<{ artist: { id: string; name: string } }>;
+  'release-group'?: { id: string; 'primary-type'?: string };
   media: Array<{
     position: number;
     tracks: Array<{
@@ -129,6 +146,342 @@ export type ArtistSearchResult = {
 };
 
 export type SearchFilter = 'all' | 'albums' | 'artists';
+
+interface MBArtistDetail {
+  id: string;
+  name: string;
+  country?: string;
+  type?: string;
+  relations?: MBRelation[];
+}
+
+interface MBReleaseGroupLookupDetail {
+  id: string;
+  'primary-type'?: string;
+  releases?: Array<{ id: string; status?: string }>;
+}
+
+interface MBReleaseBrowseItem {
+  id: string;
+  title: string;
+  date?: string;
+  'track-count'?: number;
+  'release-group'?: { id: string; 'primary-type'?: string };
+}
+
+interface MBArtistReleaseSearchResult {
+  releases?: MBReleaseBrowseItem[];
+}
+
+interface MBReleaseMediaItem {
+  id: string;
+  media?: Array<{ format?: string }>;
+}
+
+interface MBReleaseBrowseMediaResult {
+  releases?: MBReleaseMediaItem[];
+}
+
+interface WikidataEntityResponse {
+  entities?: Record<string, {
+    claims?: {
+      P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }>;
+    };
+  }>;
+}
+
+function parseMbRelationList(value: unknown): MBRelation[] {
+  return arrayValue(value).flatMap((item) => {
+    const row = recordValue(item);
+    const type = stringValue(row?.type);
+    const resource = stringValue(recordValue(row?.url)?.resource);
+    if (!type) return [];
+    return [{ type, ...(resource ? { url: { resource } } : {}) }];
+  });
+}
+
+function parseArtistCredit(value: unknown): Array<{ artist: { id: string; name: string }; name?: string }> {
+  return arrayValue(value).flatMap((item) => {
+    const row = recordValue(item);
+    const artist = recordValue(row?.artist);
+    const id = stringValue(artist?.id);
+    const artistName = stringValue(artist?.name);
+    if (!id || !artistName) return [];
+    const creditName = stringValue(row?.name);
+    return [{ artist: { id, name: artistName }, ...(creditName ? { name: creditName } : {}) }];
+  });
+}
+
+function parseMbReleaseGroups(raw: unknown, context: string): MBReleaseGroup[] {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse(context, 'root is not an object');
+    return [];
+  }
+  return arrayValue(raw['release-groups']).flatMap((item) => {
+    const row = recordValue(item);
+    const id = stringValue(row?.id);
+    const title = stringValue(row?.title);
+    if (!id || !title) return [];
+    return [{
+      id,
+      title,
+      'first-release-date': stringValue(row?.['first-release-date']) ?? undefined,
+      'artist-credit': parseArtistCredit(row?.['artist-credit']),
+      'primary-type': stringValue(row?.['primary-type']) ?? undefined,
+      'secondary-types': arrayValue(row?.['secondary-types']).flatMap((v) => stringValue(v) ? [stringValue(v)!] : []),
+      'release-count': numberValue(row?.['release-count']) ?? undefined,
+      score: numberValue(row?.score) ?? undefined,
+      relations: parseMbRelationList(row?.relations),
+    }];
+  });
+}
+
+function parseMbArtistSearch(raw: unknown): MBArtistSearchResult {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.artistSearch', 'root is not an object');
+    return { artists: [] };
+  }
+  return {
+    artists: arrayValue(raw.artists).flatMap((item) => {
+      const row = recordValue(item);
+      const id = stringValue(row?.id);
+      const name = stringValue(row?.name);
+      if (!id || !name) return [];
+      const lifeSpan = recordValue(row?.['life-span']);
+      return [{
+        id,
+        name,
+        type: stringValue(row?.type) ?? undefined,
+        country: stringValue(row?.country) ?? undefined,
+        score: numberValue(row?.score) ?? undefined,
+        'life-span': lifeSpan ? {
+          begin: stringValue(lifeSpan.begin) ?? undefined,
+          end: stringValue(lifeSpan.end) ?? undefined,
+        } : undefined,
+      }];
+    }),
+  };
+}
+
+function parseMbReleaseGroupLookup(raw: unknown): MBReleaseGroupLookupDetail | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseGroupLookup', 'root is not an object');
+    return null;
+  }
+  const id = stringValue(raw.id);
+  if (!id) return null;
+  return {
+    id,
+    'primary-type': stringValue(raw['primary-type']) ?? undefined,
+    releases: arrayValue(raw.releases).flatMap((item) => {
+      const row = recordValue(item);
+      const releaseId = stringValue(row?.id);
+      if (!releaseId) return [];
+      return [{ id: releaseId, status: stringValue(row?.status) ?? undefined }];
+    }),
+  };
+}
+
+function parseMbReleaseDetail(raw: unknown): MBReleaseDetail | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseDetail', 'root is not an object');
+    return null;
+  }
+  const id = stringValue(raw.id);
+  const title = stringValue(raw.title);
+  if (!id || !title) return null;
+  const releaseGroup = recordValue(raw['release-group']);
+  return {
+    id,
+    title,
+    date: stringValue(raw.date) ?? undefined,
+    'artist-credit': parseArtistCredit(raw['artist-credit']),
+    'release-group': releaseGroup ? {
+      id: stringValue(releaseGroup.id) ?? '',
+      'primary-type': stringValue(releaseGroup['primary-type']) ?? undefined,
+    } : undefined,
+    media: arrayValue(raw.media).map((medium, mediumIndex) => {
+      const row = recordValue(medium);
+      return {
+        position: numberValue(row?.position) ?? mediumIndex + 1,
+        tracks: arrayValue(row?.tracks).flatMap((track, trackIndex) => {
+          const t = recordValue(track);
+          const trackId = stringValue(t?.id);
+          const trackTitle = stringValue(t?.title);
+          if (!trackId || !trackTitle) return [];
+          const recording = recordValue(t?.recording);
+          return [{
+            id: trackId,
+            title: trackTitle,
+            position: numberValue(t?.position) ?? trackIndex + 1,
+            length: numberValue(t?.length) ?? undefined,
+            'track_or_recording_length': numberValue(t?.track_or_recording_length) ?? undefined,
+            recording: recording ? { length: numberValue(recording.length) ?? undefined } : undefined,
+          }];
+        }),
+      };
+    }),
+  };
+}
+
+function parseMbArtistDetail(raw: unknown): MBArtistDetail | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.artistDetail', 'root is not an object');
+    return null;
+  }
+  const id = stringValue(raw.id);
+  const name = stringValue(raw.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    country: stringValue(raw.country) ?? undefined,
+    type: stringValue(raw.type) ?? undefined,
+    relations: parseMbRelationList(raw.relations),
+  };
+}
+
+function parseMbArtistReleaseSearch(raw: unknown): MBArtistReleaseSearchResult {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.artistReleaseSearch', 'root is not an object');
+    return { releases: [] };
+  }
+  return {
+    releases: arrayValue(raw.releases).flatMap((item) => {
+      const row = recordValue(item);
+      const id = stringValue(row?.id);
+      const title = stringValue(row?.title);
+      if (!id || !title) return [];
+      const releaseGroup = recordValue(row?.['release-group']);
+      return [{
+        id,
+        title,
+        date: stringValue(row?.date) ?? undefined,
+        'track-count': numberValue(row?.['track-count']) ?? undefined,
+        'release-group': releaseGroup ? {
+          id: stringValue(releaseGroup.id) ?? '',
+          'primary-type': stringValue(releaseGroup['primary-type']) ?? undefined,
+        } : undefined,
+      }];
+    }),
+  };
+}
+
+function parseMbReleaseBrowseMedia(raw: unknown): MBReleaseBrowseMediaResult {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseBrowseMedia', 'root is not an object');
+    return { releases: [] };
+  }
+  return {
+    releases: arrayValue(raw.releases).flatMap((item) => {
+      const row = recordValue(item);
+      const id = stringValue(row?.id);
+      if (!id) return [];
+      return [{
+        id,
+        media: arrayValue(row?.media).map((medium) => ({
+          format: stringValue(recordValue(medium)?.format) ?? undefined,
+        })),
+      }];
+    }),
+  };
+}
+
+function parseMbReleaseSearch(raw: unknown): MBSearchResult {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseSearch', 'root is not an object');
+    return { releases: [] };
+  }
+  return {
+    releases: arrayValue(raw.releases).flatMap((item) => {
+      const row = recordValue(item);
+      const id = stringValue(row?.id);
+      const title = stringValue(row?.title);
+      if (!id || !title) return [];
+      const releaseGroup = recordValue(row?.['release-group']);
+      const coverArtArchive = recordValue(row?.['cover-art-archive']);
+      return [{
+        id,
+        title,
+        date: stringValue(row?.date) ?? undefined,
+        'artist-credit': parseArtistCredit(row?.['artist-credit']),
+        'cover-art-archive': coverArtArchive ? { front: coverArtArchive.front === true } : undefined,
+        'release-group': releaseGroup ? {
+          id: stringValue(releaseGroup.id) ?? '',
+          'primary-type': stringValue(releaseGroup['primary-type']) ?? undefined,
+        } : undefined,
+      }];
+    }),
+  };
+}
+
+function parseMbRecordingSearch(raw: unknown): MBRecordingSearchResult {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.recordingSearch', 'root is not an object');
+    return { recordings: [] };
+  }
+  return {
+    recordings: arrayValue(raw.recordings).flatMap((item) => {
+      const row = recordValue(item);
+      const id = stringValue(row?.id);
+      const title = stringValue(row?.title);
+      if (!id || !title) return [];
+      return [{
+        id,
+        title,
+        score: numberValue(row?.score) ?? undefined,
+        length: numberValue(row?.length) ?? undefined,
+        'artist-credit': parseArtistCredit(row?.['artist-credit']).map((credit) => ({
+          artist: { name: credit.artist.name },
+        })),
+        releases: arrayValue(row?.releases).flatMap((release) => {
+          const rel = recordValue(release);
+          const releaseId = stringValue(rel?.id);
+          const releaseTitle = stringValue(rel?.title);
+          if (!releaseId || !releaseTitle) return [];
+          const releaseGroup = recordValue(rel?.['release-group']);
+          return [{
+            id: releaseId,
+            title: releaseTitle,
+            'release-group': releaseGroup ? {
+              id: stringValue(releaseGroup.id) ?? '',
+              'primary-type': stringValue(releaseGroup['primary-type']) ?? undefined,
+            } : undefined,
+          }];
+        }),
+      }];
+    }),
+  };
+}
+
+function parseWikidataArtistImage(raw: unknown, entityId: string): string | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('wikidata.artistImage', 'root is not an object');
+    return null;
+  }
+  const entity = recordValue(recordValue(raw.entities)?.[entityId]);
+  const firstImageClaim = recordValue(arrayValue(recordValue(entity?.claims)?.P18)[0]);
+  const mainsnak = recordValue(firstImageClaim?.mainsnak);
+  const datavalue = recordValue(mainsnak?.datavalue);
+  return stringValue(datavalue?.value);
+}
+
+interface MBRecording {
+  id: string;
+  title: string;
+  score?: number;
+  length?: number;
+  'artist-credit'?: Array<{ artist: { name: string } }>;
+  releases?: Array<{
+    id: string;
+    title: string;
+    'release-group'?: { id: string; 'primary-type'?: string };
+  }>;
+}
+
+interface MBRecordingSearchResult {
+  recordings?: MBRecording[];
+}
 
 // ---------------------------------------------------------------------------
 // Search cache — L1: module-level Map (~1ms), L2: Supabase (~15ms prod / ~250ms dev)
@@ -487,8 +840,8 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
       return { success: false, error };
     }
 
-    const data = await response.json();
-    const releaseGroups: any[] = data['release-groups'] || [];
+    const raw: unknown = await response.json();
+    const releaseGroups = parseMbReleaseGroups(raw, 'musicbrainz.albumSearch');
 
     if (releaseGroups.length === 0) {
       return { success: true, results: [] };
@@ -522,7 +875,7 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     // MB doesn't rank by popularity; this re-sorts its arbitrary ordering so canonical
     // albums (MJ's Thriller, Pink Floyd's DSOTM…) surface before obscure homonyms.
     // Requires inc=releases in the search URL to get the releases array per release-group.
-    const releaseCountOf = (rg: any): number => rg['release-count'] ?? 0;
+    const releaseCountOf = (rg: MBReleaseGroup): number => rg['release-count'] ?? 0;
     console.log(`[searchMusicBrainzAlbums] "${query}" → ${studioAlbums.length}/${preFilterCount} passed filter`);
     if (process.env.NODE_ENV === 'development') {
       studioAlbums.slice(0, 5).forEach(rg => {
@@ -536,7 +889,7 @@ export async function searchMusicBrainzAlbums(query: string, _limit = 30): Promi
     // client-side with the full set (text similarity + releaseCount bonus).
     const results: AlbumSearchResult[] = studioAlbums.map((rg) => {
         const artists = rg['artist-credit'] || [];
-        const artistName = artists.map((a: any) => a.name || a.artist?.name).join(', ');
+        const artistName = artists.map((a) => a.name || a.artist?.name).join(', ');
         // releases[0] gives us a release MBID for import & cover fallback
         // releases array absent (inc=releases removed) — use release-count for popularity, releaseId unavailable
         const releaseId: string | undefined = undefined;
@@ -629,8 +982,9 @@ export async function searchMusicBrainzArtists(query: string, limit = 30): Promi
       return { success: false, error: 'MusicBrainz artist search failed' };
     }
 
-    const data = await response.json();
-    const artists: any[] = data['artists'] || [];
+    const raw: unknown = await response.json();
+    const data = parseMbArtistSearch(raw);
+    const artists = data['artists'] || [];
 
     const results: ArtistSearchResult[] = artists
       .filter((a) => (a.score || 0) >= 60)
@@ -701,14 +1055,18 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       if (!rgResponse.ok) {
         return { success: false, error: 'Album not found' };
       }
-      const rgData: any = await rgResponse.json();
+      const rawRg: unknown = await rgResponse.json();
+      const rgData = parseMbReleaseGroupLookup(rawRg);
+      if (!rgData) {
+        return { success: false, error: 'Invalid release group response' };
+      }
       rgPrimaryType = rgData['primary-type'] || null;
-      const releases: any[] = rgData.releases ?? [];
+      const releases = rgData.releases ?? [];
       if (releases.length === 0) {
         return { success: false, error: 'No releases found for this release group' };
       }
       // Préfère une release "Official" — la première de la liste peut être un promo/bootleg sans tracklist
-      const officialRelease = releases.find((r: any) => r.status === 'Official') ?? releases[0];
+      const officialRelease = releases.find((r) => r.status === 'Official') ?? releases[0];
       const firstReleaseId: string = officialRelease.id;
       releaseResponse = await fetch(
         `${MUSICBRAINZ_API}/release/${encodeURIComponent(firstReleaseId)}?inc=artist-credits+recordings+release-groups&fmt=json`,
@@ -720,7 +1078,11 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       return { success: false, error: 'Album not found' };
     }
 
-    const data: MBReleaseDetail = await releaseResponse.json();
+    const rawRelease: unknown = await releaseResponse.json();
+    const data = parseMbReleaseDetail(rawRelease);
+    if (!data) {
+      return { success: false, error: 'Invalid album response' };
+    }
 
     const artistCredit = data['artist-credit']?.[0];
     const artist = artistCredit?.artist || { id: '', name: 'Unknown' };
@@ -730,8 +1092,8 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
     );
 
     // Get release-group ID and primary-type for consistent cover lookup and type classification
-    const releaseGroupId = (data as any)['release-group']?.id || mbid;
-    const primaryType: string | null = rgPrimaryType || (data as any)['release-group']?.['primary-type'] || null;
+    const releaseGroupId = data['release-group']?.id || mbid;
+    const primaryType: string | null = rgPrimaryType || data['release-group']?.['primary-type'] || null;
 
     // Fetch cover art from CoverArt Archive — uses fetchCoverUrl (2 retries, consistent with refreshAlbumCover)
     const coverUrl = releaseGroupId
@@ -920,7 +1282,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       artist_id: artistId,
       title: track.title,
       track_no: track.position,
-      disc_no: (track as any).discNo ?? null,
+      disc_no: track.discNo ?? null,
       duration_ms: track.duration,
       mbid: track.mbid,
     }));
@@ -1051,7 +1413,11 @@ export async function previewArtistFromMusicBrainz(mbid: string) {
       return { success: false, error: 'Artist not found' };
     }
 
-    const artistData: any = await artistResponse.json();
+    const rawArtist: unknown = await artistResponse.json();
+    const artistData = parseMbArtistDetail(rawArtist);
+    if (!artistData) {
+      return { success: false, error: 'Invalid artist response' };
+    }
 
     // Then fetch ALL releases by this artist using arid search
     const releasesResponse = await fetch(
@@ -1076,11 +1442,12 @@ export async function previewArtistFromMusicBrainz(mbid: string) {
       };
     }
 
-    const releasesData: any = await releasesResponse.json();
+    const rawReleases: unknown = await releasesResponse.json();
+    const releasesData = parseMbArtistReleaseSearch(rawReleases);
     const releases = releasesData.releases || [];
 
     // Deduplicate releases by release-group
-    const releaseGroupMap = new Map<string, any>();
+    const releaseGroupMap = new Map<string, MBReleaseBrowseItem>();
 
     for (const release of releases) {
       const rgId = release['release-group']?.id;
@@ -1156,14 +1523,16 @@ export async function previewArtistFromMusicBrainz(mbid: string) {
  * inc=releases is NOT supported by the browse endpoint — previewAlbumFromMusicBrainz
  * handles the release-group MBID by doing a release-group lookup on 404.
  */
-const _artistReleasesCache = new Map<string, { result: any; expiresAt: number }>();
-const ARTIST_RELEASES_TTL_MS = 5 * 60 * 1000; // 5 min
-
-export async function getArtistReleases(mbid: string): Promise<{
+type ArtistReleasesResult = {
   success: boolean;
   releases?: Array<{ mbid: string; releaseGroupMbid: string; title: string; date: string | null; type: string | null }>;
   error?: string;
-}> {
+};
+
+const _artistReleasesCache = new Map<string, { result: ArtistReleasesResult; expiresAt: number }>();
+const ARTIST_RELEASES_TTL_MS = 5 * 60 * 1000; // 5 min
+
+export async function getArtistReleases(mbid: string): Promise<ArtistReleasesResult> {
   console.log(`[getArtistReleases] called with mbid="${mbid}"`);
   if (!mbid) {
     console.error('[getArtistReleases] ✗ mbid is empty/null — skipping MB fetch');
@@ -1196,8 +1565,8 @@ export async function getArtistReleases(mbid: string): Promise<{
       return { success: true, releases: [] };
     }
 
-    const data: any = await response.json();
-    const releaseGroups: any[] = data['release-groups'] || [];
+    const raw: unknown = await response.json();
+    const releaseGroups = parseMbReleaseGroups(raw, 'musicbrainz.artistReleases');
     console.log(`[getArtistReleases] MB returned ${releaseGroups.length} release-groups for mbid="${mbid}"`);
 
     const ALLOWED_PRIMARY_TYPES = new Set(['Album', 'EP', 'Single']);
@@ -1268,11 +1637,15 @@ export async function fetchArtistMetadata(mbid: string): Promise<{
       return { imageUrl: null, country: null, type: null, name: '' };
     }
 
-    const data: any = await response.json();
+    const raw: unknown = await response.json();
+    const data = parseMbArtistDetail(raw);
+    if (!data) {
+      return { imageUrl: null, country: null, type: null, name: '' };
+    }
     let imageUrl: string | null = null;
 
     // Extract Wikidata URL for image
-    const wikidataUrl = data.relations?.find((rel: any) =>
+    const wikidataUrl = data.relations?.find((rel) =>
       rel.type === 'wikidata' && rel.url?.resource
     )?.url?.resource;
 
@@ -1287,9 +1660,8 @@ export async function fetchArtistMetadata(mbid: string): Promise<{
             3000
           );
           if (wdResp.ok) {
-            const wdData = await wdResp.json();
-            const entity = wdData.entities?.[wikidataId];
-            const imageFile = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+            const rawWd: unknown = await wdResp.json();
+            const imageFile = parseWikidataArtistImage(rawWd, wikidataId);
             if (imageFile) {
               // Wikimedia Commons URL from filename
               const encoded = encodeURIComponent(imageFile.replace(/ /g, '_'));
@@ -1318,7 +1690,7 @@ export type StreamingLinks = {
   tidal?: string;
 };
 
-function extractStreamingLinks(relations: any[]): StreamingLinks {
+function extractStreamingLinks(relations: MBRelation[]): StreamingLinks {
   const links: StreamingLinks = {};
   for (const rel of relations) {
     const url: string | undefined = rel.url?.resource;
@@ -1355,13 +1727,18 @@ export async function getAlbumStreamingLinks(mbid: string): Promise<StreamingLin
     );
     if (!releaseRes.ok) return {};
 
-    const releaseData = await releaseRes.json();
-    const releaseLinks = extractStreamingLinks(releaseData.relations || []);
+    const rawRelease: unknown = await releaseRes.json();
+    const releaseData = recordValue(rawRelease);
+    if (!releaseData) {
+      logInvalidExternalResponse('musicbrainz.streamingRelease', 'root is not an object');
+      return {};
+    }
+    const releaseLinks = extractStreamingLinks(parseMbRelationList(releaseData.relations));
     if (Object.keys(releaseLinks).length > 0) return releaseLinks;
 
     // Step 2 — browse sibling releases with their media formats (not url-rels,
     // which are not returned inline by the browse endpoint)
-    const rgId: string | undefined = releaseData['release-group']?.id;
+    const rgId = stringValue(recordValue(releaseData['release-group'])?.id) ?? undefined;
     if (!rgId) return {};
 
     const browseRes = await fetch(
@@ -1370,15 +1747,16 @@ export async function getAlbumStreamingLinks(mbid: string): Promise<StreamingLin
     );
     if (!browseRes.ok) return {};
 
-    const browseData = await browseRes.json();
-    const siblings: any[] = (browseData.releases || []).filter((r: any) => r.id !== mbid);
+    const rawBrowse: unknown = await browseRes.json();
+    const browseData = parseMbReleaseBrowseMedia(rawBrowse);
+    const siblings = (browseData.releases || []).filter((r) => r.id !== mbid);
     if (siblings.length === 0) return {};
 
     // Prefer "Digital Media" releases; fall back to first sibling
-    const digital = siblings.filter((r: any) =>
-      r.media?.some((m: any) => m.format === 'Digital Media')
+    const digital = siblings.filter((r) =>
+      r.media?.some((m) => m.format === 'Digital Media')
     );
-    const candidate = (digital[0] || siblings[0]) as { id: string };
+    const candidate = digital[0] || siblings[0];
 
     // Step 3 — lookup the candidate release for its url-rels
     const candidateRes = await fetch(
@@ -1387,8 +1765,13 @@ export async function getAlbumStreamingLinks(mbid: string): Promise<StreamingLin
     );
     if (!candidateRes.ok) return {};
 
-    const candidateData = await candidateRes.json();
-    return extractStreamingLinks(candidateData.relations || []);
+    const rawCandidate: unknown = await candidateRes.json();
+    const candidateData = recordValue(rawCandidate);
+    if (!candidateData) {
+      logInvalidExternalResponse('musicbrainz.streamingCandidate', 'root is not an object');
+      return {};
+    }
+    return extractStreamingLinks(parseMbRelationList(candidateData.relations));
   } catch {
     return {};
   }
@@ -1414,7 +1797,8 @@ export async function searchMusicBrainzPreview(query: string): Promise<SearchRes
       return [];
     }
 
-    const data: MBSearchResult = await response.json();
+    const raw: unknown = await response.json();
+    const data = parseMbReleaseSearch(raw);
 
     return data.releases.slice(0, limit).map((r) => ({
       id: r.id,
@@ -1486,18 +1870,19 @@ export async function searchMusicBrainzRecordings(
       return { success: false, error: `MusicBrainz returned ${response.status}` };
     }
 
-    const data: any = await response.json();
-    const recordings: any[] = data.recordings || [];
+    const raw: unknown = await response.json();
+    const data = parseMbRecordingSearch(raw);
+    const recordings = data.recordings || [];
 
     const results: RecordingSearchResult[] = recordings
-      .filter((r: any) => r.releases && r.releases.length > 0)
-      .map((r: any) => {
+      .filter((r) => r.releases && r.releases.length > 0)
+      .map((r) => {
         const artistName = r['artist-credit']?.[0]?.artist?.name || 'Unknown';
         // Prefer the first non-single release (Albums first, then anything)
-        const release = r.releases.find((rel: any) => {
+        const release = r.releases!.find((rel) => {
           const pt = rel['release-group']?.['primary-type'];
           return pt === 'Album' || pt === 'EP';
-        }) || r.releases[0];
+        }) || r.releases![0];
         const rgMbid = release?.['release-group']?.id || '';
         const coverUrl = rgMbid
           ? `https://coverartarchive.org/release-group/${rgMbid}/front`

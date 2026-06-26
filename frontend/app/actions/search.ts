@@ -29,6 +29,66 @@ function escapeILike(str: string): string {
   return str.replace(/[%_]/g, '\\$&');
 }
 
+// Row shapes returned by Supabase queries below. The queries themselves stay
+// `as any`-cast because `search_vector` / fuzzy_search_* RPCs aren't in the
+// generated Supabase types yet (pending migration) — but the rows we read
+// from them have a known, stable shape.
+interface AlbumRow {
+  id: string;
+  title: string;
+  cover_url: string | null;
+  release_date: string | null;
+  artists: { name: string } | null;
+}
+
+interface ArtistRow {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+interface ProfileRow {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+}
+
+interface TrackRow {
+  id: string;
+  title: string;
+  mbid: string | null;
+  albums: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+    artists: { id: string; name: string } | null;
+  } | null;
+}
+
+interface FuzzyAlbumRow {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  cover_url: string | null;
+  release_date: string | null;
+}
+
+interface FuzzyArtistRow {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+interface FuzzyTrackRow {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  album_title: string | null;
+  album_cover: string | null;
+  album_id: string | null;
+  artist_id: string | null;
+}
+
 export async function searchInternal(
   q: string,
   kind: "all" | "albums" | "artists" | "users" | "tracks" = "all"
@@ -113,7 +173,7 @@ export async function searchInternal(
 
   const results: SearchResultUI[] = [];
 
-  albumsData.data?.forEach((a: any) =>
+  (albumsData.data as AlbumRow[] | null)?.forEach((a) =>
     results.push({
       id: a.id,
       title: a.title,
@@ -125,7 +185,7 @@ export async function searchInternal(
     })
   );
 
-  (artistsData.data || []).forEach((a: any) =>
+  ((artistsData.data as ArtistRow[] | null) || []).forEach((a) =>
     results.push({
       id: a.id,
       title: a.name,
@@ -135,7 +195,7 @@ export async function searchInternal(
     })
   );
 
-  usersData.data?.forEach((u: any) => {
+  (usersData.data as ProfileRow[] | null)?.forEach((u) => {
     if (u.username) {
       const username = u.username.trim();
       results.push({
@@ -150,9 +210,9 @@ export async function searchInternal(
   });
 
   const seenTrackKeys = new Set<string>();
-  (tracksData.data || []).forEach((t: any) => {
-    const album = t.albums as any;
-    const artist = album?.artists as any;
+  ((tracksData.data as TrackRow[] | null) || []).forEach((t) => {
+    const album = t.albums;
+    const artist = album?.artists;
     // Deduplicate tracks with same title + artist (different versions on same single)
     const dedupeKey = `${t.title.toLowerCase().trim()}|||${(artist?.name || '').toLowerCase().trim()}`;
     if (seenTrackKeys.has(dedupeKey)) return;
@@ -191,7 +251,7 @@ export async function searchInternal(
 
     const [fuzzyAlbums, fuzzyArtists, fuzzyTracks] = fuzzyPromises;
 
-    (fuzzyAlbums.data || []).forEach((a: any) =>
+    ((fuzzyAlbums.data as FuzzyAlbumRow[] | null) || []).forEach((a) =>
       results.push({
         id: a.id,
         title: a.title,
@@ -203,7 +263,7 @@ export async function searchInternal(
       })
     );
 
-    (fuzzyArtists.data || []).forEach((a: any) =>
+    ((fuzzyArtists.data as FuzzyArtistRow[] | null) || []).forEach((a) =>
       results.push({
         id: a.id,
         title: a.name,
@@ -213,7 +273,7 @@ export async function searchInternal(
       })
     );
 
-    (fuzzyTracks.data || []).forEach((t: any) => {
+    ((fuzzyTracks.data as FuzzyTrackRow[] | null) || []).forEach((t) => {
       const dedupeKey = `${t.title.toLowerCase().trim()}|||${(t.artist_name || '').toLowerCase().trim()}`;
       if (seenTrackKeys.has(dedupeKey)) return;
       seenTrackKeys.add(dedupeKey);

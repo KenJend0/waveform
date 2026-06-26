@@ -6,6 +6,7 @@ import { logAuthedProductEvent } from '@/lib/productEvents';
 import { fanoutEvent } from './feed';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
 import { findBannedContentWord } from '@/lib/bannedWords';
+import { diaryValidationMessage, parseDiaryRating, parseListenedAt } from '@/lib/diaryInputValidation';
 
 export interface UpsertDiaryEntryInput {
   albumId: string;
@@ -41,8 +42,23 @@ export async function upsertDiaryEntry(input: UpsertDiaryEntryInput) {
       return { success: false, error: 'albumId and listenedAt required' };
     }
 
-    if (input.rating !== undefined && (input.rating < 0 || input.rating > 10)) {
-      return { success: false, error: 'Rating must be 0-10' };
+    let listenedAt: string;
+    let rating: number | null;
+    try {
+      listenedAt = parseListenedAt(input.listenedAt);
+      rating = parseDiaryRating(input.rating);
+    } catch (validationError) {
+      return { success: false, error: diaryValidationMessage(validationError) };
+    }
+
+    const { data: album, error: albumError } = await supabase
+      .from('albums')
+      .select('id')
+      .eq('id', input.albumId)
+      .maybeSingle();
+
+    if (albumError || !album) {
+      return { success: false, error: 'Album introuvable' };
     }
 
     if (input.reviewTitle && input.reviewTitle.length > 200) {
@@ -62,16 +78,16 @@ export async function upsertDiaryEntry(input: UpsertDiaryEntryInput) {
     const entryPayload = {
       user_id: user.id,
       album_id: input.albumId,
-      listened_at: input.listenedAt,
+      listened_at: listenedAt,
       review_title: input.reviewTitle || null,
       review_body: input.reviewBody || null,
-      rating: input.rating ?? null,
+      rating,
       re_listen: input.relisten || false,
       is_public: input.isPublic ?? true,
       rec_source: input.source ?? null,
     };
 
-    let data: any;
+    let data: { id: string };
 
     if (input.relisten) {
       // Re-listen: always INSERT a new entry (never overwrite an existing one)
@@ -156,8 +172,13 @@ export async function updateDiaryEntry(input: {
 
     if (!input.listenedAt) return { success: false, error: 'listenedAt required' };
 
-    if (input.rating !== undefined && input.rating !== null && (input.rating < 0 || input.rating > 10)) {
-      return { success: false, error: 'Rating must be 0-10' };
+    let listenedAt: string;
+    let rating: number | null;
+    try {
+      listenedAt = parseListenedAt(input.listenedAt);
+      rating = parseDiaryRating(input.rating);
+    } catch (validationError) {
+      return { success: false, error: diaryValidationMessage(validationError) };
     }
 
     if (input.reviewBody && input.reviewBody.length > 5000) {
@@ -172,9 +193,9 @@ export async function updateDiaryEntry(input: {
     const { data, error } = await supabase
       .from('diary_entries')
       .update({
-        listened_at: input.listenedAt,
+        listened_at: listenedAt,
         review_body: input.reviewBody || null,
-        rating: input.rating ?? null,
+        rating,
       })
       .eq('id', input.entryId)
       .eq('user_id', user.id)
@@ -350,9 +371,10 @@ export async function addComment(entryId: string, body: string, parentCommentId?
         await fanoutEvent('comment_reply', {
           userId: user.id,
           entryId: entryId,
-          albumId: (entryCheck as any).album_id ?? null,
+          albumId: entryCheck.album_id ?? null,
           commentId: newCommentId,
           parentCommentId,
+          parentCommentAuthorId,
         }, [parentCommentAuthorId]);
       } catch (fanoutErr) {
         console.error('comment_reply fanout error:', fanoutErr);
@@ -367,8 +389,8 @@ export async function addComment(entryId: string, body: string, parentCommentId?
 
     try {
       const targetSet = new Set<string>([entryCheck.user_id]);
-      (previousCommenters || []).forEach((c: any) => targetSet.add(c.user_id));
-      (actorFollowers || []).forEach((f: any) => targetSet.add(f.follower_id));
+      (previousCommenters || []).forEach((c) => targetSet.add(c.user_id));
+      (actorFollowers || []).forEach((f) => targetSet.add(f.follower_id));
       targetSet.delete(user.id);
 
       await fanoutEvent('comment', {
@@ -429,7 +451,7 @@ export async function toggleDiaryLike(entryId: string): Promise<void> {
   // Vérifier si un like existe déjà
   const { data: existingLike, error: fetchError } = await supabase
     .from('diary_likes')
-    .select('*')
+    .select('entry_id, user_id')
     .eq('entry_id', entryId)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -441,11 +463,15 @@ export async function toggleDiaryLike(entryId: string): Promise<void> {
   // Get entry to find the owner
   const { data: entry, error: entryError } = await supabase
     .from('diary_entries')
-    .select('user_id')
+    .select('user_id, is_public')
     .eq('id', entryId)
     .maybeSingle();
 
   if (entryError || !entry) {
+    throw new Error('Entry not found');
+  }
+
+  if (!entry.is_public && entry.user_id !== user.id) {
     throw new Error('Entry not found');
   }
 
@@ -507,7 +533,7 @@ export async function toggleDiaryLike(entryId: string): Promise<void> {
         .eq('followee_id', user.id);
 
       const targetSet = new Set<string>([entry.user_id]);
-      (actorFollowers || []).forEach((f: any) => targetSet.add(f.follower_id));
+      (actorFollowers || []).forEach((f) => targetSet.add(f.follower_id));
       targetSet.delete(user.id); // fanoutEvent always adds actor to its own feed
 
       await fanoutEvent('like', {
@@ -549,7 +575,7 @@ export async function getEntryLikes(entryId: string): Promise<Array<{ id: string
 
   if (!likes || likes.length === 0) return [];
 
-  const userIds = likes.map((l: any) => l.user_id);
+  const userIds = likes.map((l) => l.user_id);
 
   // Step 2: fetch profiles for those user_ids
   const { data: profiles, error: profilesError } = await supabase
@@ -563,8 +589,11 @@ export async function getEntryLikes(entryId: string): Promise<Array<{ id: string
   }
 
   // Preserve order from likes query
-  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-  return userIds.map((id: string) => profileMap.get(id)).filter(Boolean);
+  const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+  return userIds
+    .map((id) => profileMap.get(id))
+    .filter((p): p is NonNullable<typeof p> => p != null)
+    .map((p) => ({ ...p, username: p.username || 'unknown' }));
 }
 
 /**
@@ -722,8 +751,8 @@ export async function getUserDiary(
   }
 
   return entries.map((e) => {
-    const album = e.albums as any;
-    const artist = album?.artists as any;
+    const album = e.albums;
+    const artist = album?.artists;
     return {
       id: e.id,
       album_id: e.album_id,
@@ -804,8 +833,8 @@ export async function getUserReviews(userId: string): Promise<DiaryEntryUI[]> {
   }
 
   return entries.map((e) => {
-    const album = e.albums as any;
-    const artist = album?.artists as any;
+    const album = e.albums;
+    const artist = album?.artists;
     return {
       id: e.id,
       album_id: e.album_id,
@@ -846,6 +875,35 @@ export type UnifiedReview = {
   is_liked: boolean;
 };
 
+// Forme des lignes track_diary_entries lues ci-dessous. La requête reste
+// `as any`-castée (table absente des types générés) mais la forme est stable.
+interface TrackReviewRow {
+  id: string;
+  rating: number | null;
+  review_body: string | null;
+  listened_at: string;
+  created_at: string;
+  track_id: string;
+  album_id: string;
+  tracks: {
+    id: string;
+    title: string;
+    albums: {
+      id: string;
+      title: string;
+      cover_url: string | null;
+      artist_id: string;
+      artists: { id: string; name: string } | null;
+    } | null;
+  } | null;
+}
+
+interface EntryStatsRow {
+  entry_id: string;
+  likes_count: number | null;
+  comments_count: number | null;
+}
+
 export async function getUserReviewsUnified(userId: string): Promise<UnifiedReview[]> {
   const supabase = await createSupabaseServer();
   const currentUser = await getAuthUser();
@@ -871,7 +929,7 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
       .limit(100),
   ]);
 
-  const allIds = (albumReviews.data ?? []).map((e: any) => e.id);
+  const allIds = (albumReviews.data ?? []).map((e) => e.id);
   let likedIds = new Set<string>();
   if (currentUser && allIds.length > 0) {
     const { data: likes } = await supabase
@@ -879,17 +937,17 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
       .select('entry_id')
       .eq('user_id', currentUser.id)
       .in('entry_id', allIds);
-    likedIds = new Set((likes ?? []).map((l: any) => l.entry_id));
+    likedIds = new Set((likes ?? []).map((l) => l.entry_id));
   }
 
   const { data: statsData } = allIds.length > 0
     ? await supabase.from('diary_entry_stats').select('entry_id, likes_count, comments_count').in('entry_id', allIds)
     : { data: [] };
-  const statsMap = new Map((statsData ?? []).map((s: any) => [s.entry_id, s]));
+  const statsMap = new Map((statsData ?? []).map((s) => [s.entry_id, s]));
 
-  const albumItems: UnifiedReview[] = (albumReviews.data ?? []).map((e: any) => {
-    const album = e.albums as any;
-    const artist = album?.artists as any;
+  const albumItems: UnifiedReview[] = (albumReviews.data ?? []).map((e) => {
+    const album = e.albums;
+    const artist = album?.artists;
     const stats = statsMap.get(e.id);
     return {
       id: e.id,
@@ -900,7 +958,8 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
       artist_id: artist?.id || album?.artist_id || '',
       cover_url: album?.cover_url || null,
       rating: e.rating,
-      review_body: e.review_body,
+      // review_body est garanti non-null par le filtre .not('review_body', 'is', null) ci-dessus
+      review_body: e.review_body!,
       listened_at: e.listened_at,
       created_at: e.created_at,
       likes_count: stats?.likes_count ?? 0,
@@ -909,7 +968,8 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
     };
   });
 
-  const trackIds = (trackReviews.data ?? []).map((e: any) => e.id);
+  const trackReviewRows = (trackReviews.data ?? []) as TrackReviewRow[];
+  const trackIds = trackReviewRows.map((e) => e.id);
   let trackLikedIds = new Set<string>();
   if (currentUser && trackIds.length > 0) {
     const { data: trackLikes } = await (supabase as any)
@@ -917,18 +977,18 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
       .select('entry_id')
       .eq('user_id', currentUser.id)
       .in('entry_id', trackIds);
-    trackLikedIds = new Set((trackLikes ?? []).map((l: any) => l.entry_id));
+    trackLikedIds = new Set(((trackLikes ?? []) as Array<{ entry_id: string }>).map((l) => l.entry_id));
   }
   const { data: trackStatsData } = trackIds.length > 0
     ? await (supabase as any).from('track_diary_entry_stats').select('entry_id, likes_count, comments_count').in('entry_id', trackIds)
     : { data: [] };
-  const trackStatsMap = new Map((trackStatsData ?? []).map((s: any) => [s.entry_id, s]));
+  const trackStatsMap = new Map(((trackStatsData ?? []) as EntryStatsRow[]).map((s) => [s.entry_id, s]));
 
-  const trackItems: UnifiedReview[] = (trackReviews.data ?? []).map((e: any) => {
-    const track = e.tracks as any;
-    const album = track?.albums as any;
-    const artist = album?.artists as any;
-    const stats = trackStatsMap.get(e.id) as any;
+  const trackItems: UnifiedReview[] = trackReviewRows.map((e) => {
+    const track = e.tracks;
+    const album = track?.albums;
+    const artist = album?.artists;
+    const stats = trackStatsMap.get(e.id);
     return {
       id: e.id,
       type: 'track',
@@ -938,7 +998,8 @@ export async function getUserReviewsUnified(userId: string): Promise<UnifiedRevi
       artist_id: artist?.id || '',
       cover_url: album?.cover_url || null,
       rating: e.rating,
-      review_body: e.review_body,
+      // review_body est garanti non-null par le filtre .not('review_body', 'is', null) ci-dessus
+      review_body: e.review_body!,
       listened_at: e.listened_at,
       created_at: e.created_at,
       likes_count: stats?.likes_count ?? 0,
@@ -989,17 +1050,17 @@ export async function getAlbumReviewsPreview(
     return [];
   }
 
-  const userIds = [...new Set(rows.map((row: any) => row.user_id))];
+  const userIds = [...new Set(rows.map((row) => row.user_id))];
   const { data: profilesData } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')
     .in('id', userIds);
 
   const profilesMap = new Map(
-    (profilesData || []).map((p: any) => [p.id, p])
+    (profilesData || []).map((p) => [p.id, p])
   );
 
-  return rows.map((row: any) => ({
+  return rows.map((row) => ({
     id: row.id,
     user_id: row.user_id,
     rating: row.rating,
@@ -1029,7 +1090,7 @@ export async function getAlbumReviewsPage(input: {
       .from('follows')
       .select('followee_id')
       .eq('follower_id', currentUser.id);
-    followingIds = (follows || []).map((f: any) => f.followee_id);
+    followingIds = (follows || []).map((f) => f.followee_id);
     hasFollowing = followingIds.length > 0;
   }
 
@@ -1070,18 +1131,18 @@ export async function getAlbumReviewsPage(input: {
   const hasMore = rows.length > limit;
   const sliced = rows.slice(0, limit);
 
-  const userIds = [...new Set(sliced.map((row: any) => row.user_id))];
+  const userIds = [...new Set(sliced.map((row) => row.user_id))];
   const { data: profilesData } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')
     .in('id', userIds);
 
   const profilesMap = new Map(
-    (profilesData || []).map((p: any) => [p.id, p])
+    (profilesData || []).map((p) => [p.id, p])
   );
 
   return {
-    items: sliced.map((row: any) => ({
+    items: sliced.map((row) => ({
       id: row.id,
       user_id: row.user_id,
       rating: row.rating,
@@ -1279,8 +1340,8 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
       }
     }
 
-    const album = entry.albums as any;
-    const artist = album?.artists as any;
+    const album = entry.albums;
+    const artist = album?.artists;
 
     return {
       success: true,

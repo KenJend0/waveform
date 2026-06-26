@@ -67,9 +67,9 @@ export async function uploadAvatar(
     if (updateError) throw updateError;
 
     return { ok: true, avatarUrl };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Avatar upload error:', error);
-    const msg = error?.message || 'Failed to upload avatar';
+    const msg = error instanceof Error ? error.message : 'Failed to upload avatar';
     return { ok: false, error: msg };
   }
 }
@@ -97,7 +97,7 @@ export async function deleteAvatar(userId: string) {
     if (updateError) throw updateError;
 
     return { ok: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Avatar delete error:', error);
     return { ok: false, error: 'Failed to delete avatar' };
   }

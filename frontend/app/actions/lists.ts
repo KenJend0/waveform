@@ -3,8 +3,15 @@
 import { getAuthUser, createSupabaseServer, createSupabaseAnon } from '@/lib/supabase/server';
 import { logAuthedProductEvent } from '@/lib/productEvents';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
+
+type SupabaseDbClient = SupabaseClient<Database>;
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+const LIST_TITLE_MAX_LENGTH = 120;
+const LIST_DESCRIPTION_MAX_LENGTH = 1000;
 
 export type UserList = {
     id: string;
@@ -76,7 +83,21 @@ export type ListTrackItem = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function attachListMeta(listIds: string[], supabase: any): Promise<Map<string, { item_count: number; cover_urls: (string | null)[]; likes_count: number; preview_items: string[] }>> {
+function normalizeListTitle(title: string): string {
+    const trimmed = title.trim();
+    if (!trimmed) throw new Error('List title is required');
+    if (trimmed.length > LIST_TITLE_MAX_LENGTH) throw new Error('List title too long');
+    return trimmed;
+}
+
+function normalizeListDescription(description: string | undefined): string | null {
+    if (description === undefined) return null;
+    const trimmed = description.trim();
+    if (trimmed.length > LIST_DESCRIPTION_MAX_LENGTH) throw new Error('List description too long');
+    return trimmed || null;
+}
+
+async function attachListMeta(listIds: string[], supabase: SupabaseDbClient): Promise<Map<string, { item_count: number; cover_urls: (string | null)[]; likes_count: number; preview_items: string[] }>> {
     if (listIds.length === 0) return new Map();
 
     const [countResults, coverResults, likesResults, previewResults] = await Promise.all([
@@ -110,7 +131,7 @@ async function attachListMeta(listIds: string[], supabase: any): Promise<Map<str
     for (const row of coverResults.data || []) {
         const existing = coverMap.get(row.list_id) ?? [];
         if (existing.length < 4) {
-            existing.push((row.albums as any)?.cover_url ?? null);
+            existing.push(row.albums?.cover_url ?? null);
             coverMap.set(row.list_id, existing);
         }
     }
@@ -124,8 +145,8 @@ async function attachListMeta(listIds: string[], supabase: any): Promise<Map<str
     for (const row of previewResults.data || []) {
         const existing = previewMap.get(row.list_id) ?? [];
         if (existing.length >= 3) continue;
-        const album = row.albums as any;
-        const track = row.tracks as any;
+        const album = row.albums;
+        const track = row.tracks;
         if (track?.title) {
             existing.push(`${track.title} – ${track.albums?.artists?.name || 'Unknown'}`);
         } else if (album?.title) {
@@ -165,9 +186,9 @@ export async function getUserLists(userId: string): Promise<UserList[]> {
 
     if (!lists || lists.length === 0) return [];
 
-    const meta = await attachListMeta(lists.map((l: any) => l.id), supabase);
+    const meta = await attachListMeta(lists.map((l) => l.id), supabase);
 
-    return lists.map((list: any) => ({
+    return lists.map((list) => ({
         ...list,
         ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [], likes_count: 0, preview_items: [] }),
     }));
@@ -176,6 +197,17 @@ export async function getUserLists(userId: string): Promise<UserList[]> {
 /**
  * Listes que l'utilisateur a sauvegardées (pas les siennes) — onglet "Listes" du profil.
  */
+interface SavedListUserListRef {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string | null;
+    is_public: boolean;
+    is_default: boolean;
+    created_at: string;
+    profiles: { username: string | null; avatar_url: string | null } | null;
+}
+
 export async function getUserSavedLists(userId: string): Promise<UserList[]> {
     const supabase = await createSupabaseServer();
 
@@ -187,12 +219,13 @@ export async function getUserSavedLists(userId: string): Promise<UserList[]> {
 
     if (!saved || saved.length === 0) return [];
 
-    const lists = saved.map((s: any) => s.user_lists).filter(Boolean);
+    const savedRows = saved as Array<{ user_lists: SavedListUserListRef | null }>;
+    const lists = savedRows.map((s) => s.user_lists).filter((l): l is SavedListUserListRef => l != null);
     if (lists.length === 0) return [];
 
-    const meta = await attachListMeta(lists.map((l: any) => l.id), supabase);
+    const meta = await attachListMeta(lists.map((l) => l.id), supabase);
 
-    return lists.map((list: any) => ({
+    return lists.map((list) => ({
         ...list,
         ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [], likes_count: 0, preview_items: [] }),
         creator_username: list.profiles?.username ?? undefined,
@@ -216,9 +249,9 @@ export async function getPublicUserLists(userId: string): Promise<UserList[]> {
 
     if (!lists || lists.length === 0) return [];
 
-    const meta = await attachListMeta(lists.map((l: any) => l.id), supabase);
+    const meta = await attachListMeta(lists.map((l) => l.id), supabase);
 
-    return lists.map((list: any) => ({
+    return lists.map((list) => ({
         ...list,
         ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [], likes_count: 0, preview_items: [] }),
     }));
@@ -244,7 +277,7 @@ export async function getPublicLists(limit = 6): Promise<UserList[]> {
 
     if (!lists || lists.length === 0) return [];
 
-    const meta = await attachListMeta(lists.map((l: any) => l.id), supabase);
+    const meta = await attachListMeta(lists.map((l) => l.id), supabase);
 
     const user = await getAuthUser();
     let savedIds = new Set<string>();
@@ -254,12 +287,12 @@ export async function getPublicLists(limit = 6): Promise<UserList[]> {
             .from('saved_lists')
             .select('list_id')
             .eq('user_id', user.id)
-            .in('list_id', lists.map((l: any) => l.id));
-        savedIds = new Set((saved || []).map((s: any) => s.list_id));
+            .in('list_id', lists.map((l) => l.id));
+        savedIds = new Set(((saved || []) as Array<{ list_id: string }>).map((s) => s.list_id));
     }
 
     return lists
-        .map((list: any) => ({
+        .map((list) => ({
             ...list,
             ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [], likes_count: 0, preview_items: [] }),
             creator_username: list.profiles?.username ?? undefined,
@@ -294,7 +327,16 @@ export async function toggleListLike(listId: string): Promise<{ liked: boolean }
         return { liked: false };
     }
 
-    await supabase.from('list_likes').insert({ user_id: user.id, list_id: listId });
+    const { data: list } = await supabase
+        .from('user_lists')
+        .select('id')
+        .eq('id', listId)
+        .eq('is_public', true)
+        .maybeSingle();
+    if (!list) throw new Error('List not found');
+
+    const { error: insertError } = await supabase.from('list_likes').insert({ user_id: user.id, list_id: listId });
+    if (insertError) throw new Error('An error occurred');
     return { liked: true };
 }
 
@@ -323,7 +365,16 @@ export async function toggleSaveList(listId: string): Promise<{ saved: boolean }
         return { saved: false };
     }
 
-    await (supabase as any).from('saved_lists').insert({ user_id: user.id, list_id: listId });
+    const { data: list } = await supabase
+        .from('user_lists')
+        .select('id')
+        .eq('id', listId)
+        .eq('is_public', true)
+        .maybeSingle();
+    if (!list) throw new Error('List not found');
+
+    const { error: insertError } = await (supabase as any).from('saved_lists').insert({ user_id: user.id, list_id: listId });
+    if (insertError) throw new Error('An error occurred');
     return { saved: true };
 }
 
@@ -342,7 +393,7 @@ export async function getPublicListsContaining(albumId: string, limit = 5): Prom
 
     if (!items || items.length === 0) return [];
 
-    return items.map((item: any) => ({
+    return items.map((item) => ({
         id: item.user_lists.id,
         title: item.user_lists.title,
         creator_username: item.user_lists.profiles?.username ?? '',
@@ -365,7 +416,7 @@ export async function getUserListsContaining(albumId: string): Promise<string[]>
 
     if (!lists || lists.length === 0) return [];
 
-    const listIds = lists.map((l: any) => l.id);
+    const listIds = lists.map((l) => l.id);
 
     const { data: items } = await supabase
         .from('list_items')
@@ -373,7 +424,7 @@ export async function getUserListsContaining(albumId: string): Promise<string[]>
         .eq('album_id', albumId)
         .in('list_id', listIds);
 
-    return (items || []).map((i: any) => i.list_id);
+    return (items || []).map((i) => i.list_id);
 }
 
 /**
@@ -392,7 +443,7 @@ export async function getUserListsContainingTrack(trackId: string): Promise<stri
 
     if (!lists || lists.length === 0) return [];
 
-    const listIds = lists.map((l: any) => l.id);
+    const listIds = lists.map((l) => l.id);
 
     const { data: items } = await supabase
         .from('list_items')
@@ -400,14 +451,14 @@ export async function getUserListsContainingTrack(trackId: string): Promise<stri
         .eq('track_id', trackId)
         .in('list_id', listIds);
 
-    return (items || []).map((i: any) => i.list_id);
+    return (items || []).map((i) => i.list_id);
 }
 
 /**
  * Résout l'id de la liste à utiliser : celle passée explicitement (après
  * vérification d'appartenance) ou la liste "À écouter" par défaut.
  */
-async function resolveListId(userId: string, listId: string | undefined, supabase: any): Promise<string | null> {
+async function resolveListId(userId: string, listId: string | undefined, supabase: SupabaseDbClient): Promise<string | null> {
     if (listId) {
         const { data: owned } = await supabase
             .from('user_lists')
@@ -451,14 +502,15 @@ export async function getDefaultListTracks(limit = 8, listId?: string): Promise<
         supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id),
     ]);
 
-    const ratedTrackIds = new Set((ratedTracks || []).map((r: any) => r.track_id));
+    const ratedTrackIds = new Set((ratedTracks || []).map((r) => r.track_id));
 
     return (items || [])
-        .filter((item: any) => !ratedTrackIds.has(item.track_id))
+        // track_id est garanti non-null par le filtre .not('track_id', 'is', null) ci-dessus
+        .filter((item) => !ratedTrackIds.has(item.track_id!))
         .slice(0, limit)
-        .map((item: any) => ({
+        .map((item) => ({
             id: item.id,
-            track_id: item.track_id,
+            track_id: item.track_id!,
             track_title: item.tracks?.title || 'Unknown',
             artist_name: item.tracks?.artists?.name || 'Unknown',
             cover_url: item.tracks?.albums?.cover_url ?? null,
@@ -492,14 +544,15 @@ export async function getDefaultListAlbums(limit = 8, listId?: string): Promise<
         supabase.from('diary_entries').select('album_id').eq('user_id', user.id),
     ]);
 
-    const ratedAlbumIds = new Set((ratedAlbums || []).map((r: any) => r.album_id));
+    const ratedAlbumIds = new Set((ratedAlbums || []).map((r) => r.album_id));
 
     return (items || [])
-        .filter((item: any) => !ratedAlbumIds.has(item.album_id))
+        // album_id est garanti non-null par le filtre .not('album_id', 'is', null) ci-dessus
+        .filter((item) => !ratedAlbumIds.has(item.album_id!))
         .slice(0, limit)
-        .map((item: any) => ({
+        .map((item) => ({
             id: item.id,
-            album_id: item.album_id,
+            album_id: item.album_id!,
             album_title: item.albums?.title || 'Unknown',
             artist_name: item.albums?.artists?.name || 'Unknown',
             cover_url: item.albums?.cover_url ?? null,
@@ -540,7 +593,7 @@ export async function getUnratedSavedItems(limit = 30): Promise<UnratedItem[]> {
         .eq('user_id', user.id);
 
     if (!lists || lists.length === 0) return [];
-    const listIds = lists.map((l: any) => l.id);
+    const listIds = lists.map((l) => l.id);
 
     const [albumItemsRes, trackItemsRes, ratedAlbumsRes, ratedTracksRes] = await Promise.all([
         supabase
@@ -559,8 +612,8 @@ export async function getUnratedSavedItems(limit = 30): Promise<UnratedItem[]> {
         supabase.from('track_diary_entries').select('track_id').eq('user_id', user.id),
     ]);
 
-    const ratedAlbumIds = new Set((ratedAlbumsRes.data || []).map((r: any) => r.album_id));
-    const ratedTrackIds = new Set((ratedTracksRes.data || []).map((r: any) => r.track_id));
+    const ratedAlbumIds = new Set((ratedAlbumsRes.data || []).map((r) => r.album_id));
+    const ratedTrackIds = new Set((ratedTracksRes.data || []).map((r) => r.track_id));
 
     const seenAlbums = new Set<string>();
     const unratedAlbums: (ListAlbumItem & { kind: 'album'; added_at: string })[] = [];
@@ -645,7 +698,7 @@ export async function getListWithItems(listId: string): Promise<{
             : Promise.resolve({ data: null }),
     ]);
 
-    const profile = list.profiles as any;
+    const profile = list.profiles;
 
     return {
         list: {
@@ -664,7 +717,7 @@ export async function getListWithItems(listId: string): Promise<{
             creator_username: profile?.username || '',
             creator_avatar: profile?.avatar_url ?? null,
         },
-        items: (items || []).map((item: any) => ({
+        items: (items || []).map((item) => ({
             id: item.id,
             list_id: item.list_id,
             album_id: item.album_id ?? null,
@@ -685,7 +738,7 @@ export async function getListWithItems(listId: string): Promise<{
                     id: item.tracks.id,
                     title: item.tracks.title,
                     artist: item.tracks.artists?.name || 'Unknown',
-                    cover_url: (item.tracks.albums as any)?.cover_url ?? null,
+                    cover_url: item.tracks.albums?.cover_url ?? null,
                     album_id: item.tracks.album_id,
                 }
                 : undefined,
@@ -752,13 +805,15 @@ export async function createList(data: {
     if (rlError) throw new Error(rlError);
 
     const supabase = await createSupabaseServer();
+    const title = normalizeListTitle(data.title);
+    const description = normalizeListDescription(data.description);
 
     const { data: list, error } = await supabase
         .from('user_lists')
         .insert({
             user_id: user.id,
-            title: data.title.trim(),
-            description: data.description?.trim() || null,
+            title,
+            description,
             is_public: data.isPublic ?? false,
             is_default: false,
         })
@@ -790,6 +845,33 @@ export async function toggleListItem(
 
     const supabase = await createSupabaseServer();
 
+    const hasAlbum = typeof data.albumId === 'string' && data.albumId.trim().length > 0;
+    const hasTrack = typeof data.trackId === 'string' && data.trackId.trim().length > 0;
+    if (hasAlbum === hasTrack) {
+        throw new Error('Exactly one of albumId or trackId is required');
+    }
+
+    const albumId = hasAlbum ? data.albumId!.trim() : undefined;
+    const trackId = hasTrack ? data.trackId!.trim() : undefined;
+
+    if (albumId) {
+        const { data: album } = await supabase
+            .from('albums')
+            .select('id')
+            .eq('id', albumId)
+            .maybeSingle();
+        if (!album) throw new Error('Album not found');
+    }
+
+    if (trackId) {
+        const { data: track } = await supabase
+            .from('tracks')
+            .select('id')
+            .eq('id', trackId)
+            .maybeSingle();
+        if (!track) throw new Error('Track not found');
+    }
+
     // Vérifie que l'utilisateur possède la liste
     const { data: list } = await supabase
         .from('user_lists')
@@ -802,28 +884,30 @@ export async function toggleListItem(
 
     // Cherche l'item existant
     let query = supabase.from('list_items').select('id').eq('list_id', listId);
-    if (data.albumId) query = query.eq('album_id', data.albumId);
-    if (data.trackId) query = query.eq('track_id', data.trackId);
+    if (albumId) query = query.eq('album_id', albumId);
+    if (trackId) query = query.eq('track_id', trackId);
 
     const { data: existing } = await query.maybeSingle();
 
     if (existing) {
-        await supabase.from('list_items').delete().eq('id', existing.id);
+        const { error: deleteError } = await supabase.from('list_items').delete().eq('id', existing.id);
+        if (deleteError) throw new Error('An error occurred');
         return { added: false };
     }
 
-    await supabase.from('list_items').insert({
+    const { error: insertError } = await supabase.from('list_items').insert({
         list_id: listId,
-        album_id: data.albumId ?? null,
-        track_id: data.trackId ?? null,
+        album_id: albumId ?? null,
+        track_id: trackId ?? null,
     });
+    if (insertError) throw new Error('An error occurred');
 
     await logAuthedProductEvent('list_item_added', {
       surface: 'lists',
       properties: {
         list_id: listId,
-        album_id: data.albumId ?? null,
-        track_id: data.trackId ?? null,
+        album_id: albumId ?? null,
+        track_id: trackId ?? null,
       },
     });
 
@@ -860,7 +944,8 @@ export async function removeListItem(itemId: string): Promise<void> {
 
     if (!list) throw new Error('Not authorized');
 
-    await supabase.from('list_items').delete().eq('id', itemId);
+    const { error: deleteError } = await supabase.from('list_items').delete().eq('id', itemId);
+    if (deleteError) throw new Error('An error occurred');
 }
 
 /**
@@ -900,9 +985,9 @@ export async function updateList(
 
     const supabase = await createSupabaseServer();
 
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
-    if (data.title !== undefined) updates.title = data.title.trim();
-    if (data.description !== undefined) updates.description = data.description.trim() || null;
+    const updates: Record<string, string | boolean | null> = { updated_at: new Date().toISOString() };
+    if (data.title !== undefined) updates.title = normalizeListTitle(data.title);
+    if (data.description !== undefined) updates.description = normalizeListDescription(data.description);
     if (data.isPublic !== undefined) updates.is_public = data.isPublic;
 
     const { error } = await supabase

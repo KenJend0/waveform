@@ -83,7 +83,8 @@ export default function EditDiaryEntryButton({
         showToast(result.error || "Erreur lors de la mise à jour", "error");
       }
     } catch (err) {
-      showToast(String(err) || "Erreur lors de la mise à jour", "error");
+      console.error("updateDiaryEntry failed:", err);
+      showToast("Erreur lors de la mise à jour", "error");
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,8 @@ export default function EditDiaryEntryButton({
         showToast(result.error || "Erreur lors de la suppression", "error");
       }
     } catch (err) {
-      showToast(String(err) || "Erreur lors de la suppression", "error");
+      console.error("deleteDiaryEntry failed:", err);
+      showToast("Erreur lors de la suppression", "error");
     } finally {
       setLoading(false);
     }

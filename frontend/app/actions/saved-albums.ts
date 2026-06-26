@@ -27,7 +27,8 @@ export async function getUserSavedAlbums(
   const supabase = await createSupabaseServer();
   const safeLimit = typeof limit === 'number' ? Math.min(Math.max(limit, 1), 100) : undefined;
 
-  let query = supabase
+  // albums.type n'est pas dans les types générés (colonne ajoutée hors migration suivie) — cast en any.
+  let query = (supabase as any)
     .from('saved_albums')
     .select(`
       id,
@@ -38,6 +39,7 @@ export async function getUserSavedAlbums(
         title,
         cover_url,
         release_date,
+        type,
         artist_id,
         artists (
           id,
@@ -59,9 +61,16 @@ export async function getUserSavedAlbums(
     return [];
   }
 
-  return saved.filter((s) => (s.albums as any)?.type !== 'Single').map((s) => {
-    const album = s.albums as any;
-    const artist = album?.artists as any;
+  type SavedAlbumRow = {
+    id: string;
+    album_id: string;
+    saved_at: string;
+    albums: { id: string; title: string; cover_url: string | null; release_date: string | null; type: string | null; artist_id: string; artists?: { id: string; name: string } } | null;
+  };
+
+  return (saved as SavedAlbumRow[]).filter((s) => s.albums?.type !== 'Single').map((s) => {
+    const album = s.albums;
+    const artist = album?.artists;
     return {
       id: s.id,
       album_id: s.album_id,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import ListCard from "@/components/ListCard";
 import { createList, deleteList, updateList, type UserList } from "@/app/actions/lists";
 import { showToast } from "@/components/Toast";
+import { toastErrorMessage } from "@/lib/toastErrors";
 
 type Props = {
     lists: UserList[];
@@ -13,10 +14,6 @@ type Props = {
     isOwner?: boolean;
     userId?: string;
 };
-
-function errorMessage(err: unknown, fallback: string): string {
-    return err instanceof Error && err.message ? err.message : fallback;
-}
 
 type ListFilter = "mine" | "saved" | "all";
 
@@ -37,7 +34,7 @@ function CreateListForm({ onCreated }: { onCreated: () => void }) {
             router.refresh();
             onCreated();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur lors de la création"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la création"), "error");
         } finally {
             setSaving(false);
         }
@@ -105,7 +102,7 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             showToast("Renommée", "success");
             router.refresh();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur"), "error");
+            showToast(toastErrorMessage(err, "Erreur"), "error");
         } finally {
             setSaving(false);
             setRenaming(false);
@@ -119,7 +116,7 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             showToast(list.is_public ? "Liste rendue privée" : "Liste rendue publique", "success");
             router.refresh();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur"), "error");
+            showToast(toastErrorMessage(err, "Erreur"), "error");
         }
     };
 
@@ -130,7 +127,7 @@ function ListCardWithMenu({ list }: { list: UserList }) {
             showToast("Liste supprimée", "success");
             router.refresh();
         } catch (err) {
-            showToast(errorMessage(err, "Erreur lors de la suppression"), "error");
+            showToast(toastErrorMessage(err, "Erreur lors de la suppression"), "error");
             setDeleting(false);
             setConfirmDelete(false);
         }

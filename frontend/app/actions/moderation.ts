@@ -2,6 +2,7 @@
 
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
+import type { Database } from '@/types/database';
 
 const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -54,7 +55,7 @@ export async function adminDeleteContent(
 
   const supabase = createSupabaseAdmin();
 
-  const tableMap: Record<string, string> = {
+  const tableMap: Record<string, keyof Database['public']['Tables']> = {
     diary_entry: 'diary_entries',
     diary_comment: 'diary_comments',
     track_diary_entry: 'track_diary_entries',
@@ -62,7 +63,7 @@ export async function adminDeleteContent(
   };
   const table = tableMap[contentType];
   if (!table) return { success: false, error: 'Type inconnu' };
-  const { error } = await supabase.from(table as any).delete().eq('id', contentId);
+  const { error } = await supabase.from(table).delete().eq('id', contentId);
 
   if (error) {
     console.error('adminDeleteContent error:', error);
@@ -153,9 +154,10 @@ export async function adminAnalyzeContent(
   }
 
   // Response: [[{label, score}, ...]] — outer array = batch
-  const data: Array<Array<{ label: string; score: number }>> = await res.json();
-  const scores = data[0] ?? [];
-  const top = scores.reduce((a, b) => (b.score > a.score ? b : a), scores[0]);
+  const raw: unknown = await res.json();
+  const scores = Array.isArray(raw) && Array.isArray(raw[0]) ? (raw[0] as Array<{ label: string; score: number }>) : [];
+  if (scores.length === 0) return { success: false, error: 'Réponse HuggingFace invalide' };
+  const top = scores.reduce((a, b) => (b.score > a.score ? b : a));
 
   return {
     success: true,

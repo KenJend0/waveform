@@ -3,6 +3,15 @@
 import { revalidatePath } from 'next/cache';
 import { createSupabaseAdmin, createSupabaseServer, getAuthUser } from '@/lib/supabase/server';
 import { findGenreBySlug } from '@/lib/genre-families';
+import {
+  arrayValue,
+  isRecord,
+  logInvalidExternalResponse,
+  numberValue,
+  recordValue,
+  stringOrNumberValue,
+  stringValue,
+} from '@/lib/externalValidation';
 
 const MB_API = 'https://musicbrainz.org/ws/2';
 const MB_USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
@@ -21,9 +30,8 @@ async function searchAppleMusic(artist: string, title: string): Promise<string |
       { signal: AbortSignal.timeout(6000) }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    const results: Array<{ collectionType: string; artistName: string; collectionName: string; collectionViewUrl: string }> =
-      data.results ?? [];
+    const raw: unknown = await res.json();
+    const results = parseAppleMusicAlbums(raw);
     // Cherche le meilleur match : artiste + titre similaires
     const titleLow = title.toLowerCase();
     const artistLow = artist.toLowerCase();
@@ -46,15 +54,14 @@ async function searchDeezer(artist: string, title: string): Promise<string | nul
       { signal: AbortSignal.timeout(6000) }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    const results: Array<{ title: string; artist: { name: string }; link: string }> =
-      data.data ?? [];
+    const raw: unknown = await res.json();
+    const results = parseDeezerAlbums(raw);
     const titleLow = title.toLowerCase();
     const artistLow = artist.toLowerCase();
     const match = results.find(
       (r) =>
         r.title.toLowerCase().includes(titleLow.slice(0, 6)) &&
-        r.artist.name.toLowerCase().includes(artistLow.split(' ')[0].toLowerCase())
+        r.artistName.toLowerCase().includes(artistLow.split(' ')[0].toLowerCase())
     ) ?? results[0];
     return match?.link ?? null;
   } catch { return null; }
@@ -78,8 +85,10 @@ async function getSpotifyToken(): Promise<string | null> {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    _spotifyToken = { token: data.access_token, expiresAt: Date.now() + data.expires_in * 1000 };
+    const raw: unknown = await res.json();
+    const parsed = parseSpotifyToken(raw);
+    if (!parsed) return null;
+    _spotifyToken = { token: parsed.token, expiresAt: Date.now() + parsed.expiresIn * 1000 };
     return _spotifyToken.token;
   } catch { return null; }
 }
@@ -95,17 +104,16 @@ async function searchSpotify(artist: string, title: string): Promise<string | nu
       { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000) }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    const items: Array<{ name: string; artists: Array<{ name: string }>; external_urls: { spotify: string } }> =
-      data.albums?.items ?? [];
+    const raw: unknown = await res.json();
+    const items = parseSpotifyAlbums(raw);
     const titleLow = title.toLowerCase();
     const artistLow = artist.toLowerCase();
     const match = items.find(
       (r) =>
         r.name.toLowerCase().includes(titleLow.slice(0, 6)) &&
-        r.artists.some((a) => a.name.toLowerCase().includes(artistLow.split(' ')[0].toLowerCase()))
+        r.artistNames.some((artistName) => artistName.toLowerCase().includes(artistLow.split(' ')[0].toLowerCase()))
     ) ?? items[0];
-    return match?.external_urls?.spotify ?? null;
+    return match?.spotifyUrl ?? null;
   } catch { return null; }
 }
 
@@ -177,6 +185,71 @@ function toSlug(name: string): string {
 
 type StreamingLinks = { spotify: string | null; appleMusic: string | null; deezer: string | null };
 
+function parseAppleMusicAlbums(raw: unknown): Array<{ collectionType: string; artistName: string; collectionName: string; collectionViewUrl: string }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('itunes.searchAlbum', 'root is not an object');
+    return [];
+  }
+  return arrayValue(raw.results).flatMap((item) => {
+    const row = recordValue(item);
+    const collectionType = stringValue(row?.collectionType);
+    const artistName = stringValue(row?.artistName);
+    const collectionName = stringValue(row?.collectionName);
+    const collectionViewUrl = stringValue(row?.collectionViewUrl);
+    if (!collectionType || !artistName || !collectionName || !collectionViewUrl) return [];
+    return [{ collectionType, artistName, collectionName, collectionViewUrl }];
+  });
+}
+
+function parseDeezerAlbums(raw: unknown): Array<{ title: string; artistName: string; link: string }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('deezer.searchAlbum', 'root is not an object');
+    return [];
+  }
+  return arrayValue(raw.data).flatMap((item) => {
+    const row = recordValue(item);
+    const artist = recordValue(row?.artist);
+    const title = stringValue(row?.title);
+    const artistName = stringValue(artist?.name);
+    const link = stringValue(row?.link);
+    if (!title || !artistName || !link) return [];
+    return [{ title, artistName, link }];
+  });
+}
+
+function parseSpotifyToken(raw: unknown): { token: string; expiresIn: number } | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('spotify.token', 'root is not an object');
+    return null;
+  }
+  const token = stringValue(raw.access_token);
+  const expiresIn = numberValue(raw.expires_in);
+  if (!token || !expiresIn) {
+    logInvalidExternalResponse('spotify.token', 'missing token fields');
+    return null;
+  }
+  return { token, expiresIn };
+}
+
+function parseSpotifyAlbums(raw: unknown): Array<{ name: string; artistNames: string[]; spotifyUrl: string }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('spotify.searchAlbum', 'root is not an object');
+    return [];
+  }
+  return arrayValue(recordValue(raw.albums)?.items).flatMap((item) => {
+    const row = recordValue(item);
+    const externalUrls = recordValue(row?.external_urls);
+    const name = stringValue(row?.name);
+    const spotifyUrl = stringValue(externalUrls?.spotify);
+    const artistNames = arrayValue(row?.artists).flatMap((artist) => {
+      const artistName = stringValue(recordValue(artist)?.name);
+      return artistName ? [artistName] : [];
+    });
+    if (!name || !spotifyUrl || artistNames.length === 0) return [];
+    return [{ name, artistNames, spotifyUrl }];
+  });
+}
+
 type MBDataResult = {
   tags: Array<{ name: string; count: number }>;
   rgMbid: string | null;
@@ -184,6 +257,94 @@ type MBDataResult = {
   annotation: string | null;
   streamingLinks: StreamingLinks;
 };
+
+interface WikidataSitelinksResponse {
+  entities?: Record<string, {
+    sitelinks?: Record<string, { site: string; title: string }>;
+  }>;
+}
+
+type ExternalTag = { name: string; count: number };
+type ExternalRelation = { type: string; url?: { resource: string } };
+
+function parseExternalRelations(value: unknown): ExternalRelation[] {
+  return arrayValue(value).flatMap((item) => {
+    const row = recordValue(item);
+    const url = recordValue(row?.url);
+    const type = stringValue(row?.type);
+    const resource = stringValue(url?.resource);
+    if (!type) return [];
+    return [{ type, ...(resource ? { url: { resource } } : {}) }];
+  });
+}
+
+function parseMbReleaseLookup(raw: unknown): { releaseGroupId: string | null; relations: ExternalRelation[] } | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseLookup', 'root is not an object');
+    return null;
+  }
+  const releaseGroup = recordValue(raw['release-group']);
+  return {
+    releaseGroupId: stringValue(releaseGroup?.id),
+    relations: parseExternalRelations(raw.relations),
+  };
+}
+
+function parseExternalTags(value: unknown, minCount: number): ExternalTag[] {
+  return arrayValue(value).flatMap((item) => {
+    const row = recordValue(item);
+    const name = stringValue(row?.name)?.toLowerCase().trim() ?? '';
+    const count = numberValue(row?.count) ?? 1;
+    if (!name || count < minCount) return [];
+    return [{ name, count }];
+  });
+}
+
+function parseMbReleaseGroupEnrichment(raw: unknown): {
+  genres: ExternalTag[];
+  tags: ExternalTag[];
+  relations: ExternalRelation[];
+  annotation: string | null;
+} | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseGroupEnrichment', 'root is not an object');
+    return null;
+  }
+  const annotation = stringValue(raw.annotation)?.trim() ?? null;
+  return {
+    genres: parseExternalTags(raw.genres, 0),
+    tags: parseExternalTags(raw.tags, 3),
+    relations: parseExternalRelations(raw.relations),
+    annotation: annotation && annotation.length > 30 ? annotation : null,
+  };
+}
+
+function parseWikidataSitelinks(raw: unknown, entityId: string): Array<{ site: string; title: string }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('wikidata.sitelinks', 'root is not an object');
+    return [];
+  }
+  const entity = recordValue(recordValue(raw.entities)?.[entityId]);
+  const sitelinks = recordValue(entity?.sitelinks);
+  if (!sitelinks) return [];
+  return Object.values(sitelinks).flatMap((value) => {
+    const row = recordValue(value);
+    const site = stringValue(row?.site);
+    const title = stringValue(row?.title);
+    if (!site || !title) return [];
+    return [{ site, title }];
+  });
+}
+
+function parseMbReleaseBrowseRelations(raw: unknown): Array<{ relations: ExternalRelation[] }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('musicbrainz.releaseBrowseRelations', 'root is not an object');
+    return [];
+  }
+  return arrayValue(raw.releases).map((item) => ({
+    relations: parseExternalRelations(recordValue(item)?.relations),
+  }));
+}
 
 function extractStreamingLinks(relations: Array<{ url?: { resource: string } }>): StreamingLinks {
   const links: StreamingLinks = { spotify: null, appleMusic: null, deezer: null };
@@ -214,9 +375,11 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
       { headers: { 'User-Agent': MB_USER_AGENT }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
     );
     if (releaseRes.ok) {
-      const releaseData = await releaseRes.json();
-      rgMbid = releaseData['release-group']?.id;
-      streamingLinks = extractStreamingLinks(releaseData.relations ?? []);
+      const raw: unknown = await releaseRes.json();
+      const releaseData = parseMbReleaseLookup(raw);
+      if (!releaseData) return empty;
+      rgMbid = releaseData.releaseGroupId ?? undefined;
+      streamingLinks = extractStreamingLinks(releaseData.relations);
     } else if (releaseRes.status === 404) {
       rgMbid = releaseMbid; // c'est déjà un release-group MBID
     } else {
@@ -233,14 +396,12 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
       { headers: { 'User-Agent': MB_USER_AGENT }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
     );
     if (!res.ok) return { ...empty, rgMbid, streamingLinks };
-    const data = await res.json();
+    const raw: unknown = await res.json();
+    const data = parseMbReleaseGroupEnrichment(raw);
+    if (!data) return { ...empty, rgMbid, streamingLinks };
 
-    const genres: Array<{ name: string; count: number }> = (data.genres ?? []).map(
-      (g: { name: string; count?: number }) => ({ name: g.name.toLowerCase().trim(), count: g.count ?? 1 })
-    );
-    const tags: Array<{ name: string; count: number }> = (data.tags ?? [])
-      .filter((t: { count?: number }) => (t.count ?? 0) >= 3)
-      .map((t: { name: string; count: number }) => ({ name: t.name.toLowerCase().trim(), count: t.count }));
+    const genres = data.genres;
+    const tags = data.tags;
 
     const seen = new Set(genres.map((g) => g.name));
     const combined = [...genres];
@@ -249,7 +410,7 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
     }
 
     // URL relations du release-group : Wikipedia + streaming links (fallback si pas trouvé sur la release)
-    const relations: Array<{ type: string; url?: { resource: string } }> = data.relations ?? [];
+    const relations = data.relations;
     let wikipediaUrl = relations.find((r) => r.type === 'wikipedia')?.url?.resource ?? null;
 
     // Si pas de lien Wikipedia direct, essaie via Wikidata (même pattern que les artistes)
@@ -264,15 +425,15 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
               { headers: { 'User-Agent': MB_USER_AGENT }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
             );
             if (wdRes.ok) {
-              const wdData = await wdRes.json();
-              const entity = wdData.entities?.[wikidataId];
+              const rawWd: unknown = await wdRes.json();
+              const sitelinks = parseWikidataSitelinks(rawWd, wikidataId);
               // Préfère la langue anglaise, sinon prend la première disponible
-              const sitelinks = entity?.sitelinks ?? {};
-              const wikiLink = sitelinks['enwiki'] ?? sitelinks['frwiki'] ?? Object.values(sitelinks).find((s: any) => s.site?.endsWith('wiki') && !s.site?.endsWith('wikiquote'));
+              const wikiLink = sitelinks.find((s) => s.site === 'enwiki')
+                ?? sitelinks.find((s) => s.site === 'frwiki')
+                ?? sitelinks.find((s) => s.site.endsWith('wiki') && !s.site.endsWith('wikiquote'));
               if (wikiLink) {
-                const sl = wikiLink as { site: string; title: string };
-                const lang = sl.site.replace('wiki', '');
-                wikipediaUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(sl.title.replace(/ /g, '_'))}`;
+                const lang = wikiLink.site.replace('wiki', '');
+                wikipediaUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(wikiLink.title.replace(/ /g, '_'))}`;
               }
             }
           }
@@ -300,8 +461,8 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
           { headers: { 'User-Agent': MB_USER_AGENT }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
         );
         if (releasesRes.ok) {
-          const releasesData = await releasesRes.json();
-          const releases: Array<{ relations?: Array<{ url?: { resource: string } }> }> = releasesData.releases ?? [];
+          const rawReleases: unknown = await releasesRes.json();
+          const releases = parseMbReleaseBrowseRelations(rawReleases);
           for (const release of releases) {
             const releaseLinks = extractStreamingLinks(release.relations ?? []);
             mergedLinks = {
@@ -317,9 +478,7 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
     }
 
     // Annotation MB (texte libre, parfois une description)
-    const annotation: string | null = typeof data.annotation === 'string' && data.annotation.trim().length > 30
-      ? data.annotation.trim()
-      : null;
+    const annotation = data.annotation;
 
     return { tags: combined.slice(0, 12), rgMbid, wikipediaUrl, annotation, streamingLinks: mergedLinks };
   } catch {
@@ -332,6 +491,53 @@ async function fetchMBData(releaseMbid: string): Promise<MBDataResult> {
  * Essaie d'abord avec le release-group MBID (plus fiable), puis artist+title en fallback.
  * Nécessite LASTFM_API_KEY — retourne vide si absente (graceful degradation).
  */
+interface LastfmAlbumInfoResponse {
+  album?: {
+    tags?: { tag?: Array<{ name: string }> };
+    wiki?: { summary?: string; content?: string };
+    listeners?: string;
+    playcount?: string;
+    url?: string;
+  };
+}
+
+function parseLastfmAlbumInfo(raw: unknown): LastfmAlbumInfoResponse | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('lastfm.albumInfo', 'root is not an object');
+    return null;
+  }
+  const album = recordValue(raw.album);
+  if (!album) return null;
+
+  const tags = arrayValue(recordValue(album.tags)?.tag).flatMap((item) => {
+    const name = stringValue(recordValue(item)?.name);
+    return name ? [{ name }] : [];
+  });
+  const wiki = recordValue(album.wiki);
+
+  return {
+    album: {
+      tags: { tag: tags },
+      wiki: {
+        summary: stringValue(wiki?.summary) ?? undefined,
+        content: stringValue(wiki?.content) ?? undefined,
+      },
+      listeners: stringValue(album.listeners) ?? undefined,
+      playcount: stringValue(album.playcount) ?? undefined,
+      url: stringValue(album.url) ?? undefined,
+    },
+  };
+}
+
+function parseWikipediaSummary(raw: unknown): string | null {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('wikipedia.summary', 'root is not an object');
+    return null;
+  }
+  const extract = stringValue(raw.extract)?.trim() ?? '';
+  return extract.length > 30 ? extract : null;
+}
+
 async function fetchLastFmData(
   artistName: string,
   title: string,
@@ -355,12 +561,14 @@ async function fetchLastFmData(
     `${base}&artist=${encodeURIComponent(artistName)}&album=${encodeURIComponent(title)}&autocorrect=1`,
   ];
 
-  let data: any = null;
+  let data: LastfmAlbumInfoResponse | null = null;
   for (const url of urls) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!res.ok) continue;
-      const json = await res.json();
+      const raw: unknown = await res.json();
+      const json = parseLastfmAlbumInfo(raw);
+      if (!json) continue;
       if (json.album && (Array.isArray(json.album.tags?.tag) || typeof json.album.tags?.tag === 'object')) {
         data = json;
         break;
@@ -511,9 +719,8 @@ export async function enrichAlbumMetadata(
             { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
           );
           if (wikiRes.ok) {
-            const wikiData = await wikiRes.json();
-            const extract: string | undefined = wikiData.extract;
-            if (extract && extract.length > 30) description = extract;
+            const rawWiki: unknown = await wikiRes.json();
+            description = parseWikipediaSummary(rawWiki) ?? description;
           }
         }
       } catch { /* best-effort */ }
@@ -565,12 +772,12 @@ export async function enrichAlbumMetadata(
         // 3. Batch upsert all album_genres
         const albumGenreRows = validTags
           .map((t) => ({ album_id: albumId, genre_id: slugToId.get(t.slug), source: t.source, weight: t.count }))
-          .filter((r) => r.genre_id != null);
+          .filter((r): r is { album_id: string; genre_id: string; source: 'lastfm' | 'musicbrainz'; weight: number } => r.genre_id != null);
 
         if (albumGenreRows.length > 0) {
           await supabase
             .from('album_genres')
-            .upsert(albumGenreRows as any[], { onConflict: 'album_id,genre_id' });
+            .upsert(albumGenreRows, { onConflict: 'album_id,genre_id' });
         }
       }
     }
@@ -595,6 +802,8 @@ export async function enrichAlbumMetadata(
       tags_checked_at: new Date().toISOString(),
     };
 
+    // tags_checked_at/tag_attempts ne sont pas encore dans les types générés
+    // (migration récente, cf. supabase_migration_tag_retry.sql) — cast en any.
     await supabase
       .from('album_metadata')
       .upsert(metaRow as any, { onConflict: 'album_id' });

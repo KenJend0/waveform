@@ -31,10 +31,10 @@ export async function importAllArtistAlbums(artistId: string, artistMbid: string
       .eq('artist_id', artistId);
 
     const existingTitles = new Set(
-      existingAlbums?.map((a: any) => a.title.toLowerCase()) || []
+      existingAlbums?.map((a) => a.title.toLowerCase()) || []
     );
     const existingMbids = new Set(
-      existingAlbums?.filter((a: any) => a.mbid).map((a: any) => a.mbid) || []
+      existingAlbums?.filter((a) => a.mbid).map((a) => a.mbid) || []
     );
 
     // Fetch all releases from MusicBrainz preview
@@ -46,7 +46,7 @@ export async function importAllArtistAlbums(artistId: string, artistMbid: string
     const releases = result.preview.releases || [];
 
     // Filter out albums that are already imported (by title or MBID)
-    const missingReleases = releases.filter((release: any) => {
+    const missingReleases = releases.filter((release) => {
       if (existingMbids.has(release.mbid)) return false;
       if (existingTitles.has(release.title.toLowerCase())) return false;
       return true;
@@ -100,7 +100,7 @@ export async function importAllArtistAlbums(artistId: string, artistMbid: string
     for (const release of missingReleases) {
       try {
         const importResult = await importAlbumFromMusicBrainz(release.mbid);
-        if (importResult.success && (importResult as any).albumId) imported++;
+        if (importResult.success && 'albumId' in importResult && importResult.albumId) imported++;
         // Small delay to avoid rate limiting upstream
         await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (err) {

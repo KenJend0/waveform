@@ -3,21 +3,58 @@
 import { getAuthUser, createSupabaseAdmin } from '@/lib/supabase/server';
 import { createList } from './lists';
 import type { RawExternalItem } from '@/lib/externalImport';
+import { isRecord, logInvalidExternalResponse, recordValue, stringValue } from '@/lib/externalValidation';
 
 const LASTFM_API = 'https://ws.audioscrobbler.com/2.0';
 const COOLDOWN_HOURS = 24;
 
-async function lastfmRequest(params: Record<string, string>): Promise<any> {
+interface LastfmAlbumItem {
+  name: string;
+  mbid: string | null;
+  artistName: string;
+}
+
+async function lastfmRequest(
+  params: Record<string, string>
+): Promise<unknown> {
   const apiKey = process.env.LASTFM_API_KEY;
   if (!apiKey) throw new Error('Last.fm non configuré');
 
   const search = new URLSearchParams({ ...params, api_key: apiKey, format: 'json' });
   const res = await fetch(`${LASTFM_API}/?${search}`, { signal: AbortSignal.timeout(8_000) });
-  const data = await res.json();
-  if (data.error) {
-    throw new Error(data.message || 'Erreur Last.fm');
+  const raw: unknown = await res.json();
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('lastfm.request', 'root is not an object');
+    throw new Error('Réponse Last.fm invalide');
   }
-  return data;
+  if (typeof raw.error === 'number' || typeof raw.error === 'string') {
+    throw new Error(stringValue(raw.message) || 'Erreur Last.fm');
+  }
+  return raw;
+}
+
+function parseLastfmTopAlbumsResponse(raw: unknown): LastfmAlbumItem[] {
+  const topAlbums = recordValue(recordValue(raw)?.topalbums);
+  if (!topAlbums) {
+    logInvalidExternalResponse('lastfm.topalbums', 'missing topalbums');
+    return [];
+  }
+
+  const rawAlbum = topAlbums.album;
+  const rawAlbums = Array.isArray(rawAlbum) ? rawAlbum : rawAlbum ? [rawAlbum] : [];
+
+  return rawAlbums.flatMap((item) => {
+    const album = recordValue(item);
+    const artist = recordValue(album?.artist);
+    const name = stringValue(album?.name)?.trim() ?? '';
+    const artistName = stringValue(artist?.name)?.trim() ?? '';
+    if (!name || !artistName) return [];
+    return [{
+      name,
+      artistName,
+      mbid: stringValue(album?.mbid)?.trim() || null,
+    }];
+  });
 }
 
 export async function startLastfmImport(username: string) {
@@ -53,19 +90,18 @@ export async function startLastfmImport(username: string) {
 
   let topAlbums: RawExternalItem[];
   try {
-    const data = await lastfmRequest({
+    const raw = await lastfmRequest({
       method: 'user.gettopalbums',
       user: trimmed,
       period: 'overall',
       limit: '100',
     });
-    const albums = data?.topalbums?.album;
-    const list: any[] = Array.isArray(albums) ? albums : albums ? [albums] : [];
+    const list = parseLastfmTopAlbumsResponse(raw);
     topAlbums = list
       .map((a) => ({
-        artist: a.artist?.name || '',
-        album: a.name || '',
-        mbid: a.mbid || null,
+        artist: a.artistName,
+        album: a.name,
+        mbid: a.mbid,
       }))
       .filter((a) => a.artist && a.album);
   } catch {

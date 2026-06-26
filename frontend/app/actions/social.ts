@@ -167,7 +167,7 @@ export async function getSuggestedUsers(limit = 5): Promise<SuggestedUser[]> {
   ]);
 
   const followedIds = new Set<string>((followed || []).map((f) => f.followee_id));
-  const blockedIds = new Set<string>((blocked || []).map((b: any) => b.blocked_id));
+  const blockedIds = new Set<string>(((blocked || []) as Array<{ blocked_id: string }>).map((b) => b.blocked_id));
 
   // Users with recent public activity, deduped and not already followed
   const { data: recentEntries } = await supabase

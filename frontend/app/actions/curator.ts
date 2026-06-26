@@ -31,8 +31,8 @@ export async function getCuratorPick(): Promise<CuratorPick | null> {
 
     if (!data) return null;
 
-    const album = data.albums as any;
-    const curator = data.profiles as any;
+    const album = data.albums as { title: string; cover_url: string | null; release_date: string | null; artists?: { name: string } } | null;
+    const curator = data.profiles as { username: string | null; avatar_url: string | null } | null;
 
     const { data: stats } = await supabase
         .from('album_stats_mat')

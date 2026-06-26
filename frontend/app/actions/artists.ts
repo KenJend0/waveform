@@ -2,6 +2,7 @@
 
 import { createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { fetchArtistMetadata } from './musicbrainz';
+import { arrayValue, isRecord, logInvalidExternalResponse, recordValue, stringValue } from '@/lib/externalValidation';
 
 const LASTFM_API = 'https://ws.audioscrobbler.com/2.0';
 
@@ -11,6 +12,37 @@ export type SimilarArtist = {
     imageUrl: string | null;
     mbid: string | null;
 };
+
+function parseLastfmSimilarArtists(raw: unknown): Array<{ name: string; mbid: string | null }> {
+    const similarArtists = recordValue(recordValue(raw)?.similarartists);
+    if (!similarArtists) {
+        logInvalidExternalResponse('lastfm.similarartists', 'missing similarartists');
+        return [];
+    }
+
+    return arrayValue(similarArtists.artist).flatMap((item) => {
+        const artist = recordValue(item);
+        const name = stringValue(artist?.name)?.trim() ?? '';
+        if (!name) return [];
+        return [{ name, mbid: stringValue(artist?.mbid)?.trim() || null }];
+    });
+}
+
+function parseWikidataImageBindings(raw: unknown): Array<{ mbid: string; imageUrl: string }> {
+  if (!isRecord(raw)) {
+    logInvalidExternalResponse('wikidata.artistImages', 'root is not an object');
+    return [];
+  }
+
+  const bindings = arrayValue(recordValue(recordValue(raw.results)?.bindings));
+  return bindings.flatMap((binding) => {
+    const row = recordValue(binding);
+    const mbid = stringValue(recordValue(row?.mbid)?.value)?.trim() ?? '';
+    const imageUrl = stringValue(recordValue(row?.image)?.value)?.trim() ?? '';
+    if (!mbid || !imageUrl) return [];
+    return [{ mbid, imageUrl }];
+  });
+}
 
 /**
  * Récupère les artistes similaires depuis Last.fm, puis tente de les matcher
@@ -39,16 +71,15 @@ export async function getSimilarArtists(
         });
         if (!res.ok) return [];
 
-        const data = await res.json();
-        const similar: Array<{ name: string; mbid?: string }> =
-            data?.similarartists?.artist ?? [];
+        const raw: unknown = await res.json();
+        const similar = parseLastfmSimilarArtists(raw);
 
         if (similar.length === 0) return [];
 
         const supabase = await createSupabaseServer();
 
         // Tenter de matcher par MBID d'abord
-        const lfmMbids = similar.map(a => a.mbid).filter(Boolean) as string[];
+        const lfmMbids = similar.flatMap(a => a.mbid ? [a.mbid] : []);
         const lfmNames = similar.map(a => a.name.toLowerCase());
 
         const [mbidMatch, nameMatch] = await Promise.all([
@@ -69,7 +100,7 @@ export async function getSimilarArtists(
             return {
                 id: db?.id ?? null,
                 name: db?.name ?? a.name,
-                imageUrl: (db as any)?.image_url ?? null,
+                imageUrl: db?.image_url ?? null,
                 mbid: db?.mbid ?? a.mbid ?? null,
             };
         });
@@ -98,9 +129,9 @@ export async function getArtistImagesByMbids(
   const supabaseAdmin = createSupabaseAdmin();
 
   // 1. DB lookup (read — user client is fine)
-  const { data } = await (supabase
+  const { data } = await supabase
     .from('artists')
-    .select('mbid, image_url') as any)
+    .select('mbid, image_url')
     .in('mbid', mbids);
 
   const result: Record<string, string | null> = {};
@@ -109,7 +140,7 @@ export async function getArtistImagesByMbids(
   // MBIDs that ARE in DB but have no image → query Wikidata + save back
   const inDbWithoutImage = new Set<string>();
 
-  (data || []).forEach((row: any) => {
+  (data || []).forEach((row) => {
     if (!row.mbid) return;
     if (row.image_url) {
       result[row.mbid] = row.image_url;
@@ -143,12 +174,12 @@ export async function getArtistImagesByMbids(
     );
 
     if (resp.ok) {
-      const wdData = await resp.json();
+      const raw: unknown = await resp.json();
       const toSave: Array<{ mbid: string; imageUrl: string }> = [];
 
-      for (const binding of wdData.results?.bindings || []) {
-        const mbid = binding.mbid?.value;
-        const imageUrl = binding.image?.value;
+      for (const binding of parseWikidataImageBindings(raw)) {
+        const mbid = binding.mbid;
+        const imageUrl = binding.imageUrl;
         if (mbid && imageUrl && !result[mbid]) {
           const finalUrl = `${imageUrl.replace(/^http:\/\//, 'https://')}?width=400`;
           result[mbid] = finalUrl;
@@ -159,14 +190,14 @@ export async function getArtistImagesByMbids(
         }
       }
 
-      // Persist via admin client (bypasses RLS on artists table) — single upsert batch
+      // Persist via admin client (bypasses RLS on artists table) — single upsert batch.
+      // `name` est requis par le type généré sur l'overload upsert même si on ne
+      // met à jour que des lignes existantes (onConflict: 'mbid') — cast en any.
       if (toSave.length > 0) {
-        (supabaseAdmin
-          .from('artists')
-          .upsert(
-            toSave.map(({ mbid, imageUrl }) => ({ mbid, image_url: imageUrl } as any)),
-            { onConflict: 'mbid' }
-          ) as any
+        Promise.all(
+          toSave.map(({ mbid, imageUrl }) =>
+            supabaseAdmin.from('artists').update({ image_url: imageUrl }).eq('mbid', mbid)
+          )
         ).catch(() => {/* ignore write errors */});
       }
     }
@@ -191,22 +222,20 @@ export async function getOrFetchArtistMeta(
   const supabaseAdmin = createSupabaseAdmin();
 
   // Check DB first
-  const { data: artist } = await (supabase
+  const { data: artist } = await supabase
     .from('artists')
-    .select('image_url') as any)
+    .select('image_url')
     .eq('id', artistId)
     .maybeSingle();
 
-  const row = artist as { image_url?: string | null } | null;
-
   // Image cached → return immediately
-  if (row?.image_url) {
-    return { imageUrl: row.image_url };
+  if (artist?.image_url) {
+    return { imageUrl: artist.image_url };
   }
 
   // No mbid → can't fetch from external APIs
   if (!mbid) {
-    return { imageUrl: row?.image_url ?? null };
+    return { imageUrl: artist?.image_url ?? null };
   }
 
   // Fetch from external APIs
@@ -227,9 +256,9 @@ export async function getOrFetchArtistMeta(
   }
 
   // Store via admin client (bypasses RLS on artists table)
-  await (supabaseAdmin
+  await supabaseAdmin
     .from('artists')
-    .update({ image_url: finalImage } as any) as any)
+    .update({ image_url: finalImage })
     .eq('id', artistId);
 
   return { imageUrl: finalImage };

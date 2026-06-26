@@ -25,11 +25,23 @@ export async function getActiveImports() {
     .in('status', ['pending', 'matching'])
     .order('created_at', { ascending: false });
 
+  interface ActiveImportRow {
+    id: string;
+    source: 'lastfm' | 'rym';
+    status: string;
+    total_items: number;
+    processed_count: number;
+    matched_count: number;
+    skipped_count: number;
+    failed_count: number;
+    list_id: string | null;
+  }
+
   return {
     success: true as const,
-    imports: (data || []).map((row: any) => ({
+    imports: ((data || []) as ActiveImportRow[]).map((row) => ({
       id: row.id,
-      source: row.source as 'lastfm' | 'rym',
+      source: row.source,
       ...progressOfImportRow(row),
     })),
   };

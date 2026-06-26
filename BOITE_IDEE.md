@@ -85,3 +85,22 @@ messagerie privée, ML lourd, refonte complète du feed, trop de badges/notifs p
 - **`is_saved` (sauvegarde de liste) non calculé dans `getUserLists`/`getPublicUserLists`** — seulement dans `getPublicLists` (utilisé par `/explore` et `/lists`). Pas un vrai manque sauf si on affiche un jour le bouton "sauvegarder" sur les listes depuis un profil public ou ses propres listes.
 - **Pagination réelle de la page "Listes" (`/lists`)** — plafonnée à 30 résultats pour l'instant, largement suffisant au volume actuel. À remplacer par une vraie pagination si on approche un jour ce plafond.
 
+trouver comment integrer les artistes en featuring, que ca apparaisse sur leur profil ou quoi 
+
+sur la page /feed, voir pour faire des version compactées/empilées quand un utilisateur note ou critique plusieurs choses afin de ne pas polluer le fil des gens. peut etre quan dplusisuers ecoutes d'affilées, faire une pile qui se deplie avec un appuie long ou une petite fleche. trouver un moyen de replier
+
+durcir la CSP (next.config.ts) : retirer unsafe-eval en prod après test sur une vraie preview build (console navigateur sur login, navigation, Sentry, Analytics), et envisager un système de nonce/hash pour remplacer unsafe-inline (script-src + style-src) — chantier à part, beaucoup de style={{...}} inline React à auditer avant de pouvoir le retirer.
+
+faire un taff sur la qualité des données dans la base de données
+
+---
+
+## Reste de l'audit validation finale pré-push (favorite-albums déjà corrigé en RPC transactionnelle)
+
+- `/api/enrich` appelle toujours `enrichAlbumMetadata(..., force=true)`, ce qui désactive le cooldown TTL interne prévu contre le spam d'enrichissement. Seul `applyRateLimit` (par IP, global) protège aujourd'hui. À décider : soit `force=false` pour les users normaux (le rafraîchissement forcé devient admin-only), soit ajouter un vrai cooldown par album côté route.
+- `AuthForm.tsx` (flow "mot de passe oublié", ligne ~149) relaie `resetError.message` brut (message Supabase Auth, parfois en anglais) directement dans le toast au lieu de passer par `toastErrorMessage`/un message générique français. Mineur, fix rapide à faire un jour.
+- Types Supabase désynchronisés confirmés dans `frontend/types/database.ts` : absents des types générés — `track_diary_*`, `saved_lists`, `user_blocks`, `content_reports`, `external_imports`, `curator_picks`, `recommendation_feedback`, `user_track_recommendations`, `album_metadata`, `similar_albums_cache`, et la colonne `albums.type`. Tous les `as any` associés dans le code sont justifiés par ça tant que les types ne sont pas régénérés.
+- `npm run lint` ne fonctionne pas : aucun `eslint.config.*`/`.eslintrc` dans `frontend/`, `next lint` (déprécié, supprimé en Next 16) demande une config interactive. À mettre en place si on veut un vrai lint dans la CI.
+- `npm run build` échoue en local à cause de `next/font` qui n'arrive pas à joindre Google Fonts (`unable to verify the first certificate`, souci TLS/proxy local). Probablement pas lié au code — à confirmer que le build passe bien sur Vercel/CI avant d'en faire un sujet.
+- Payload JSONB polymorphe de `feed_events.payload` pas audité en détail (gestion d'un event de type inconnu qui ne casserait pas le feed).
+- `albumEnrichment.mjs` (script legacy) pas inspecté dans cette passe.

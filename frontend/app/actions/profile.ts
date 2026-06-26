@@ -70,7 +70,7 @@ export async function ensureProfile() {
       profile: newProfile,
       created: true,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error ensuring profile:', error);
     return {
       ok: false,
@@ -98,7 +98,7 @@ export async function getMyProfileSettings() {
   const supabase = await createSupabaseServer();
 
   // Try with username_changed first; fall back without it if column doesn't exist
-  let data: any = null;
+  let data: { id: string; display_name: string | null; username: string | null; bio: string | null; avatar_url: string | null } | null = null;
   let usernameChanged: boolean | null = null;
 
   const { data: fullData, error: fullError } = await supabase
@@ -121,7 +121,7 @@ export async function getMyProfileSettings() {
     data = partialData;
   } else {
     data = fullData;
-    usernameChanged = (fullData as any)?.username_changed ?? null;
+    usernameChanged = fullData?.username_changed ?? null;
   }
 
   const profile: ProfileSettings = {
@@ -188,7 +188,7 @@ export async function setOnboardingUsername(newUsername: string) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if ((current as any)?.username_changed) {
+  if (current?.username_changed) {
     return { ok: false, error: 'already_onboarded' };
   }
 
@@ -269,11 +269,11 @@ export async function changeUsername(newUsername: string) {
     return { ok: false, error: 'An error occurred' };
   }
 
-  if ((current as any)?.username_changed) {
+  if (current?.username_changed) {
     return { ok: false, error: 'username_change_already_used' };
   }
 
-  if ((current as any)?.username && (current as any).username === trimmed) {
+  if (current?.username && current.username === trimmed) {
     return { ok: false, error: 'username_same' };
   }
 
@@ -377,8 +377,8 @@ export async function getCurrentStreak(userId: string): Promise<{ ok: boolean; s
     ]);
 
     const activeDays = new Set<string>();
-    for (const row of albumDays ?? []) activeDays.add(dayKey((row as any).listened_at));
-    for (const row of trackDays ?? []) activeDays.add(dayKey((row as any).listened_at));
+    for (const row of albumDays ?? []) activeDays.add(dayKey(row.listened_at));
+    for (const row of (trackDays ?? []) as Array<{ listened_at: string }>) activeDays.add(dayKey(row.listened_at));
 
     const today = new Date();
     const isActiveToday = activeDays.has(dayKey(today.toISOString()));

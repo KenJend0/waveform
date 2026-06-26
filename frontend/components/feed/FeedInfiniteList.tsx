@@ -135,12 +135,12 @@ type RenderItem = FeedEvent | LikeGroup | ListenGroup;
 
 const FEED_TABS: Array<{ id: FeedTab; label: string }> = [
   { id: 'notifications', label: 'Pour moi' },
-  { id: 'activity', label: 'Activité' },
+  { id: 'activity', label: 'Réseau' },
 ];
 
 function getTabEmptyLabel(tab: FeedTab): string {
   if (tab === 'notifications') return 'Aucune notification dans les événements chargés.';
-  return 'Aucune activité dans les événements chargés.';
+  return 'Aucune activité réseau dans les événements chargés.';
 }
 
 function countEventsAfter(events: FeedEvent[], lastSeenAt?: string | null): number {
@@ -718,7 +718,7 @@ export default function FeedInfiniteList({
   }));
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<FeedTab>(restoredState?.scope ?? 'notifications');
-  const [notificationsMarkedSeen, setNotificationsMarkedSeen] = useState(false);
+  const [seenUnreadTabs, setSeenUnreadTabs] = useState<Set<FeedTab>>(() => new Set());
   const observerTarget = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
   const bucketsRef = useRef(buckets);
@@ -735,27 +735,39 @@ export default function FeedInfiniteList({
   }, [activeTab]);
 
   const unreadNotificationsCount = countEventsAfter(buckets.notifications.events, initialLastSeenRef.current);
-  const showNotificationsBadge = !notificationsMarkedSeen && unreadNotificationsCount > 0;
+  const unreadNetworkCount = countEventsAfter(buckets.activity.events, initialLastSeenRef.current);
+  const unreadCounts: Record<FeedTab, number> = {
+    notifications: unreadNotificationsCount,
+    activity: unreadNetworkCount,
+  };
 
   useEffect(() => {
-    if (activeTab !== 'notifications' || notificationsMarkedSeen || unreadNotificationsCount === 0 || markSeenInFlightRef.current) {
+    if (unreadCounts[activeTab] === 0 || seenUnreadTabs.has(activeTab)) {
       return;
     }
 
     const timer = window.setTimeout(() => {
-      markSeenInFlightRef.current = true;
-      markActivitySeen()
-        .then(() => {
-          setNotificationsMarkedSeen(true);
-          return refreshUnseenActivity();
-        })
-        .catch(() => {
-          markSeenInFlightRef.current = false;
-        });
+      const nextSeenTabs = new Set(seenUnreadTabs);
+      nextSeenTabs.add(activeTab);
+      setSeenUnreadTabs(nextSeenTabs);
+
+      const unreadTabs = FEED_TABS
+        .map((tab) => tab.id)
+        .filter((tab) => unreadCounts[tab] > 0);
+      const allUnreadTabsSeen = unreadTabs.length > 0 && unreadTabs.every((tab) => nextSeenTabs.has(tab));
+
+      if (allUnreadTabsSeen && !markSeenInFlightRef.current) {
+        markSeenInFlightRef.current = true;
+        markActivitySeen()
+          .then(() => refreshUnseenActivity())
+          .catch(() => {
+            markSeenInFlightRef.current = false;
+          });
+      }
     }, 800);
 
     return () => window.clearTimeout(timer);
-  }, [activeTab, notificationsMarkedSeen, refreshUnseenActivity, unreadNotificationsCount]);
+  }, [activeTab, refreshUnseenActivity, seenUnreadTabs, unreadNotificationsCount, unreadNetworkCount]);
 
   // Restore scroll position after back-navigation and clear saved state
   useEffect(() => {
@@ -902,7 +914,7 @@ export default function FeedInfiniteList({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative rounded-full px-3 py-2 text-[13px] font-medium leading-none transition-colors duration-150 ${
+                className={`relative rounded-full px-3 py-2 text-[13px] font-medium leading-none ${
                   active
                     ? 'bg-paper-hi text-accent-deep shadow-sm'
                     : 'text-text-tertiary'
@@ -910,9 +922,9 @@ export default function FeedInfiniteList({
               >
                 <span className="inline-flex items-center justify-center gap-1.5">
                   {tab.label}
-                  {tab.id === 'notifications' && showNotificationsBadge && (
+                  {unreadCounts[tab.id] > 0 && !seenUnreadTabs.has(tab.id) && (
                     <span className="min-w-4 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold leading-none text-paper-hi">
-                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                      {unreadCounts[tab.id] > 9 ? '9+' : unreadCounts[tab.id]}
                     </span>
                   )}
                 </span>

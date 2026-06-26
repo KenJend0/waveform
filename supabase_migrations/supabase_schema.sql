@@ -249,6 +249,7 @@ CREATE TABLE IF NOT EXISTS feed_events (
     entry_id    UUID REFERENCES diary_entries(id) ON DELETE CASCADE,
     album_id    UUID REFERENCES albums(id) ON DELETE SET NULL,
     comment_id  UUID REFERENCES diary_comments(id) ON DELETE SET NULL,
+    track_comment_id UUID REFERENCES track_diary_comments(id) ON DELETE SET NULL,
     payload     JSONB,
     created_at  TIMESTAMPTZ DEFAULT now()
 );
@@ -256,6 +257,9 @@ CREATE TABLE IF NOT EXISTS feed_events (
 CREATE INDEX IF NOT EXISTS idx_feed_events_user_id    ON feed_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_feed_events_actor_id   ON feed_events(actor_id);
 CREATE INDEX IF NOT EXISTS idx_feed_events_created_at ON feed_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_feed_events_track_comment_id
+  ON feed_events(track_comment_id)
+  WHERE track_comment_id IS NOT NULL;
 
 -- ============================================================
 -- 11. SAVED_ALBUMS

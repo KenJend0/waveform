@@ -6,6 +6,33 @@ import { fanoutEvent } from './feed';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
 import { findBannedContentWord } from '@/lib/bannedWords';
 import { logAuthedProductEvent } from '@/lib/productEvents';
+import { diaryValidationMessage, parseDiaryRating, parseListenedAt } from '@/lib/diaryInputValidation';
+
+// Formes des relations imbriquées renvoyées par Supabase (tracks → albums → artists).
+// Les requêtes elles-mêmes restent `as any`-castées car les tables track_diary_*
+// ne sont pas dans les types générés — mais la forme des lignes lues est stable.
+interface ArtistRef {
+  id: string;
+  name: string;
+}
+
+interface AlbumRef {
+  id: string;
+  title: string;
+  cover_url: string | null;
+  artist_id?: string;
+  artists?: ArtistRef | null;
+}
+
+interface TrackRef {
+  id: string;
+  title: string;
+  track_no?: number | null;
+  duration_ms?: number | null;
+  album_id?: string;
+  artist_id?: string;
+  albums?: AlbumRef | null;
+}
 
 export interface UpsertTrackDiaryEntryInput {
   trackId: string;
@@ -30,12 +57,17 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
 
     const supabase = await createSupabaseServer();
 
-    if (!input.trackId || !input.albumId || !input.artistId || !input.listenedAt) {
-      return { success: false, error: 'trackId, albumId, artistId et listenedAt sont requis' };
+    if (!input.trackId || !input.listenedAt) {
+      return { success: false, error: 'trackId et listenedAt sont requis' };
     }
 
-    if (input.rating !== undefined && (input.rating < 0 || input.rating > 10)) {
-      return { success: false, error: 'La note doit être entre 0 et 10' };
+    let listenedAt: string;
+    let rating: number | null;
+    try {
+      listenedAt = parseListenedAt(input.listenedAt);
+      rating = parseDiaryRating(input.rating);
+    } catch (validationError) {
+      return { success: false, error: diaryValidationMessage(validationError) };
     }
 
     if (input.reviewTitle && input.reviewTitle.length > 200) {
@@ -54,13 +86,38 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
       return { success: false, error: 'Cette critique contient du contenu inapproprié.' };
     }
 
+    const { data: trackRow, error: trackError } = await supabase
+      .from('tracks')
+      .select('id, title, album_id, artist_id, albums(id, title, cover_url, artist_id, artists(id, name))')
+      .eq('id', input.trackId)
+      .maybeSingle();
+
+    if (trackError || !trackRow) {
+      return { success: false, error: 'Titre introuvable' };
+    }
+
+    const trackData = trackRow as TrackRef;
+    const album = trackData.albums ?? null;
+    const serverAlbumId = trackData.album_id ?? album?.id ?? null;
+    const serverArtistId = trackData.artist_id ?? album?.artist_id ?? album?.artists?.id ?? null;
+
+    if (!serverAlbumId || !serverArtistId) {
+      console.error('[upsertTrackDiaryEntry] missing track relations', { trackId: input.trackId });
+      return { success: false, error: 'Titre incomplet' };
+    }
+
+    if ((input.albumId && input.albumId !== serverAlbumId) || (input.artistId && input.artistId !== serverArtistId)) {
+      console.error('[upsertTrackDiaryEntry] inconsistent client relations', { trackId: input.trackId });
+      return { success: false, error: 'Titre invalide' };
+    }
+
     const entryPayload = {
       user_id: user.id,
       track_id: input.trackId,
-      album_id: input.albumId,
-      artist_id: input.artistId,
-      listened_at: input.listenedAt,
-      rating: input.rating ?? null,
+      album_id: serverAlbumId,
+      artist_id: serverArtistId,
+      listened_at: listenedAt,
+      rating,
       review_title: input.reviewTitle || null,
       review_body: input.reviewBody || null,
       is_public: input.isPublic ?? true,
@@ -84,22 +141,15 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
     try {
       const supabaseAdmin = createSupabaseAdmin();
 
-      const [trackDataResult, followersResult] = await Promise.all([
-        supabase
-          .from('tracks')
-          .select('title, albums(id, title, cover_url, artist_id, artists(id, name))')
-          .eq('id', input.trackId)
-          .maybeSingle(),
+      const [followersResult] = await Promise.all([
         supabaseAdmin
           .from('follows')
           .select('follower_id')
           .eq('followee_id', user.id),
       ]);
 
-      const trackData = trackDataResult.data;
-      const album = (trackData as any)?.albums;
-      const artist = (album as any)?.artists;
-      const followerIds = (followersResult.data ?? []).map((f: any) => f.follower_id);
+      const artist = album?.artists;
+      const followerIds = (followersResult.data ?? []).map((f) => f.follower_id);
 
       // Inclure l'acteur lui-même pour son propre feed
       const targets = [...new Set([...followerIds, user.id])];
@@ -116,16 +166,16 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
         .eq('actor_id', user.id)
         .eq('payload->>trackEntryId', data.id);
 
-      await fanoutEvent('track_diary_entry' as any, {
+      await fanoutEvent('track_diary_entry', {
         userId: user.id,
-        albumId: input.albumId,
+        albumId: serverAlbumId,
         trackEntryId: data.id,
         trackId: input.trackId,
-        trackTitle: (trackData as any)?.title || '',
+        trackTitle: trackData?.title || '',
         albumTitle: album?.title || '',
         coverUrl: album?.cover_url || null,
         artistName: artist?.name || '',
-        rating: input.rating ?? null,
+        rating,
         reviewBody: input.reviewBody || null,
       }, targets);
     } catch (fanoutErr) {
@@ -136,8 +186,8 @@ export async function upsertTrackDiaryEntry(input: UpsertTrackDiaryEntryInput) {
       surface: 'diary',
       properties: {
         track_id: input.trackId,
-        album_id: input.albumId,
-        rating: input.rating ?? null,
+        album_id: serverAlbumId,
+        rating,
         has_review: !!(input.reviewBody),
         rec_source: input.source ?? null,
       },
@@ -270,10 +320,14 @@ export async function getUserTrackDiary(
     return [];
   }
 
-  return entries.map((e: any) => {
-    const track = e.tracks as any;
-    const album = track?.albums as any;
-    const artist = album?.artists as any;
+  return (entries as Array<{
+    id: string; track_id: string; album_id: string; rating: number | null;
+    review_body: string | null; listened_at: string; created_at: string;
+    tracks: TrackRef | null;
+  }>).map((e) => {
+    const track = e.tracks;
+    const album = track?.albums;
+    const artist = album?.artists;
     return {
       id: e.id,
       track_id: e.track_id,
@@ -303,6 +357,21 @@ export type TrackReview = {
   avatar_url: string | null;
 };
 
+interface TrackReviewRow {
+  id: string;
+  user_id: string;
+  rating: number | null;
+  review_body: string | null;
+  created_at: string;
+}
+
+interface ProfileRef {
+  id: string;
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 export async function getTrackReviewsPreview(
   trackId: string,
   limit = 3
@@ -320,15 +389,16 @@ export async function getTrackReviewsPreview(
 
   if (error || !rows) return [];
 
-  const userIds = [...new Set(rows.map((r: any) => r.user_id))] as string[];
+  const reviewRows = rows as TrackReviewRow[];
+  const userIds = [...new Set(reviewRows.map((r) => r.user_id))];
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')
     .in('id', userIds);
 
-  const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+  const profilesMap = new Map((profiles ?? []).map((p) => [p.id, p as ProfileRef]));
 
-  return rows.map((row: any) => ({
+  return reviewRows.map((row) => ({
     id: row.id,
     user_id: row.user_id,
     rating: row.rating,
@@ -360,7 +430,7 @@ export async function getTrackReviewsPage(input: {
       .from('follows')
       .select('followee_id')
       .eq('follower_id', currentUser.id);
-    followingIds = (follows || []).map((f: any) => f.followee_id);
+    followingIds = (follows || []).map((f) => f.followee_id);
     hasFollowing = followingIds.length > 0;
   }
 
@@ -395,19 +465,20 @@ export async function getTrackReviewsPage(input: {
 
   if (error || !rows) return { items: [], hasMore: false, userId: currentUser?.id || null, hasFollowing };
 
-  const hasMore = rows.length > limit;
-  const sliced = rows.slice(0, limit);
+  const reviewRows = rows as TrackReviewRow[];
+  const hasMore = reviewRows.length > limit;
+  const sliced = reviewRows.slice(0, limit);
 
-  const userIds = [...new Set(sliced.map((r: any) => r.user_id))] as string[];
+  const userIds = [...new Set(sliced.map((r) => r.user_id))];
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, display_name, username, avatar_url')
     .in('id', userIds);
 
-  const profilesMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+  const profilesMap = new Map((profiles ?? []).map((p) => [p.id, p as ProfileRef]));
 
   return {
-    items: sliced.map((row: any) => ({
+    items: sliced.map((row) => ({
       id: row.id,
       user_id: row.user_id,
       rating: row.rating,
@@ -445,6 +516,14 @@ export async function getTrackStats(trackId: string): Promise<TrackStat | null> 
     ratings_count: data.ratings_count || 0,
     listeners_count: data.listeners_count || 0,
   };
+}
+
+interface CommentRow {
+  id: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+  parent_comment_id: string | null;
 }
 
 export type TrackDiaryComment = {
@@ -508,14 +587,15 @@ export async function getTrackDiaryEntry(
     return { success: false, error: 'Données incomplètes' };
   }
 
-  const commentUserIds = [...new Set(((commentsRes.data ?? []) as any[]).map((c: any) => c.user_id))];
+  const commentRows = (commentsRes.data ?? []) as CommentRow[];
+  const commentUserIds = [...new Set(commentRows.map((c) => c.user_id))];
   const { data: commentProfiles } = commentUserIds.length > 0
     ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', commentUserIds)
     : { data: [] };
-  const profilesMap = new Map((commentProfiles ?? []).map((p: any) => [p.id, p]));
+  const profilesMap = new Map((commentProfiles ?? []).map((p) => [p.id, p as ProfileRef]));
 
-  const allComments: TrackDiaryComment[] = ((commentsRes.data ?? []) as any[]).map((c: any) => {
-    const profile = profilesMap.get(c.user_id) as any;
+  const allComments: TrackDiaryComment[] = commentRows.map((c) => {
+    const profile = profilesMap.get(c.user_id);
     return {
       id: c.id,
       body: c.body,
@@ -547,10 +627,15 @@ export async function getTrackDiaryEntry(
       listened_at: data.listened_at,
       created_at: data.created_at,
       is_public: data.is_public,
-      author: authorRes.data as any,
-      track: trackRes.data as any,
-      album: albumRes.data as any,
-      artist: artistRes.data as any,
+      author: {
+        id: authorRes.data.id,
+        username: authorRes.data.username || 'unknown',
+        display_name: authorRes.data.display_name ?? null,
+        avatar_url: authorRes.data.avatar_url ?? null,
+      },
+      track: trackRes.data,
+      album: albumRes.data,
+      artist: artistRes.data,
       stats: { likes_count: statsRes.data?.likes_count ?? 0, comments_count: statsRes.data?.comments_count ?? 0 },
       has_liked: !!likedRes.data,
       comments: topLevelComments,
@@ -569,7 +654,7 @@ export async function getAlbumTracksStats(albumId: string): Promise<Map<string, 
 
   if (!trackIds || trackIds.length === 0) return new Map();
 
-  const ids = trackIds.map((t: any) => t.id);
+  const ids = trackIds.map((t) => t.id);
 
   const { data, error } = await (supabase as any)
     .from('track_stats')
@@ -578,8 +663,12 @@ export async function getAlbumTracksStats(albumId: string): Promise<Map<string, 
 
   if (error || !data) return new Map();
 
+  const rows = data as Array<{
+    track_id: string; avg_rating: string | number | null; ratings_count: number | null; listeners_count: number | null;
+  }>;
+
   return new Map(
-    data.map((row: any) => [
+    rows.map((row) => [
       row.track_id,
       {
         avg_rating: row.avg_rating ? Number(row.avg_rating) : null,
@@ -610,7 +699,12 @@ export async function getTrendingTracks(limit = 10): Promise<TrackWithStats[]> {
   });
 
   if (!rpcError && rpcRows) {
-    return rpcRows.map((row: any) => ({
+    const trendingRows = rpcRows as Array<{
+      track_id: string; track_title: string | null; artist_id: string | null; artist_name: string | null;
+      album_id: string | null; album_title: string | null; cover_url: string | null;
+      avg_rating: string | number | null; activity_count: number | null; delta: number | null;
+    }>;
+    return trendingRows.map((row) => ({
       track_id: row.track_id,
       track_title: row.track_title || 'Unknown',
       artist_id: row.artist_id || '',
@@ -649,9 +743,12 @@ export async function getTrendingTracks(limit = 10): Promise<TrackWithStats[]> {
 
   if (error || !data || data.length === 0) return [];
 
+  const recentRows = data as Array<{ track_id: string; rating: number | null }>;
+  const prevRows = prevData as Array<{ track_id: string }> | null;
+
   // Aggregate in JS
   const map = new Map<string, { count: number; totalRating: number; ratingCount: number }>();
-  for (const row of data) {
+  for (const row of recentRows) {
     const existing = map.get(row.track_id) || { count: 0, totalRating: 0, ratingCount: 0 };
     existing.count++;
     if (row.rating !== null) {
@@ -662,7 +759,7 @@ export async function getTrendingTracks(limit = 10): Promise<TrackWithStats[]> {
   }
 
   const prevCounts = new Map<string, number>();
-  for (const row of prevData || []) {
+  for (const row of prevRows || []) {
     prevCounts.set(row.track_id, (prevCounts.get(row.track_id) ?? 0) + 1);
   }
   const prevRankMap = new Map(
@@ -684,14 +781,14 @@ export async function getTrendingTracks(limit = 10): Promise<TrackWithStats[]> {
     .select('id, title, album_id, albums(id, title, cover_url, artist_id, artists(id, name))')
     .in('id', trackIds);
 
-  const trackMap = new Map((tracks || []).map((t: any) => [t.id, t]));
+  const trackMap = new Map((tracks ?? []).map((t) => [t.id, t]));
 
   return sorted
     .map(([trackId, stats], index) => {
-      const track = trackMap.get(trackId) as any;
+      const track = trackMap.get(trackId);
       if (!track) return null;
-      const album = track.albums as any;
-      const artist = album?.artists as any;
+      const album = track.albums;
+      const artist = album?.artists;
       const currentRank = index + 1;
       const prevRank = prevRankMap.get(trackId);
       return {
@@ -722,7 +819,7 @@ export async function getFriendsHighRatedTracks(limit = 10): Promise<TrackWithSt
     .select('followee_id')
     .eq('follower_id', user.id);
 
-  const followingIds = (follows || []).map((f: any) => f.followee_id);
+  const followingIds = (follows || []).map((f) => f.followee_id);
   if (followingIds.length === 0) return [];
 
   // Get tracks already rated by the current user (to exclude)
@@ -731,7 +828,7 @@ export async function getFriendsHighRatedTracks(limit = 10): Promise<TrackWithSt
     .select('track_id')
     .eq('user_id', user.id);
 
-  const ownTrackIds = new Set((ownEntries || []).map((e: any) => e.track_id));
+  const ownTrackIds = new Set((ownEntries as Array<{ track_id: string }> ?? []).map((e) => e.track_id));
 
   // Get high-rated tracks from followed users
   const { data, error } = await (supabase as any)
@@ -743,9 +840,11 @@ export async function getFriendsHighRatedTracks(limit = 10): Promise<TrackWithSt
 
   if (error || !data || data.length === 0) return [];
 
+  const ratedRows = data as Array<{ track_id: string; rating: number }>;
+
   // Aggregate
   const map = new Map<string, { totalRating: number; count: number }>();
-  for (const row of data) {
+  for (const row of ratedRows) {
     if (ownTrackIds.has(row.track_id)) continue;
     const existing = map.get(row.track_id) || { totalRating: 0, count: 0 };
     existing.totalRating += row.rating;
@@ -765,14 +864,14 @@ export async function getFriendsHighRatedTracks(limit = 10): Promise<TrackWithSt
     .select('id, title, album_id, albums(id, title, cover_url, artist_id, artists(id, name))')
     .in('id', trackIds);
 
-  const trackMap = new Map((tracks || []).map((t: any) => [t.id, t]));
+  const trackMap = new Map((tracks ?? []).map((t) => [t.id, t]));
 
   return sorted
     .map(([trackId, stats]) => {
-      const track = trackMap.get(trackId) as any;
+      const track = trackMap.get(trackId);
       if (!track) return null;
-      const album = track.albums as any;
-      const artist = album?.artists as any;
+      const album = track.albums;
+      const artist = album?.artists;
       return {
         track_id: trackId,
         track_title: track.title || 'Unknown',
@@ -792,6 +891,13 @@ export async function getFriendsHighRatedTracks(limit = 10): Promise<TrackWithSt
 // LIKES & COMMENTAIRES SUR TRACK DIARY ENTRIES
 // ============================================================================
 
+interface LikeFanoutEntryData {
+  user_id: string;
+  track_id: string;
+  album_id: string;
+  tracks: { title: string; albums: { id: string; title: string; cover_url: string | null } | null } | null;
+}
+
 export async function toggleTrackDiaryLike(entryId: string): Promise<void> {
   const user = await getAuthUser();
   if (!user) throw new Error('Not authenticated');
@@ -800,6 +906,15 @@ export async function toggleTrackDiaryLike(entryId: string): Promise<void> {
   if (rlError) throw new Error(rlError);
 
   const supabase = await createSupabaseServer();
+
+  const { data: entryCheck } = await (supabase as any)
+    .from('track_diary_entries')
+    .select('user_id, is_public')
+    .eq('id', entryId)
+    .maybeSingle();
+
+  if (!entryCheck) throw new Error('Entrée introuvable');
+  if (!entryCheck.is_public && entryCheck.user_id !== user.id) throw new Error('Entrée introuvable');
 
   const { data: existing } = await (supabase as any)
     .from('track_diary_likes')
@@ -820,21 +935,23 @@ export async function toggleTrackDiaryLike(entryId: string): Promise<void> {
         .eq('payload->>trackEntryId', entryId)
     ).catch(() => {});
   } else {
-    await (supabase as any).from('track_diary_likes').insert({ entry_id: entryId, user_id: user.id });
+    const { error: likeError } = await (supabase as any).from('track_diary_likes').insert({ entry_id: entryId, user_id: user.id });
+    if (likeError) throw new Error('Une erreur est survenue');
     // Fanout like event
     try {
-      const { data: entryData } = await (supabase as any)
+      const { data: rawEntryData } = await (supabase as any)
         .from('track_diary_entries')
         .select('user_id, track_id, album_id, tracks(title, albums(id, title, cover_url))')
         .eq('id', entryId)
         .maybeSingle();
+      const entryData = rawEntryData as LikeFanoutEntryData | null;
       if (entryData) {
-        const track = (entryData as any).tracks as any;
-        const album = track?.albums as any;
+        const track = entryData.tracks;
+        const album = track?.albums;
         const supabaseAdmin = createSupabaseAdmin();
         const { data: actorFollowers } = await supabase.from('follows').select('follower_id').eq('followee_id', user.id);
         const targetSet = new Set<string>([entryData.user_id]);
-        (actorFollowers || []).forEach((f: any) => targetSet.add(f.follower_id));
+        (actorFollowers || []).forEach((f) => targetSet.add(f.follower_id));
         targetSet.delete(user.id);
         await fanoutEvent('track_like', {
           userId: user.id,
@@ -873,35 +990,59 @@ export async function addTrackComment(entryId: string, body: string, parentComme
   if (!entry) throw new Error('Entrée introuvable');
   if (!entry.is_public && entry.user_id !== user.id) throw new Error('Entrée introuvable');
 
-  const { error } = await (supabase as any).from('track_diary_comments').insert({
-    entry_id: entryId,
-    user_id: user.id,
-    body: body.trim(),
-    ...(parentCommentId ? { parent_comment_id: parentCommentId } : {}),
-  });
+  let parentCommentAuthorId: string | null = null;
+  if (parentCommentId) {
+    const { data: parentComment } = await (supabase as any)
+      .from('track_diary_comments')
+      .select('id, entry_id, parent_comment_id, user_id')
+      .eq('id', parentCommentId)
+      .maybeSingle();
 
-  if (error) throw new Error('Une erreur est survenue');
+    if (!parentComment || parentComment.entry_id !== entryId) throw new Error('Commentaire parent introuvable');
+    if (parentComment.parent_comment_id) throw new Error('Impossible de répondre à une réponse');
+    parentCommentAuthorId = parentComment.user_id;
+  }
+
+  const { data: insertedComment, error } = await (supabase as any)
+    .from('track_diary_comments')
+    .insert({
+      entry_id: entryId,
+      user_id: user.id,
+      body: body.trim(),
+      ...(parentCommentId ? { parent_comment_id: parentCommentId } : {}),
+    })
+    .select('id')
+    .single();
+
+  if (error || !insertedComment) throw new Error('Une erreur est survenue');
 
   // Fanout comment event (non-fatal)
   try {
-    const { data: entryData } = await (supabase as any)
+    const { data: rawEntryData } = await (supabase as any)
       .from('track_diary_entries')
       .select('user_id, track_id, album_id, tracks(title, albums(id, title, cover_url))')
       .eq('id', entryId)
       .single();
+    const entryData = rawEntryData as LikeFanoutEntryData | null;
     if (entryData) {
-      const track = (entryData as any).tracks as any;
-      const album = track?.albums as any;
-      const { data: prevCommenters } = await (supabase as any)
-        .from('track_diary_comments')
-        .select('user_id')
-        .eq('entry_id', entryId)
-        .neq('user_id', user.id)
-        .limit(500);
-      const { data: actorFollowers } = await supabase.from('follows').select('follower_id').eq('followee_id', user.id);
-      const targetSet = new Set<string>([entryData.user_id]);
-      (prevCommenters || []).forEach((c: any) => targetSet.add(c.user_id));
-      (actorFollowers || []).forEach((f: any) => targetSet.add(f.follower_id));
+      const track = entryData.tracks;
+      const album = track?.albums;
+      const targetSet = new Set<string>();
+      if (parentCommentId && parentCommentAuthorId) {
+        targetSet.add(parentCommentAuthorId);
+      } else {
+        const { data: rawPrevCommenters } = await (supabase as any)
+          .from('track_diary_comments')
+          .select('user_id')
+          .eq('entry_id', entryId)
+          .neq('user_id', user.id)
+          .limit(500);
+        const prevCommenters = rawPrevCommenters as Array<{ user_id: string }> | null;
+        const { data: actorFollowers } = await supabase.from('follows').select('follower_id').eq('followee_id', user.id);
+        targetSet.add(entryData.user_id);
+        (prevCommenters || []).forEach((c) => targetSet.add(c.user_id));
+        (actorFollowers || []).forEach((f) => targetSet.add(f.follower_id));
+      }
       targetSet.delete(user.id);
       await fanoutEvent('track_comment', {
         userId: user.id,
@@ -912,6 +1053,9 @@ export async function addTrackComment(entryId: string, body: string, parentComme
         albumTitle: album?.title || '',
         coverUrl: album?.cover_url || null,
         entryOwnerId: entryData.user_id,
+        commentId: insertedComment.id,
+        parentCommentId: parentCommentId ?? null,
+        parentCommentAuthorId: parentCommentAuthorId ?? null,
       }, [...targetSet]);
     }
   } catch { /* fanout errors are non-fatal */ }
@@ -932,7 +1076,8 @@ export async function deleteTrackComment(commentId: string): Promise<void> {
   if (!comment) throw new Error('Commentaire introuvable');
   if (comment.user_id !== user.id) throw new Error('Non autorisé');
 
-  await (supabase as any).from('track_diary_comments').delete().eq('id', commentId);
+  const { error: deleteError } = await (supabase as any).from('track_diary_comments').delete().eq('id', commentId);
+  if (deleteError) throw new Error('Une erreur est survenue');
 }
 
 export async function getTrackEntryComments(entryId: string): Promise<TrackDiaryComment[]> {
@@ -947,12 +1092,13 @@ export async function getTrackEntryComments(entryId: string): Promise<TrackDiary
 
   if (!commentsData || commentsData.length === 0) return [];
 
-  const userIds = [...new Set((commentsData as any[]).map((c: any) => c.user_id))];
+  const commentRows = commentsData as CommentRow[];
+  const userIds = [...new Set(commentRows.map((c) => c.user_id))];
   const { data: profiles } = await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds);
-  const profilesMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+  const profilesMap = new Map((profiles ?? []).map((p) => [p.id, p as ProfileRef]));
 
-  const allComments: TrackDiaryComment[] = (commentsData as any[]).map((c: any) => {
-    const profile = profilesMap.get(c.user_id) as any;
+  const allComments: TrackDiaryComment[] = commentRows.map((c) => {
+    const profile = profilesMap.get(c.user_id);
     return {
       id: c.id,
       body: c.body,

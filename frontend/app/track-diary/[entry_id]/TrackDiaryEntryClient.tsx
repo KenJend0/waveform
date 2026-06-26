@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Heart, Trash2, CornerDownLeft, Flag, Share2, Link2, MoreHorizontal, Edit2 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
@@ -109,6 +109,7 @@ interface Props {
 
 export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
   const { profile } = useAuth();
+  const searchParams = useSearchParams();
   const isAuthor = currentUser?.id === entry.author.id;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -125,6 +126,19 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
 
   const totalComments = comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
+
+  useEffect(() => {
+    const replyId = searchParams.get('reply');
+    if (!replyId) return;
+
+    const parentComment = comments.find((comment) => (comment.replies ?? []).some((reply) => reply.id === replyId));
+    if (!parentComment) return;
+
+    setExpandedReplies((prev) => new Set([...prev, parentComment.id]));
+    setTimeout(() => {
+      document.getElementById(`comment-${replyId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+  }, [comments, searchParams]);
 
   useEffect(() => {
     if (!['#comments', '#commentaires'].includes(window.location.hash)) return;
@@ -482,7 +496,7 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
                     <div className="relative mt-1.5 ml-9 pl-3.5 flex flex-col gap-2">
                       <div className="absolute left-0 top-0 bottom-3 w-px bg-[#C9C2B5]" />
                       {replies.map((reply) => (
-                        <div key={reply.id} className={`flex gap-2 p-2.5 rounded-[10px] border border-[#D8D3CB] ${reply.is_mine ? 'bg-[#ECE8E1]' : 'bg-[#FAF8F4]'}`}>
+                        <div key={reply.id} id={`comment-${reply.id}`} className={`flex gap-2 p-2.5 rounded-[10px] border border-[#D8D3CB] ${reply.is_mine ? 'bg-[#ECE8E1]' : 'bg-[#FAF8F4]'}`}>
                           <Link href={`/u/${reply.author.username}`} className="flex-shrink-0">
                             <UserAvatar userId={reply.author.id} src={reply.author.avatar_url} size={26} />
                           </Link>

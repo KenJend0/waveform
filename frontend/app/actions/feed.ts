@@ -43,6 +43,7 @@ export interface FeedEvent {
   target_has_review?: boolean; // Whether the liked/commented entry has review text
   current_user_also_commented?: boolean; // For COMMENT_CREATED: current user has also commented on same entry
   comment_id?: string; // For COMMENT_REPLY: ID of the reply comment (used for deep-linking)
+  is_reply?: boolean; // Comment event is a reply to the current user's comment
   track?: {
     id: string;
     title: string;
@@ -90,17 +91,21 @@ export async function getMyFeed({
     // Fetch blocked user IDs to exclude their events from the feed
     const { data: blockedRows } = await (supabase as any)
       .from('user_blocks')
-      .select('blocked_id')
-      .eq('blocker_id', user.id);
-    const blockedIds = (blockedRows ?? []).map((r: any) => r.blocked_id);
+      .select('blocked_id');
+    const blockedIds = ((blockedRows ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id);
 
     // Feed is fan-out at write time, so we only read events where user_id = auth.uid()
     // No need to fetch followers or use .in() — all relevant events are already here
 
     const queryLimit = scope === 'all' ? limit : Math.max(limit * 5, 100);
+    const maxBatches = scope === 'all' ? 1 : 5;
+    const rawEvents: any[] = [];
+    let scanCursor = cursor;
+    let reachedEnd = false;
 
-    // Fetch feed_events for current user, with joins
-    let query = supabase
+    for (let batch = 0; batch < maxBatches; batch++) {
+      // Fetch feed_events for current user, with joins
+      let query = (supabase as any)
       .from('feed_events')
       .select(
         `
@@ -112,6 +117,7 @@ export async function getMyFeed({
         entry_id,
         album_id,
         comment_id,
+        track_comment_id,
         payload,
         created_at,
         actor:profiles!actor_id (
@@ -150,32 +156,51 @@ export async function getMyFeed({
               name
             )
           )
+        ),
+        track_comment:track_diary_comments!feed_events_track_comment_id_fkey (
+          id,
+          parent_comment_id,
+          user_id
         )
       `
-      )
+        )
       .eq('user_id', user.id)
       .neq('type', 'discover')
       .neq('actor_id', user.id) // Don't show own actions — user already knows what they did
       .order('created_at', { ascending: false })
       .limit(queryLimit);
 
-    // Exclude events from blocked users
-    if (blockedIds.length > 0) {
-      query = query.not('actor_id', 'in', `(${blockedIds.join(',')})`);
+      // Exclude events from blocked users
+      if (blockedIds.length > 0) {
+        query = query.not('actor_id', 'in', `(${blockedIds.join(',')})`);
+      }
+
+      // Cursor: only fetch events older than the last seen timestamp
+      if (scanCursor) {
+        query = query.lt('created_at', scanCursor);
+      }
+
+      const { data: batchEvents, error } = await query;
+
+      if (error) {
+        return { success: false, error: 'An error occurred', events: [], nextCursor: null };
+      }
+
+      if (!batchEvents || batchEvents.length === 0) {
+        reachedEnd = true;
+        break;
+      }
+
+      rawEvents.push(...batchEvents);
+      scanCursor = batchEvents[batchEvents.length - 1].created_at;
+
+      if (batchEvents.length < queryLimit) {
+        reachedEnd = true;
+        break;
+      }
     }
 
-    // Cursor: only fetch events older than the last seen timestamp
-    if (cursor) {
-      query = query.lt('created_at', cursor);
-    }
-
-    const { data: rawEvents, error } = await query;
-
-    if (error) {
-      return { success: false, error: 'An error occurred', events: [], nextCursor: null };
-    }
-
-    if (!rawEvents || rawEvents.length === 0) {
+    if (rawEvents.length === 0) {
       return { success: true, events: [], nextCursor: null };
     }
 
@@ -192,7 +217,7 @@ export async function getMyFeed({
           .eq('user_id', user.id)
       : { data: [] };
 
-    const likedEntryIds = new Set((likedData || []).map((l: any) => l.entry_id));
+    const likedEntryIds = new Set((likedData || []).map((l) => l.entry_id));
 
     const { data: statsData } = entryIds.length > 0
       ? await supabase
@@ -202,7 +227,7 @@ export async function getMyFeed({
       : { data: [] };
 
     const statsMap = new Map(
-      (statsData || []).map((stats: any) => [
+      (statsData || []).map((stats) => [
         stats.entry_id,
         {
           likes_count: stats.likes_count ?? 0,
@@ -220,7 +245,7 @@ export async function getMyFeed({
           .eq('user_id', user.id)
       : { data: [] };
 
-    const commentedEntryIds = new Set((commentedData || []).map((c: any) => c.entry_id));
+    const commentedEntryIds = new Set((commentedData || []).map((c) => c.entry_id));
 
     // Track diary entry stats (for TRACK_REVIEW_CREATED events)
     const trackEntryIds = (rawEvents || [])
@@ -253,10 +278,16 @@ export async function getMyFeed({
         : Promise.resolve({ data: [] }),
     ]);
 
-    const trackStatsMap = new Map((trackStatsData || []).map((s: any) => [s.entry_id, s]));
-    const trackLikedIds = new Set((trackLikedData || []).map((l: any) => l.entry_id));
-    const trackCommentedEntryIds = new Set((trackCommentedData || []).map((c: any) => c.entry_id));
-    const trackEntryMap = new Map((trackEntryReviewData || []).map((entry: any) => [entry.id, entry]));
+    const trackStatsMap = new Map(
+      ((trackStatsData || []) as Array<{ entry_id: string; likes_count: number | null; comments_count: number | null }>)
+        .map((s) => [s.entry_id, s])
+    );
+    const trackLikedIds = new Set(((trackLikedData || []) as Array<{ entry_id: string }>).map((l) => l.entry_id));
+    const trackCommentedEntryIds = new Set(((trackCommentedData || []) as Array<{ entry_id: string }>).map((c) => c.entry_id));
+    const trackEntryMap = new Map(
+      ((trackEntryReviewData || []) as Array<{ id: string; rating: number | null; review_body: string | null }>)
+        .map((entry) => [entry.id, entry])
+    );
 
     // Map DB events to frontend types
     const events: FeedEvent[] = (rawEvents || [])
@@ -271,16 +302,20 @@ export async function getMyFeed({
         }
         // Attach fresh counts + is_liked for track reviews
         if (mapped && mapped.type === 'TRACK_REVIEW_CREATED' && mapped.entry_id) {
-          const stats = trackStatsMap.get(mapped.entry_id) as any;
+          const stats = trackStatsMap.get(mapped.entry_id);
           mapped.likes_count = stats?.likes_count ?? 0;
           mapped.comments_count = stats?.comments_count ?? 0;
           mapped.is_liked = trackLikedIds.has(mapped.entry_id);
         }
         if (mapped && (mapped.type === 'TRACK_REVIEW_LIKED' || mapped.type === 'TRACK_COMMENT_CREATED') && mapped.entry_id) {
-          const trackEntry = trackEntryMap.get(mapped.entry_id) as any;
+          const trackEntry = trackEntryMap.get(mapped.entry_id);
           mapped.target_has_review = Boolean(String(trackEntry?.review_body ?? '').trim());
           if (mapped.type === 'TRACK_REVIEW_LIKED') {
             mapped.rating = trackEntry?.rating ?? undefined;
+          }
+          if (mapped.type === 'TRACK_COMMENT_CREATED' && raw.track_comment) {
+            mapped.comment_id = mapped.comment_id ?? raw.track_comment.id ?? undefined;
+            mapped.is_reply = mapped.is_reply || Boolean(raw.track_comment.parent_comment_id);
           }
         }
         // Attach "also commented" flag for comment events from other users
@@ -302,7 +337,7 @@ export async function getMyFeed({
 
     // Cursor for the next page: created_at of the oldest raw event scanned.
     // For scoped tabs, this prevents looping over events filtered out from the tab.
-    const nextCursor = rawEvents.length === queryLimit
+    const nextCursor = !reachedEnd && rawEvents.length > 0
       ? rawEvents[rawEvents.length - 1].created_at
       : null;
 
@@ -335,6 +370,7 @@ function isNotificationFeedEvent(event: FeedEvent, currentUserId: string): boole
     return event.entry_owner_id === currentUserId;
   }
   if (event.type === 'COMMENT_CREATED' || event.type === 'TRACK_COMMENT_CREATED') {
+    if (event.is_reply) return true;
     return event.entry_owner_id === currentUserId;
   }
   return false;
@@ -596,6 +632,23 @@ function mapFeedEvent(raw: any): FeedEvent | null {
       const commentAlbum = raw.entry?.album || (raw.album ? { id: raw.album.id, title: raw.album.title, cover_url: raw.album.cover_url } : null);
 
       if (raw.entry && commentAlbum) {
+        if (raw.payload?.parentCommentId) {
+          return {
+            ...baseEvent,
+            type: 'COMMENT_REPLY',
+            entry_id: raw.entry.id,
+            comment_id: raw.comment_id ?? undefined,
+            album: {
+              id: commentAlbum.id,
+              title: commentAlbum.title,
+              cover_url: commentAlbum.cover_url,
+              artist_id: commentAlbum.artist_id ?? raw.album?.artist_id ?? undefined,
+              artist_name: commentAlbum.artist?.name ?? raw.album?.artist?.name ?? undefined,
+            },
+            is_reply: true,
+          };
+        }
+
         return {
           ...baseEvent,
           type: 'COMMENT_CREATED',
@@ -651,6 +704,7 @@ function mapFeedEvent(raw: any): FeedEvent | null {
           type: 'COMMENT_REPLY',
           entry_id: raw.entry?.id ?? undefined,
           comment_id: raw.comment_id ?? undefined,
+          is_reply: true,
           album: {
             id: replyAlbum.id,
             title: replyAlbum.title,
@@ -690,7 +744,9 @@ function mapFeedEvent(raw: any): FeedEvent | null {
         ...baseEvent,
         type: 'TRACK_COMMENT_CREATED',
         entry_id: p.trackEntryId ?? undefined,
+        comment_id: raw.track_comment?.id ?? p.commentId ?? undefined,
         entry_owner_id: p.entryOwnerId ?? undefined,
+        is_reply: Boolean(raw.track_comment?.parent_comment_id ?? p.parentCommentId),
         track: {
           id: p.trackId || '',
           title: p.trackTitle || '',
@@ -735,7 +791,7 @@ export async function getFollowActors(followeeId: string, anchorTime: string): P
       .order('created_at', { ascending: false });
 
     if (error || !data) return [];
-    return (data as any[]).map((r) => r.actor).filter(Boolean) as FeedActor[];
+    return data.map((r) => r.actor).filter((a): a is FeedActor => a != null);
   } catch {
     return [];
   }
@@ -756,7 +812,10 @@ export async function getCommentActors(entryId: string): Promise<FeedActor[]> {
       .order('created_at', { ascending: false });
 
     if (error || !data) return [];
-    return (data as any[]).map((r) => r.user).filter(Boolean) as FeedActor[];
+    // Supabase type-infers `user` as an array here despite the FK alias resolving
+    // to a single row at runtime — same join shape as getFollowActors above.
+    const rows = data as unknown as Array<{ user: FeedActor | null }>;
+    return rows.map((r) => r.user).filter((a): a is FeedActor => a != null);
   } catch {
     return [];
   }
@@ -778,10 +837,10 @@ export async function getTrackCommentActors(entryId: string): Promise<FeedActor[
 
     if (error || !comments || comments.length === 0) return [];
 
-    const userIds = [...new Set(comments.map((c: any) => c.user_id))] as string[];
+    const userIds = [...new Set((comments as Array<{ user_id: string }>).map((c) => c.user_id))];
     const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url').in('id', userIds);
-    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-    return userIds.map((id) => profileMap.get(id)).filter(Boolean) as FeedActor[];
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+    return userIds.map((id) => profileMap.get(id)).filter((a): a is FeedActor => a != null);
   } catch {
     return [];
   }
@@ -803,10 +862,10 @@ export async function getTrackEntryLikes(entryId: string): Promise<FeedActor[]> 
 
     if (error || !likes || likes.length === 0) return [];
 
-    const userIds = [...new Set(likes.map((l: any) => l.user_id))] as string[];
+    const userIds = [...new Set((likes as Array<{ user_id: string }>).map((l) => l.user_id))];
     const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url').in('id', userIds);
-    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-    return userIds.map((id) => profileMap.get(id)).filter(Boolean) as FeedActor[];
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+    return userIds.map((id) => profileMap.get(id)).filter((a): a is FeedActor => a != null);
   } catch {
     return [];
   }
@@ -908,7 +967,8 @@ export async function fanoutEvent(
       type,
       entry_id: (payload.entryId || null) as string | null,
       album_id: (payload.albumId || null) as string | null,
-      comment_id: (payload.commentId || null) as string | null,
+      comment_id: (type === 'comment' || type === 'comment_reply' ? payload.commentId || null : null) as string | null,
+      track_comment_id: (type === 'track_comment' ? payload.commentId || null : null) as string | null,
       followee_id: type === 'follow' ? (payload.followeeId as string | null) : null,
       payload: payload || {},
     }));
@@ -924,16 +984,16 @@ export async function fanoutEvent(
     // ce qui permet à l'acteur d'écrire dans les feeds de ses followers.
     // Fallback sur supabaseAdmin si le client user-level n'a pas de session.
     const insertClient = supabase ?? supabaseAdmin;
-    const { error: insertError } = await (insertClient as any)
+    const { error: insertError } = await insertClient
       .from('feed_events')
-      .insert(safeEvents as any[]);
+      .insert(safeEvents);
 
     if (insertError) {
       // Retry avec supabaseAdmin si le client user-level échoue (ex: pas de session)
       if (insertClient !== supabaseAdmin) {
         const { error: adminError } = await supabaseAdmin
           .from('feed_events')
-          .insert(safeEvents as any[]);
+          .insert(safeEvents);
         if (adminError) {
           console.error('fanoutEvent insert error (admin):', adminError.message, { type, code: adminError.code });
           return { success: false, error: 'An error occurred' };
@@ -987,8 +1047,8 @@ export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
     }
 
     // Keep only the latest entry per author, then cap to requested unique authors.
-    const latestByUser = new Map<string, any>();
-    for (const entry of entries as any[]) {
+    const latestByUser = new Map<string, (typeof entries)[number]>();
+    for (const entry of entries) {
       if (!latestByUser.has(entry.user_id)) {
         latestByUser.set(entry.user_id, entry);
       }
@@ -997,8 +1057,8 @@ export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
 
     const uniqueEntries = Array.from(latestByUser.values());
 
-    const userIds = [...new Set(uniqueEntries.map((e: any) => e.user_id))];
-    const albumIds = [...new Set(uniqueEntries.map((e: any) => e.album_id))];
+    const userIds = [...new Set(uniqueEntries.map((e) => e.user_id))];
+    const albumIds = [...new Set(uniqueEntries.map((e) => e.album_id))];
 
     // Step 2: fetch profiles and albums in parallel
     const [{ data: profiles }, { data: albums }] = await Promise.all([
@@ -1006,21 +1066,21 @@ export async function getPublicFeed(limit = 30): Promise<PublicFeedEntry[]> {
       supabase.from('albums').select('id, title, cover_url, artist_id').in('id', albumIds),
     ]);
 
-    const artistIds = [...new Set((albums ?? []).map((a: any) => a.artist_id).filter(Boolean))];
+    const artistIds = [...new Set((albums ?? []).map((a) => a.artist_id).filter((id): id is string => id != null))];
     const { data: artists } = artistIds.length > 0
       ? await supabase.from('artists').select('id, name').in('id', artistIds)
       : { data: [] };
 
-    const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-    const albumMap = new Map((albums ?? []).map((a: any) => [a.id, a]));
-    const artistMap = new Map((artists ?? []).map((a: any) => [a.id, a]));
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const albumMap = new Map((albums ?? []).map((a) => [a.id, a]));
+    const artistMap = new Map((artists ?? []).map((a) => [a.id, a]));
 
     return uniqueEntries
-      .filter((e: any) => profileMap.has(e.user_id) && albumMap.has(e.album_id))
-      .map((e: any) => {
-        const profile = profileMap.get(e.user_id);
-        const album = albumMap.get(e.album_id);
-        const artist = artistMap.get(album?.artist_id);
+      .filter((e) => profileMap.has(e.user_id) && albumMap.has(e.album_id))
+      .map((e) => {
+        const profile = profileMap.get(e.user_id)!;
+        const album = albumMap.get(e.album_id)!;
+        const artist = artistMap.get(album.artist_id ?? '');
         return {
           id: e.id,
           rating: e.rating ?? null,
@@ -1079,39 +1139,25 @@ export async function hasUnseenActivity(): Promise<boolean> {
 
     const supabase = await createSupabaseServer();
 
-    const { data: profile } = await supabase
+    // last_seen_activity_at n'est pas dans les types générés (migration récente) — cast en any.
+    const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('last_seen_activity_at')
       .eq('id', user.id)
       .maybeSingle();
 
-    const since = (profile as any)?.last_seen_activity_at ?? new Date(0).toISOString();
+    const since = profile?.last_seen_activity_at ?? new Date(0).toISOString();
 
-    const { data: recentEvents } = await supabase
+    const { count } = await supabase
       .from('feed_events')
-      .select(`
-        id,
-        type,
-        followee_id,
-        payload,
-        entry:diary_entries (
-          user_id
-        )
-      `)
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .neq('type', 'discover')
       .neq('actor_id', user.id)
       .gt('created_at', since)
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(1);
 
-    return (recentEvents ?? []).some((event: any) => {
-      if (event.type === 'follow') return event.followee_id === user.id;
-      if (event.type === 'comment_reply') return true;
-      if (event.type === 'like' || event.type === 'comment') return event.entry?.user_id === user.id;
-      if (event.type === 'track_like' || event.type === 'track_comment') return event.payload?.entryOwnerId === user.id;
-      return false;
-    });
+    return (count ?? 0) > 0;
   } catch (err) {
     console.error('hasUnseenActivity error:', err);
     return false;

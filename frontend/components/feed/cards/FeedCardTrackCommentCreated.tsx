@@ -24,7 +24,9 @@ export default function FeedCardTrackCommentCreated({ event, currentUserId }: Pr
   const isAggregate = event.actors_count && event.actors_count > 1 && event.actors;
   const needsFetch = isAggregate && event.actors_count! > event.actors!.length;
   const track = event.track;
-  const entryHref = event.entry_id ? `/track-diary/${event.entry_id}` : undefined;
+  const entryHref = event.entry_id
+    ? `/track-diary/${event.entry_id}${event.is_reply && event.comment_id ? `?reply=${event.comment_id}` : ''}`
+    : undefined;
   const canOpenActors = Boolean(isAggregate && event.entry_id);
 
   const handleCardNavigation = (target: EventTarget | null) => {
@@ -38,18 +40,25 @@ export default function FeedCardTrackCommentCreated({ event, currentUserId }: Pr
     <FeedAvatarCluster isAggregate={isAggregate} actor={event.actor} actors={event.actors} glyph="comment" />
   );
 
-  const context = buildInteractionContext({
-    currentUserId,
-    actor: event.actor,
-    verb: 'commenté',
-    isAggregate,
-    actors: event.actors,
-    actorsCount: event.actors_count,
-    onShowMore: needsFetch ? () => setSheetOpen(true) : undefined,
-    entryOwnerId: event.entry_owner_id,
-    alsoActed: event.current_user_also_commented,
-    targetHasReview: event.target_has_review,
-  });
+  const context = event.is_reply ? (
+    <>
+      <Link href={`/u/${event.actor.username}`} className="font-medium text-text-secondary hover:text-accent-deep transition-colors duration-150">
+        {event.actor.username}
+      </Link>
+      <span>{' a répondu à ton commentaire'}</span>
+    </>
+  ) : buildInteractionContext({
+      currentUserId,
+      actor: event.actor,
+      verb: 'commenté',
+      isAggregate,
+      actors: event.actors,
+      actorsCount: event.actors_count,
+      onShowMore: needsFetch ? () => setSheetOpen(true) : undefined,
+      entryOwnerId: event.entry_owner_id,
+      alsoActed: event.current_user_also_commented,
+      targetHasReview: event.target_has_review,
+    });
 
   const title = track && (
     entryHref ? (

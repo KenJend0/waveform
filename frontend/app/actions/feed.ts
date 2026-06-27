@@ -329,17 +329,20 @@ export async function getMyFeed({
       })
       .filter(Boolean) as FeedEvent[];
 
-    const scopedEvents = events
-      .filter((event) => eventMatchesScope(event, scope, user.id))
-      .slice(0, limit);
+    const allScopedEvents = events.filter((event) => eventMatchesScope(event, scope, user.id));
+    const scopedEvents = allScopedEvents.slice(0, limit);
 
     const aggregated = aggregateFeedEvents(scopedEvents, user.id);
 
-    // Cursor for the next page: created_at of the oldest raw event scanned.
-    // For scoped tabs, this prevents looping over events filtered out from the tab.
-    const nextCursor = !reachedEnd && rawEvents.length > 0
-      ? rawEvents[rawEvents.length - 1].created_at
-      : null;
+    // Cursor for the next page. If the scoped batch had more matches than the
+    // page size, resume right after the last *returned* event — the remaining
+    // matches scanned in this batch are still unseen by the client and must
+    // not be skipped. Otherwise fall back to the oldest raw event scanned.
+    const nextCursor = allScopedEvents.length > limit
+      ? scopedEvents[scopedEvents.length - 1].created_at
+      : !reachedEnd && rawEvents.length > 0
+        ? rawEvents[rawEvents.length - 1].created_at
+        : null;
 
     return { success: true, events: aggregated, nextCursor };
   } catch (err) {

@@ -19,6 +19,8 @@ import FeedCardTrackCommentCreated from './cards/FeedCardTrackCommentCreated';
 import { ActorLink } from './cards/FeedActorLink';
 import { FeedAvatarGlyph } from './cards/FeedAvatarGlyph';
 import { showToast } from '@/components/Toast';
+import FeedDiscoverPeople from './FeedDiscoverPeople';
+import { type SimilarUser } from '@/app/actions/explore';
 
 interface FeedInfiniteListProps {
   initialNotifications: FeedEvent[];
@@ -27,6 +29,7 @@ interface FeedInfiniteListProps {
   initialActivityCursor: string | null;
   currentUserId?: string;
   lastSeenActivityAt?: string | null;
+  similarUsers?: SimilarUser[];
 }
 
 type SavedFeedState = {
@@ -361,13 +364,14 @@ function ListenGroupCard({ group, currentUserId }: { group: ListenGroup; current
   const dominantAlbum = [...albumTitleCounts.entries()].find(([, count]) => count >= 3 && count === trackItems.length)?.[0];
   const previewTitles = formatPreviewTitles(group.items.slice(0, 3).map(item => item.title));
 
+  const previewIsPartial = total > 3;
   const action = dominantAlbum
-    ? `a noté ${total} titres de ${dominantAlbum} dont`
+    ? `a noté ${total} titres de ${dominantAlbum}${previewIsPartial ? ' dont' : ''}`
     : ratedCount === total
-      ? `a noté ${total} écoutes dont`
+      ? `a noté ${total} écoutes${previewIsPartial ? ' dont' : ''}`
       : ratedCount === 0
-        ? `a ajouté ${total} écoutes dont`
-        : `a ajouté ${total} écoutes dont`;
+        ? `a ajouté ${total} écoutes${previewIsPartial ? ' dont' : ''}`
+        : `a écouté ${total} titres, dont ${ratedCount} noté${ratedCount > 1 ? 's' : ''}`;
 
   const toggleFromSummary = (target: EventTarget | null) => {
     const element = target instanceof HTMLElement ? target : null;
@@ -464,12 +468,13 @@ function LikeGroupCard({ group, currentUserId }: { group: LikeGroup; currentUser
   const myCount = group.items.filter(i => i.isMyEntry).length;
   const previewTitles = formatPreviewTitles(group.items.slice(0, 3).map(item => item.title));
 
+  const previewIsPartial = total > 3;
   const action = isMe
-    ? `Tu as aimé ${total} écoutes dont`
+    ? `Tu as aimé ${total} écoutes${previewIsPartial ? ' dont' : ''}`
     : myCount === total
-      ? `a aimé ${total} de tes écoutes dont`
+      ? `a aimé ${total} de tes écoutes${previewIsPartial ? ' dont' : ''}`
       : myCount === 0
-        ? `a aimé ${total} écoutes dont`
+        ? `a aimé ${total} écoutes${previewIsPartial ? ' dont' : ''}`
         : `a aimé ${total} écoutes dont ${myCount} des tiennes`;
 
   const toggleFromSummary = (target: EventTarget | null) => {
@@ -699,6 +704,7 @@ export default function FeedInfiniteList({
   initialActivityCursor,
   currentUserId,
   lastSeenActivityAt,
+  similarUsers = [],
 }: FeedInfiniteListProps) {
   const storageKey = getFeedScrollKey(currentUserId);
 
@@ -937,8 +943,9 @@ export default function FeedInfiniteList({
       </div>
       <div>
         {renderItems.length === 0 && (
-          <div className="py-10 text-center">
-            <p className="text-meta text-text-disabled">{getTabEmptyLabel(activeTab)}</p>
+          <div className="pt-10 pb-6">
+            <p className="text-meta text-text-disabled text-center mb-6">{getTabEmptyLabel(activeTab)}</p>
+            <FeedDiscoverPeople users={similarUsers} />
           </div>
         )}
 
@@ -983,9 +990,12 @@ export default function FeedInfiniteList({
       )}
 
       {!activeBucket.hasMore && activeBucket.events.length > 0 && (
-        <div className="py-12 text-center">
-          <div className="w-8 h-px bg-border mx-auto mb-4" />
-          <p className="text-meta text-text-disabled">Fin du fil</p>
+        <div className="pt-12 pb-8">
+          <div className="text-center mb-6">
+            <div className="w-8 h-px bg-border mx-auto mb-4" />
+            <p className="text-meta text-text-disabled">Fin du fil</p>
+          </div>
+          <FeedDiscoverPeople users={similarUsers} />
         </div>
       )}
     </div>

@@ -45,7 +45,7 @@ export default function FeedCardUserFollowed({
         event.actors_count!,
         needsFetch ? () => setSheetOpen(true) : undefined,
       )}{' '}
-      vous ont suivi
+      t&apos;ont suivi
     </>
   ) : (
     <>

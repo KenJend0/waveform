@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getMyFeed, getPublicFeed } from '@/app/actions/feed';
+import { getSimilarUsers } from '@/app/actions/explore';
 import { createSupabaseServer, getAuthUser, userNeedsOnboarding } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 import PublicFeedCard from '@/components/feed/PublicFeedCard';
+import SimilarUsersSection from '@/components/SimilarUsersSection';
 import UnauthCTA from '@/components/UnauthCTA';
 
 export default async function FeedPage() {
@@ -62,6 +64,7 @@ export default async function FeedPage() {
   const activityEvents = activityResult.events;
   const hasEvents = notificationEvents.length > 0 || activityEvents.length > 0;
   const lastSeenActivityAt = (profile as any)?.last_seen_activity_at ?? null;
+  const similarUsers = await getSimilarUsers(3);
 
   return (
     <div className="px-3 md:px-5 lg:px-6 pb-28 lg:pb-12">
@@ -78,6 +81,7 @@ export default async function FeedPage() {
           initialActivityCursor={activityResult.nextCursor ?? null}
           currentUserId={user.id}
           lastSeenActivityAt={lastSeenActivityAt}
+          similarUsers={similarUsers}
         />
       ) : (
         <div className="py-4">
@@ -85,6 +89,17 @@ export default async function FeedPage() {
           <p className="text-meta text-text-tertiary mb-8 leading-relaxed">
             Les likes, commentaires et nouveaux abonnés apparaîtront ici.
           </p>
+
+          {similarUsers.length > 0 ? (
+            <div className="mb-8">
+              <SimilarUsersSection users={similarUsers} />
+            </div>
+          ) : (
+            <p className="text-meta text-text-tertiary mb-6 leading-relaxed">
+              Note quelques albums pour qu&apos;on puisse te suggérer des profils qui te ressemblent.
+            </p>
+          )}
+
           <Link
             href="/explore"
             className="flex items-center justify-between px-4 py-4 bg-background-secondary border border-border rounded-[12px] hover:bg-background-tertiary transition-colors duration-150"

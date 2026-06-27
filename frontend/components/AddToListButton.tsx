@@ -141,7 +141,7 @@ export default function AddToListButton({
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-64 bg-background border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full right-0 mt-1.5 w-64 max-w-[calc(100vw-2rem)] bg-background border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">
                     {/* Listes existantes */}
                     {userLists.length > 0 && (
                         <div className="py-1">

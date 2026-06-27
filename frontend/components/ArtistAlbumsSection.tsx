@@ -129,7 +129,7 @@ export default function ArtistAlbumsSection({ dbAlbums, mbAlbums }: Props) {
     if (allEmpty) return null;
 
     return (
-        <section className="border-t border-border-divider pt-10 mb-20">
+        <section className="border-t border-border-divider pt-8 mb-12">
             <h2 className="text-h2 text-text-primary mb-8">Du même artiste</h2>
             <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
                 {dbAlbums.map((a) => {

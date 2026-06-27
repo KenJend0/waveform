@@ -16,6 +16,7 @@ import AlbumReviewSection from "@/components/AlbumReviewSection";
 import ArtistAlbumsSection from "@/components/ArtistAlbumsSection";
 import ScrollToHashClient from "@/components/ScrollToHashClient";
 import GenrePills from "@/components/GenrePills";
+import ScrollToReviewsStat from "@/components/ScrollToReviewsStat";
 import StreamingLinks from "@/components/StreamingLinks";
 import AdminSpotifyEdit from "@/components/AdminSpotifyEdit";
 import AdminRefreshCover from "@/components/AdminRefreshCover";
@@ -332,19 +333,9 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                     albumHasGenres={hasGenres}
                     genres={hasPills ? genres : undefined}
                     genreWeights={genreWeights}
-                    streamingLinks={hasSomeLinks ? streamingLinks : undefined}
+                    streamingLinks={streamingLinks}
                 />
             </div>
-
-            {/* ========== Mon écoute ========== */}
-            {myLatestEntry && (
-                <MyListenSection
-                    albumId={album.id}
-                    userId={user?.id}
-                    entry={myLatestEntry}
-                    entriesCount={myEntries.length}
-                />
-            )}
 
             {/* ========== Activité réseau ========== */}
             {networkListeners.length > 0 && (
@@ -355,7 +346,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
 
             {/* ========== Stats ========== */}
             {(stats.avg_rating !== null || stats.listeners_count > 0 || stats.reviews_count > 0) && (
-                <div className="flex w-full border-t border-b border-rule py-3 mb-10">
+                <div className="flex w-full border-t border-b border-rule py-3 mb-8">
                     {stats.avg_rating !== null && (
                         <div className={`flex flex-col flex-1 ${(stats.listeners_count > 0 || stats.reviews_count > 0) ? 'border-r border-rule pr-4' : ''}`}>
                             <span className="font-display italic text-[26px] text-text-warm leading-none">
@@ -372,17 +363,27 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                         </div>
                     )}
                     {stats.reviews_count > 0 && (
-                        <div className={`flex flex-col flex-1 ${(stats.avg_rating !== null || stats.listeners_count > 0) ? 'pl-4' : ''}`}>
-                            <span className="font-display italic text-[26px] text-text-warm leading-none">{stats.reviews_count.toLocaleString()}</span>
-                            <span className="text-[10.5px] uppercase tracking-[0.16em] text-text-tertiary mt-1.5">Critiques</span>
-                        </div>
+                        <ScrollToReviewsStat
+                            count={stats.reviews_count}
+                            className={`flex flex-col flex-1 ${(stats.avg_rating !== null || stats.listeners_count > 0) ? 'pl-4' : ''}`}
+                        />
                     )}
                 </div>
             )}
 
+            {/* ========== Mon écoute ========== */}
+            {myLatestEntry && (
+                <MyListenSection
+                    albumId={album.id}
+                    userId={user?.id}
+                    entry={myLatestEntry}
+                    entriesCount={myEntries.length}
+                />
+            )}
+
             {/* Admin tools */}
             {isAdmin && (!streamingLinks.spotify || !!album.mbid) && (
-                <div className="border-t border-border-divider pt-8 mb-20">
+                <div className="border-t border-border-divider pt-8 mb-12">
                     {!streamingLinks.spotify && (
                         <div className="mb-4">
                             <AdminSpotifyEdit albumId={album.id} />
@@ -402,7 +403,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                 const discNos = [...new Set(allTracks.map((t) => t.disc_no))].filter(Boolean).sort();
                 const isMultiDisc = discNos.length > 1;
                 return (
-                    <section className="pt-10 mb-20">
+                    <section className="pt-8 mb-12">
                         <div className="mb-8">
                             <h2 className="text-h2 text-text-primary">Morceaux</h2>
                             {(trackCount > 0 || totalDurationMs > 0) && (
@@ -470,7 +471,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             })()}
 
             {/* ========== 3. OTHERS' NOTES ========== */}
-            <section id="reviews" className="border-t border-border-divider pt-10 mb-20">
+            <section id="reviews" className="border-t border-border-divider pt-8 mb-12 scroll-mt-6">
                 <AlbumReviewSection
                     albumId={album.id}
                     reviewsCount={stats.reviews_count}
@@ -492,7 +493,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             )}
 
             {/* ========== 5. SIMILAR ALBUMS ========== */}
-            <section className="border-t border-border-divider pt-10 mb-20">
+            <section className="border-t border-border-divider pt-8 mb-12">
                 <h2 className="text-h2 text-text-primary mb-8">Albums similaires</h2>
                 {similarAlbums.length > 0 ? (
                     <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">

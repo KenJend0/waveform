@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AlbumEntryMenu from "@/components/AlbumEntryMenu";
 import MyActivitiesModal from "@/components/MyActivitiesModal";
+import EditDiaryEntryButton from "@/components/EditDiaryEntryButton";
 
 type Props = {
     albumId: string;
@@ -19,9 +20,10 @@ type Props = {
 
 export default function MyListenSection({ albumId, userId, entry, entriesCount }: Props) {
     const [isOpen, setIsOpen] = useState(false);
+    const [addReviewOpen, setAddReviewOpen] = useState(false);
 
     return (
-        <section className="border-t border-border-divider pt-10 mb-10">
+        <section className="border-b border-border-divider pb-12">
             <div className="flex items-center gap-3 mb-6">
                 <h2 className="text-h2 text-text-primary">Mon écoute</h2>
                 {entriesCount > 1 && (
@@ -55,10 +57,17 @@ export default function MyListenSection({ albumId, userId, entry, entriesCount }
                     )}
                 </div>
 
-                {entry.review_body && (
+                {entry.review_body ? (
                     <p className="text-meta text-text-secondary italic leading-relaxed max-w-lg mb-3">
                         &laquo;&thinsp;{entry.review_body}&thinsp;&raquo;
                     </p>
+                ) : userId && (
+                    <button
+                        onClick={() => setAddReviewOpen(true)}
+                        className="block font-display italic text-meta text-accent hover:text-accent-deep transition-colors duration-150 mb-3"
+                    >
+                        + Ajouter une critique
+                    </button>
                 )}
 
                 <span className="inline-flex items-center gap-1.5 bg-[#FAF8F4] border border-rule rounded-full px-2.5 py-1 font-display italic text-[12px] text-accent leading-none">
@@ -67,11 +76,23 @@ export default function MyListenSection({ albumId, userId, entry, entriesCount }
             </div>
 
             {userId && (
-                <MyActivitiesModal
-                    albumId={albumId}
-                    isOpen={isOpen}
-                    onClose={() => setIsOpen(false)}
-                />
+                <>
+                    <MyActivitiesModal
+                        albumId={albumId}
+                        isOpen={isOpen}
+                        onClose={() => setIsOpen(false)}
+                    />
+                    <EditDiaryEntryButton
+                        entryId={entry.id}
+                        albumId={albumId}
+                        currentRating={entry.rating}
+                        currentReview={entry.review_body}
+                        currentListenedAt={entry.listened_at}
+                        headless
+                        externalEditOpen={addReviewOpen}
+                        onExternalEditClose={() => setAddReviewOpen(false)}
+                    />
+                </>
             )}
         </section>
     );

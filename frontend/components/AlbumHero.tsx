@@ -117,11 +117,9 @@ export default function AlbumHero({
             </div>
 
             {/* Streaming */}
-            {streamingLinks && (
-                <div className="mt-5">
-                    <StreamingLinks albumId={albumId || album.id} initial={streamingLinks} showSeparator={false} />
-                </div>
-            )}
+            <div className="mt-5">
+                <StreamingLinks albumId={albumId || album.id} initial={streamingLinks ?? {}} showSeparator={false} />
+            </div>
         </>
     );
 }

@@ -4,13 +4,26 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import { BottomSheetProvider } from '@/lib/BottomSheetContext';
+import PullToRefresh from '@/components/PullToRefresh';
+import { BottomSheetProvider, useBottomSheet } from '@/lib/BottomSheetContext';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 const NO_NAV_PATHS = ['/onboarding', '/auth/reset'];
 
 type Props = {
   children: React.ReactNode;
 };
+
+function MainContent({ children }: Props) {
+  const isStandalone = useIsStandalone();
+  const { openCount } = useBottomSheet();
+
+  return (
+    <PullToRefresh enabled={isStandalone && openCount === 0}>
+      <main>{children}</main>
+    </PullToRefresh>
+  );
+}
 
 /**
  * Gère l'affichage du layout selon l'état d'authentification.
@@ -28,7 +41,7 @@ export default function AuthenticatedLayout({ children }: Props) {
   return (
     <BottomSheetProvider>
       {!loading && !hideNav && <Header />}
-      <main>{children}</main>
+      <MainContent>{children}</MainContent>
       {showBottomNav && <BottomNav />}
     </BottomSheetProvider>
   );

@@ -4,7 +4,6 @@ import { ensureProfile, getCurrentStreak } from "@/app/actions/profile";
 import UnauthCTA from "@/components/UnauthCTA";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
-import Top3Albums from "@/components/profile/Top3Albums";
 import RatingDistribution from "@/components/profile/RatingDistribution";
 import { RatingFilterProvider } from "@/components/profile/RatingFilterContext";
 import { getUserDiary, getUserReviewsUnified } from "@/app/actions/diary";
@@ -61,6 +60,7 @@ export default async function MyProfilePage() {
         trackEntries,
         unifiedReviews,
         allRatingsResult,
+        allTrackRatingsResult,
         trackReviewsCountResult,
         streakResult,
     ] = await Promise.all([
@@ -89,6 +89,7 @@ export default async function MyProfilePage() {
         getUserTrackDiary(user.id),
         getUserReviewsUnified(user.id),
         supabase.from("diary_entries").select("rating").eq("user_id", user.id),
+        supabase.from("track_diary_entries").select("rating").eq("user_id", user.id),
         supabase
             .from("track_diary_entries")
             .select("id", { count: "exact", head: true })
@@ -109,7 +110,10 @@ export default async function MyProfilePage() {
     const followersCount = followersResult.count || 0;
     const followingCount = followingResult.count || 0;
 
-    const allRatings = (allRatingsResult.data ?? []).map((e: any) => e.rating as number | null);
+    const allRatings = [
+        ...(allRatingsResult.data ?? []),
+        ...(allTrackRatingsResult.data ?? []),
+    ].map((e: any) => e.rating as number | null);
     const reviewsCount = (reviewsTotalResult.count ?? 0) + (trackReviewsCountResult.count ?? 0);
 
     const username = profile?.username || user.email?.split("@")[0] || "user";
@@ -139,12 +143,9 @@ export default async function MyProfilePage() {
         <div className="lg:flex lg:items-start lg:gap-12 lg:px-8">
             {/* Sidebar gauche (desktop) / Layout empilé (mobile) */}
             <aside className="lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-[72px]">
-                <ProfileHeader user={userData} stats={stats} streak={streak} />
-                <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
-                    <Top3Albums userId={user.id} isMe={true} initialAlbums={favoriteAlbums} />
-                    <div className="mt-4 lg:mt-8">
-                        <RatingDistribution ratings={allRatings} />
-                    </div>
+                <ProfileHeader user={userData} stats={stats} streak={streak} favoriteAlbums={favoriteAlbums} />
+                <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 mt-4 lg:mt-8">
+                    <RatingDistribution ratings={allRatings} />
                 </div>
             </aside>
 

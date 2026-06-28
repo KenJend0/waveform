@@ -41,8 +41,8 @@ export default function RatingDistribution({ ratings, label = "Mes" }: Props) {
         </h4>
         <span className="text-label text-text-tertiary">
           {selected !== null && counts[selected] > 0
-            ? <><em className="font-display italic text-accent-deep not-italic">{selected + 1}/10</em> · {counts[selected]} album{counts[selected] > 1 ? 's' : ''}</>
-            : <>{total} album{total > 1 ? 's' : ''}</>
+            ? <><em className="font-display italic text-accent-deep not-italic">{selected + 1}/10</em> · {counts[selected]} écoute{counts[selected] > 1 ? 's' : ''}</>
+            : <>{total} écoute{total > 1 ? 's' : ''}</>
           }
         </span>
       </div>

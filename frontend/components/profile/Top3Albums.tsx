@@ -17,9 +17,10 @@ type Props = {
   userId: string;
   isMe?: boolean;
   initialAlbums?: FavoriteAlbum[];
+  hideIfEmpty?: boolean;
 };
 
-export default function Top3Albums({ userId, isMe, initialAlbums }: Props) {
+export default function Top3Albums({ userId, isMe, initialAlbums, hideIfEmpty }: Props) {
   const [albums, setAlbums] = useState<FavoriteAlbum[]>(initialAlbums ?? []);
   const [loading, setLoading] = useState(!initialAlbums);
 
@@ -44,6 +45,7 @@ export default function Top3Albums({ userId, isMe, initialAlbums }: Props) {
   }, [userId]);
 
   if (loading) return null;
+  if (hideIfEmpty && albums.length === 0) return null;
 
   return (
     <div className="mt-6">

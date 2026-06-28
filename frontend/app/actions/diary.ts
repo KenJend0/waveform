@@ -733,17 +733,31 @@ export async function getUserDiary(
     query = query.eq('rating', ratingFilter);
   }
 
+  // PostgREST ne peut pas trier la table parente par une colonne d'une
+  // relation to-one embarquée (release_date) : ce tri se fait donc côté JS,
+  // sur l'ensemble des entrées, avant de découper la page.
+  const sortInJs = sort === 'release_date';
+
   if (sort === 'personal_rating') {
     query = query.order('rating', { ascending: false, nullsFirst: false });
-  } else if (sort === 'release_date') {
-    query = query.order('release_date', { ascending: false, nullsFirst: false, foreignTable: 'albums' });
   } else {
     query = query.order('listened_at', { ascending: false });
   }
+  query = query.order('created_at', { ascending: false });
 
-  const { data: entries, error } = await query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+  const { data: rawEntries, error } = sortInJs
+    ? await query.limit(2000)
+    : await query.range(offset, offset + limit - 1);
+
+  let entries = rawEntries;
+  if (entries && sortInJs) {
+    entries = [...entries].sort((a, b) => {
+      const dA = a.albums?.release_date ? new Date(a.albums.release_date).getTime() : 0;
+      const dB = b.albums?.release_date ? new Date(b.albums.release_date).getTime() : 0;
+      return dB - dA;
+    });
+    entries = entries.slice(offset, offset + limit);
+  }
 
   // Get likes count from the stats view
   const entryIds = (entries || []).map(e => e.id);

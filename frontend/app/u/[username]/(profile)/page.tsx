@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: any) {
   };
 }
 
+import { Flame } from "lucide-react";
 import FollowButton from "@/components/social/FollowButton";
 import ProfileActionsMenu from "@/components/social/ProfileActionsMenu";
 import BackButton from "@/components/BackButton";
@@ -33,6 +34,7 @@ import PublicProfileTabs from "@/components/profile/PublicProfileTabs";
 import Top3Albums from "@/components/profile/Top3Albums";
 import RatingDistribution from "@/components/profile/RatingDistribution";
 import { RatingFilterProvider } from "@/components/profile/RatingFilterContext";
+import { getCurrentStreak } from "@/app/actions/profile";
 import { getUserDiary, getUserReviewsUnified } from "@/app/actions/diary";
 import { getPublicUserLists } from "@/app/actions/lists";
 import { getUserTrackDiary } from "@/app/actions/track-diary";
@@ -78,6 +80,10 @@ export default async function PublicProfilePage({
     profileTrackDiary,
     profileUnifiedReviews,
     allRatingsResult,
+    allTrackRatingsResult,
+    albumReviewsCountResult,
+    trackReviewsCountResult,
+    streakResult,
   ] = await Promise.all([
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("followee_id", profile.id),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
@@ -92,7 +98,27 @@ export default async function PublicProfilePage({
     getUserTrackDiary(profile.id, 0, 51),
     getUserReviewsUnified(profile.id),
     supabase.from("diary_entries").select("rating").eq("user_id", profile.id),
+    supabase.from("track_diary_entries").select("rating").eq("user_id", profile.id),
+    supabase
+      .from("diary_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .eq("is_public", true)
+      .not("review_body", "is", null)
+      .neq("review_body", ""),
+    supabase
+      .from("track_diary_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .eq("is_public", true)
+      .not("review_body", "is", null)
+      .neq("review_body", ""),
+    getCurrentStreak(profile.id),
   ]);
+
+  const streak = streakResult.ok
+    ? { days: streakResult.streakDays, isActiveToday: streakResult.isActiveToday }
+    : undefined;
 
   const favoriteAlbums = (favoriteAlbumsResult.data || []).map((item: any) => ({
     id: (item.albums as any)?.id || item.album_id,
@@ -103,25 +129,21 @@ export default async function PublicProfilePage({
   }));
 
   let isFollowing = false;
-  let isFollowingYou = false;
   let isBlocking = false;
   let myListenedAlbums: Record<string, number | null> = {};
 
   if (authUser) {
     const [
       { data: followStatus },
-      { data: followBackStatus },
       { data: blockStatus },
       myDiaryRes,
     ] = await Promise.all([
       supabase.from("follows").select("follower_id").eq("follower_id", authUser.id).eq("followee_id", profile.id).maybeSingle(),
-      supabase.from("follows").select("follower_id").eq("follower_id", profile.id).eq("followee_id", authUser.id).maybeSingle(),
       supabase.from("user_blocks").select("blocked_id").eq("blocker_id", authUser.id).eq("blocked_id", profile.id).maybeSingle(),
       supabase.from("diary_entries").select("album_id, rating").eq("user_id", authUser.id).limit(2000),
     ]);
 
     isFollowing = !!followStatus;
-    isFollowingYou = !!followBackStatus;
     isBlocking = !!blockStatus;
 
     (myDiaryRes.data || []).forEach((e) => {
@@ -130,8 +152,11 @@ export default async function PublicProfilePage({
   }
 
   const bio = (profile as any).bio || "";
-  const reviewsCount = profileUnifiedReviews.length;
-  const allRatings = (allRatingsResult.data ?? []).map((e: any) => e.rating as number | null);
+  const reviewsCount = (albumReviewsCountResult.count ?? 0) + (trackReviewsCountResult.count ?? 0);
+  const allRatings = [
+    ...(allRatingsResult.data ?? []),
+    ...(allTrackRatingsResult.data ?? []),
+  ].map((e: any) => e.rating as number | null);
 
   if (isBlocking) {
     return (
@@ -191,11 +216,16 @@ export default async function PublicProfilePage({
                   <h1 className="text-[24px] lg:text-[22px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
                     @{username}
                   </h1>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+
+                  {streak && streak.days >= 2 && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 bg-paper-hi border border-border rounded-badge px-2 py-0.5 text-label text-accent-deep">
+                      <Flame size={12} />
+                      {streak.days} jours d&apos;affilés
+                    </span>
+                  )}
+
+                  <div className="mt-3">
                     <FollowButton userId={profile.id} initialIsFollowing={isFollowing} />
-                    {isFollowingYou && (
-                      <span className="text-[11px] text-text-tertiary/60 italic">vous suit</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -203,6 +233,9 @@ export default async function PublicProfilePage({
               {bio && (
                 <p className="text-meta text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">{bio}</p>
               )}
+
+              {/* Albums favoris */}
+              <Top3Albums userId={profile.id} initialAlbums={favoriteAlbums} hideIfEmpty />
 
               {/* Stats — charte : font-display italic 28px text-text-warm, labels text-label */}
               <div className="flex w-full mt-5 pt-4 border-t border-rule">
@@ -222,13 +255,9 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          {/* Albums favoris + distribution */}
-          <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 lg:mt-4">
-            {/* Distribution mobile — juste sous le hero */}
-            <Top3Albums userId={profile.id} initialAlbums={favoriteAlbums} />
-            <div className="mt-4 lg:mt-8">
-              <RatingDistribution ratings={allRatings} label="Ses" />
-            </div>
+          {/* Distribution des notes */}
+          <div className="max-w-page mx-auto px-4 sm:px-6 lg:max-w-none lg:px-0 mt-4 lg:mt-8">
+            <RatingDistribution ratings={allRatings} label="Ses" />
           </div>
         </aside>
 

@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import { showToast } from "@/components/Toast";
+import Top3Albums, { FavoriteAlbum } from "@/components/profile/Top3Albums";
 
 type Props = {
   user: {
@@ -27,10 +28,11 @@ type Props = {
     days: number;
     isActiveToday: boolean;
   };
+  favoriteAlbums?: FavoriteAlbum[];
   onFollowClick?: () => void;
 };
 
-export default function ProfileHeader({ user, stats, streak, onFollowClick }: Props) {
+export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onFollowClick }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { signOut } = useAuth();
@@ -152,6 +154,14 @@ export default function ProfileHeader({ user, stats, streak, onFollowClick }: Pr
             {user.bio}
           </p>
         )}
+
+        {/* Albums favoris */}
+        <Top3Albums
+          userId={user.id}
+          isMe={!!user.is_me}
+          initialAlbums={favoriteAlbums}
+          hideIfEmpty={!user.is_me}
+        />
 
         {/* Stats row */}
         <div className="flex w-full mt-5 pt-4 border-t border-rule">

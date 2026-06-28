@@ -76,7 +76,7 @@ export default function TrackDiaryInline({ trackId, albumId, artistId, userId, e
                     }
                     setOpen(true);
                 }}
-                className="text-label text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-[8px] transition-colors duration-150 border border-border hover:border-[#8E6F5E]"
+                className="text-sm font-medium bg-accent-deep text-[#FAF8F4] px-4 py-2 rounded-[8px] hover:opacity-90 transition-opacity duration-150"
             >
                 {existingEntry ? "Ré-écouter" : "Ajouter au journal"}
             </button>

@@ -6,6 +6,7 @@ import { upsertTrackDiaryEntry, deleteTrackDiaryEntry } from "@/app/actions/trac
 import { Edit2, Trash2 } from "lucide-react";
 import StarRating from "@/components/StarRating";
 import { showToast } from "@/components/Toast";
+import BottomSheet from "@/components/BottomSheet";
 
 type Props = {
   entryId: string;
@@ -126,11 +127,8 @@ export default function EditTrackDiaryEntryButton({
       )}
 
       {/* Modal modifier */}
-      {resolvedEditOpen && (
-        <div className="fixed inset-0 bg-[#1C1C1C]/20 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-[12px] p-6 max-w-md w-full border border-border">
-            <h2 className="text-meta font-medium font-sans text-text-primary mb-4">Mettre à jour</h2>
-            <form onSubmit={handleUpdate} className="space-y-3">
+      <BottomSheet isOpen={resolvedEditOpen} onClose={closeEdit} title="Mettre à jour" maxHeight="h-[70vh]">
+            <form onSubmit={handleUpdate} className="px-6 py-4 space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-meta text-text-secondary">Note</span>
@@ -159,11 +157,10 @@ export default function EditTrackDiaryEntryButton({
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Vos pensées..."
-                rows={3}
-                className="w-full border border-border rounded-[10px] p-3 text-meta bg-background-secondary text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E]"
+                className="w-full h-36 resize-none border border-border rounded-[10px] p-3 text-meta bg-background-secondary text-text-primary placeholder-text-tertiary focus:outline-none focus:border-[#8E6F5E]"
               />
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-2 pb-2">
                 <button
                   type="button"
                   onClick={closeEdit}
@@ -180,34 +177,29 @@ export default function EditTrackDiaryEntryButton({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </BottomSheet>
 
       {/* Confirmation suppression */}
-      {resolvedDeleteOpen && (
-        <div className="fixed inset-0 bg-[#1C1C1C]/20 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-[12px] p-6 max-w-md w-full border border-border">
-            <h2 className="text-meta font-medium font-sans text-text-primary mb-2">Supprimer ?</h2>
-            <p className="text-label text-text-secondary mb-4">Cette action ne peut pas être annulée.</p>
-            <div className="flex gap-2">
-              <button
-                onClick={closeDelete}
-                className="flex-1 px-3 py-2.5 bg-background-secondary hover:bg-background-tertiary text-text-primary rounded-[8px] text-meta transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={loading}
-                className="flex-1 px-3 py-2.5 bg-[#C86C6C] hover:opacity-85 text-[#F5F3EF] rounded-[8px] text-meta disabled:opacity-50 transition-opacity"
-              >
-                Supprimer
-              </button>
+      <BottomSheet isOpen={resolvedDeleteOpen} onClose={closeDelete} title="Supprimer ?">
+            <div className="px-6 py-4">
+              <p className="text-label text-text-secondary mb-4">Cette action ne peut pas être annulée.</p>
+              <div className="flex gap-2 pb-2">
+                <button
+                  onClick={closeDelete}
+                  className="flex-1 px-3 py-2.5 bg-background-secondary hover:bg-background-tertiary text-text-primary rounded-[8px] text-meta transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="flex-1 px-3 py-2.5 bg-[#C86C6C] hover:opacity-85 text-[#F5F3EF] rounded-[8px] text-meta disabled:opacity-50 transition-opacity"
+                >
+                  Supprimer
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+      </BottomSheet>
     </>
   );
 }

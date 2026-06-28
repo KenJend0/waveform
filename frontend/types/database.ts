@@ -1615,6 +1615,7 @@ export type Database = {
           avg_rating: number | null
           listeners_count: number | null
           ratings_count: number | null
+          reviews_count: number | null
           track_id: string | null
         }
         Relationships: [

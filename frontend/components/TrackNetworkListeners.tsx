@@ -37,7 +37,7 @@ export default function TrackNetworkListeners({ listeners }: Props) {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 mt-5 hover:opacity-75 transition-opacity duration-150"
+                className="flex items-center gap-2 hover:opacity-75 transition-opacity duration-150"
             >
                 <div className="flex -space-x-1.5">
                     {shown.map((l) => (

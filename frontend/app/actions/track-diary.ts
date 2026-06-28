@@ -517,6 +517,7 @@ export async function getTrackReviewsPage(input: {
 export type TrackStat = {
   avg_rating: number | null;
   ratings_count: number;
+  reviews_count: number;
   listeners_count: number;
 };
 
@@ -525,7 +526,7 @@ export async function getTrackStats(trackId: string): Promise<TrackStat | null> 
 
   const { data, error } = await supabase
     .from('track_stats')
-    .select('avg_rating, ratings_count, listeners_count')
+    .select('avg_rating, ratings_count, reviews_count, listeners_count')
     .eq('track_id', trackId)
     .maybeSingle();
 
@@ -534,6 +535,7 @@ export async function getTrackStats(trackId: string): Promise<TrackStat | null> 
   return {
     avg_rating: data.avg_rating ? Number(data.avg_rating) : null,
     ratings_count: data.ratings_count || 0,
+    reviews_count: data.reviews_count || 0,
     listeners_count: data.listeners_count || 0,
   };
 }
@@ -678,13 +680,13 @@ export async function getAlbumTracksStats(albumId: string): Promise<Map<string, 
 
   const { data, error } = await supabase
     .from('track_stats')
-    .select('track_id, avg_rating, ratings_count, listeners_count')
+    .select('track_id, avg_rating, ratings_count, reviews_count, listeners_count')
     .in('track_id', ids);
 
   if (error || !data) return new Map();
 
   const rows = data as Array<{
-    track_id: string; avg_rating: string | number | null; ratings_count: number | null; listeners_count: number | null;
+    track_id: string; avg_rating: string | number | null; ratings_count: number | null; reviews_count: number | null; listeners_count: number | null;
   }>;
 
   return new Map(
@@ -693,6 +695,7 @@ export async function getAlbumTracksStats(albumId: string): Promise<Map<string, 
       {
         avg_rating: row.avg_rating ? Number(row.avg_rating) : null,
         ratings_count: row.ratings_count || 0,
+        reviews_count: row.reviews_count || 0,
         listeners_count: row.listeners_count || 0,
       },
     ])

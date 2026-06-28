@@ -75,7 +75,7 @@ Rendre les pages albums et artistes vraiment riches.
 - [x] **Activité réseau** — afficher les amis qui ont déjà écouté cet album (avatars + note si disponible) directement sur la page album
 - [x] **Enrichissement metadata** — genres (tags) via MusicBrainz ou Last.fm, description de l'album si disponible
 - [x] **Albums similaires / de la même disco** — carousel "Du même artiste" et "Albums similaires" en bas de page album
-- [ ] **Gérer l'état vide "Albums similaires"** — message ou fallback quand il n'y a aucun résultat, plutôt qu'un vide silencieux
+- [x] **Gérer l'état vide "Albums similaires"** — message ou fallback quand il n'y a aucun résultat, plutôt qu'un vide silencieux
 
 ### Pages artiste
 - [x] **Bio et tags** — bio Wikipedia déjà fetchée (`fetchArtistMetadata`), l'afficher proprement avec genres et tags ; artistes similaires
@@ -83,7 +83,7 @@ Rendre les pages albums et artistes vraiment riches.
 - [ ] **Gérer l'état vide "Artistes similaires"** — même besoin que côté album
 
 ### Enrichissement des tags & votes communautaires
-- [ ] **Améliorer la couverture des tags d'albums** — actuellement ~30% (vs 99% covers/liens streaming) ; arbitrer entre saisie manuelle, IA, ou source externe complémentaire
+- [x] **Améliorer la couverture des tags d'albums** — actuellement ~30% (vs 99% covers/liens streaming) ; arbitrer entre saisie manuelle, IA, ou source externe complémentaire
 - [ ] **Vérifier que les votes communautaires de genre sont réellement pris en compte** dans les tags affichés/utilisés pour la recommandation
 - [ ] **Revoir l'UX du vote communautaire de genre** — beaucoup de skips car l'utilisateur ne sait pas quel style choisir ; proposer des suggestions/exemples plutôt qu'un champ ouvert
 
@@ -98,7 +98,7 @@ Ce qui rend l'app vraiment utilisable au quotidien.
 - [x] **Agrégation des événements** — *"Mehdi, Camille et 8 autres ont aimé GUTS"* (groupBy album + event_type + fenêtre de 24h)
 - [x] **Section "Pour toi" dans Explore** — collaborative filtering Jaccard : voisins de goût (>= 3 albums notés >= 8 en commun, toute la plateforme), suggestions hors journal, disparaît proprement si pas assez de données
 - [x] **Carousel "Découverte" dans Explore** — remplace "Récemment ajoutés" : albums bien notés globalement dont l'artiste est inconnu de l'utilisateur
-- [ ] **Revoir les textes des cartes du feed** pour finaliser la refonte ligne uniforme
+- [x] **Revoir les textes des cartes du feed** pour finaliser la refonte ligne uniforme
 - [ ] **Feedback après notation** — un retour qui montre que le profil évolue (pas juste un toast "ajouté")
 - [ ] **Notation rapide sur Explore** — noter un album directement depuis la carte, sans ouvrir la page album
 - [ ] **Critique minimale / tags "vibe"** — alternative au texte libre (sombre, nostalgique, énergique...)
@@ -109,7 +109,7 @@ Ce qui rend l'app vraiment utilisable au quotidien.
 - [ ] **Compte privé / public** — toggle dans les paramètres : compte privé = diary et feed visibles uniquement par les abonnés approuvés
 
 ### Notifications
-- [ ] **Centre de notifications** — icône cloche dans l'header ; types : like, commentaire, follow, recommandation
+- [x] **Centre de notifications** — icône cloche dans l'header ; types : like, commentaire, follow, recommandation
 - [ ] **Notifications contextuelles** (pas des notifs sociales classiques) :
   - Reminder wishlist : *"X est dans ta liste depuis 3 semaines, tu l'as écouté ?"* (cron hebdo)
   - Convergence sociale : *"3 personnes que tu suis ont écouté X cette semaine"*

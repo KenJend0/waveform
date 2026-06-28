@@ -136,7 +136,7 @@ export default function AddToDiaryButton({
     onSuccess?.();
   }
 
-  async function handleGenreVote(slug: string) {
+  async function handleGenreVote(slug: string, opts?: { silent?: boolean }) {
     setGenreVoting(true);
     try {
       await voteAlbumGenre(albumId, slug);
@@ -144,8 +144,10 @@ export default function AddToDiaryButton({
       // best-effort
     } finally {
       setGenreVoting(false);
-      setSelectedFamily(null);
-      navigateAfterNudge();
+      if (!opts?.silent) {
+        setSelectedFamily(null);
+        navigateAfterNudge();
+      }
     }
   }
 
@@ -153,6 +155,8 @@ export default function AddToDiaryButton({
     if (family.subgenres.length === 0) {
       handleGenreVote(family.slug);
     } else {
+      // Le vote sur la famille est immédiat ; le sous-genre n'est qu'un raffinement optionnel.
+      handleGenreVote(family.slug, { silent: true });
       setSelectedFamily(family);
     }
   }
@@ -218,7 +222,9 @@ export default function AddToDiaryButton({
                   </svg>
                   {selectedFamily.label}
                 </button>
-                <p className="text-meta text-text-secondary mb-4">Un sous-genre plus précis ?</p>
+                <p className="text-meta text-text-secondary mb-4">
+                  Vote enregistré pour <span className="text-text-primary">{selectedFamily.label}</span>. Tu peux préciser le sous-genre si tu le connais (optionnel) :
+                </p>
                 <div className="flex flex-wrap gap-2 mb-8">
                   {selectedFamily.subgenres.map((sub) => (
                     <button
@@ -232,11 +238,10 @@ export default function AddToDiaryButton({
                   ))}
                 </div>
                 <button
-                  onClick={() => handleGenreVote(selectedFamily.slug)}
-                  disabled={genreVoting}
+                  onClick={navigateAfterNudge}
                   className="w-full text-sm text-text-tertiary hover:text-text-secondary transition-colors duration-150"
                 >
-                  Voter pour {selectedFamily.label} sans préciser
+                  Terminé
                 </button>
               </>
             )}

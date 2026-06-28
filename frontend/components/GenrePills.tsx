@@ -21,13 +21,15 @@ export default function GenrePills({ genres, albumId, userId, genreWeights, clas
     const [voting, setVoting] = useState(false);
     const [selectedFamily, setSelectedFamily] = useState<GenreFamily | null>(null);
 
-    async function handleVote(slug: string) {
+    async function handleVote(slug: string, opts?: { silent?: boolean }) {
         setVoting(true);
         try {
             await voteAlbumGenre(albumId, slug);
-            showToast("Genre suggéré, merci !", "success");
-            setSelectedFamily(null);
-            setOpen(false);
+            if (!opts?.silent) {
+                showToast("Genre suggéré, merci !", "success");
+                setSelectedFamily(null);
+                setOpen(false);
+            }
             router.refresh();
         } catch (err: any) {
             const msg = err?.message?.includes('Limite') ? err.message : "Erreur lors du vote";
@@ -41,6 +43,8 @@ export default function GenrePills({ genres, albumId, userId, genreWeights, clas
         if (family.subgenres.length === 0) {
             handleVote(family.slug);
         } else {
+            // Le vote sur la famille est immédiat ; le sous-genre n'est qu'un raffinement optionnel.
+            handleVote(family.slug, { silent: true });
             setSelectedFamily(family);
         }
     }
@@ -105,7 +109,9 @@ export default function GenrePills({ genres, albumId, userId, genreWeights, clas
                                 </svg>
                                 {selectedFamily.label}
                             </button>
-                            <p className="text-meta text-text-secondary mb-4">Un sous-genre plus précis ?</p>
+                            <p className="text-meta text-text-secondary mb-4">
+                                Vote enregistré pour <span className="text-text-primary">{selectedFamily.label}</span>. Tu peux préciser le sous-genre si tu le connais (optionnel) :
+                            </p>
                             <div className="flex flex-wrap gap-2 mb-6">
                                 {selectedFamily.subgenres.map((sub) => (
                                     <button
@@ -119,11 +125,10 @@ export default function GenrePills({ genres, albumId, userId, genreWeights, clas
                                 ))}
                             </div>
                             <button
-                                onClick={() => handleVote(selectedFamily.slug)}
-                                disabled={voting}
+                                onClick={() => { setSelectedFamily(null); setOpen(false); }}
                                 className="w-full text-sm text-text-tertiary hover:text-text-secondary transition-colors duration-150"
                             >
-                                Voter pour {selectedFamily.label} sans préciser
+                                Terminé
                             </button>
                         </>
                     )}

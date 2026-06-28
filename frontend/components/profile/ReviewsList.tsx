@@ -148,7 +148,7 @@ export default function ReviewsList({ reviews }: Props) {
               </div>
 
               {review.review_body && (
-                <p className="italic text-meta leading-relaxed text-text-secondary line-clamp-3 mb-3">
+                <p className="font-display italic text-meta leading-relaxed text-accent-deep line-clamp-3 mb-3">
                   &laquo;&thinsp;{review.review_body}&thinsp;&raquo;
                 </p>
               )}

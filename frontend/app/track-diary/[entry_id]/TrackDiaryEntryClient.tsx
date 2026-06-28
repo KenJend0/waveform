@@ -342,7 +342,7 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
         )}
 
         {entry.review_body && (
-          <p className="italic text-meta leading-relaxed text-text-secondary mt-4">
+          <p className="font-display italic text-meta leading-relaxed text-accent-deep mt-4">
             &laquo;&thinsp;{entry.review_body.trim()}&thinsp;&raquo;
           </p>
         )}

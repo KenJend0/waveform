@@ -80,8 +80,8 @@ export default function ProfileJournal({ entries }: ProfileJournalProps) {
 
                 {/* Review text */}
                 {entry.review_body && (
-                  <p className="text-meta text-text-secondary leading-[1.6] mt-3 line-clamp-3">
-                    {entry.review_body}
+                  <p className="font-display italic text-meta text-accent-deep leading-[1.6] mt-3 line-clamp-3">
+                    &laquo;&thinsp;{entry.review_body}&thinsp;&raquo;
                   </p>
                 )}
               </div>

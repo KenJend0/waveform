@@ -58,7 +58,7 @@ export default function MyListenSection({ albumId, userId, entry, entriesCount }
                 </div>
 
                 {entry.review_body ? (
-                    <p className="text-meta text-text-secondary italic leading-relaxed max-w-lg mb-3">
+                    <p className="font-display text-meta text-accent-deep italic leading-relaxed max-w-lg mb-3">
                         &laquo;&thinsp;{entry.review_body}&thinsp;&raquo;
                     </p>
                 ) : userId && (

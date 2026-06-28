@@ -194,8 +194,8 @@ function ReviewItem({ review }: { review: Review }) {
 
             {/* Text */}
             {review.review_body && (
-                <p className="text-meta text-text-secondary leading-relaxed">
-                    {review.review_body}
+                <p className="font-display italic text-meta text-accent-deep leading-relaxed">
+                    &laquo;&thinsp;{review.review_body}&thinsp;&raquo;
                 </p>
             )}
         </div>

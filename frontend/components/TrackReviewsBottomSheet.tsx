@@ -190,8 +190,8 @@ function ReviewItem({ review }: { review: TrackReview }) {
                 )}
             </div>
             {review.review_body && (
-                <p className="text-[13px] text-text-secondary leading-relaxed break-words line-clamp-3">
-                    {review.review_body}
+                <p className="font-display italic text-[13px] text-accent-deep leading-relaxed break-words line-clamp-3">
+                    &laquo;&thinsp;{review.review_body}&thinsp;&raquo;
                 </p>
             )}
         </Link>

@@ -116,8 +116,8 @@ export default function MyActivitiesModal({
                                 </div>
 
                                 {entry.review_body && (
-                                    <p className="text-meta text-text-secondary leading-relaxed">
-                                        {entry.review_body}
+                                    <p className="font-display italic text-meta text-accent-deep leading-relaxed">
+                                        &laquo;&thinsp;{entry.review_body}&thinsp;&raquo;
                                     </p>
                                 )}
                             </div>

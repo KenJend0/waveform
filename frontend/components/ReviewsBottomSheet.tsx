@@ -203,8 +203,8 @@ function ReviewItem({ review }: { review: Review }) {
                 )}
             </div>
             {review.review_body && (
-                <p className="text-sm text-text-secondary leading-relaxed break-words line-clamp-3">
-                    {review.review_body}
+                <p className="font-display italic text-sm text-accent-deep leading-relaxed break-words line-clamp-3">
+                    &laquo;&thinsp;{review.review_body}&thinsp;&raquo;
                 </p>
             )}
         </Link>

@@ -21,9 +21,10 @@ type Props = {
     onClose: () => void;
     title?: string;
     entryPrefix?: string;
+    showRating?: boolean;
 };
 
-export default function NetworkListenersBottomSheet({ listeners, isOpen, onClose, title = "Ont écouté cet album", entryPrefix = "/diary/" }: Props) {
+export default function NetworkListenersBottomSheet({ listeners, isOpen, onClose, title = "Ont écouté cet album", entryPrefix = "/diary/", showRating = true }: Props) {
     return (
         <BottomSheet isOpen={isOpen} onClose={onClose} title={title} maxHeight="h-[50vh]">
             <div className="px-6 py-2">
@@ -44,16 +45,18 @@ export default function NetworkListenersBottomSheet({ listeners, isOpen, onClose
                             <span className="flex-1 text-meta text-text-primary font-medium">{name}</span>
 
                             {/* Rating + review indicator */}
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                {l.rating && l.rating > 0 ? (
-                                    <span className="text-meta text-text-primary font-medium">{l.rating}<span className="text-label text-text-tertiary">/10</span></span>
-                                ) : (
-                                    <span className="text-label text-text-tertiary">—</span>
-                                )}
-                                {l.hasReview && (
-                                    <span className="text-[10px] text-text-tertiary border border-border-divider rounded px-1 py-0.5 leading-none">critique</span>
-                                )}
-                            </div>
+                            {showRating && (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    {l.rating && l.rating > 0 ? (
+                                        <span className="text-meta text-text-primary font-medium">{l.rating}<span className="text-label text-text-tertiary">/10</span></span>
+                                    ) : (
+                                        <span className="text-label text-text-tertiary">—</span>
+                                    )}
+                                    {l.hasReview && (
+                                        <span className="text-[10px] text-text-tertiary border border-border-divider rounded px-1 py-0.5 leading-none">critique</span>
+                                    )}
+                                </div>
+                            )}
                         </Link>
                     );
                 })}

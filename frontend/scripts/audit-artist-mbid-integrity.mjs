@@ -48,6 +48,9 @@
  *   node --env-file=.env.local scripts/audit-artist-mbid-integrity.mjs
  *   node --env-file=.env.local scripts/audit-artist-mbid-integrity.mjs --out=audit-report.json
  *   node --env-file=.env.local scripts/audit-artist-mbid-integrity.mjs --artist-limit=20   (smoke test)
+ *   node --env-file=.env.local scripts/audit-artist-mbid-integrity.mjs --skip=83 --out=audit-report-part2.json
+ *     (resume after an interruption — artist order is stable across runs via
+ *     `.order('id')`, so --skip=N picks up exactly where a previous run left off)
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -61,6 +64,8 @@ const outArg = process.argv.find((a) => a.startsWith('--out='));
 const OUT_FILE = outArg ? outArg.slice('--out='.length) : null;
 const limitArg = process.argv.find((a) => a.startsWith('--artist-limit='));
 const ARTIST_LIMIT = limitArg ? parseInt(limitArg.slice('--artist-limit='.length), 10) : Infinity;
+const skipArg = process.argv.find((a) => a.startsWith('--skip='));
+const ARTIST_SKIP = skipArg ? parseInt(skipArg.slice('--skip='.length), 10) : 0;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -97,7 +102,9 @@ const PAGE_SIZE = 1000;
 async function fetchAllRows(table, select, filterFn) {
   const all = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    let q = supabase.from(table).select(select).range(from, from + PAGE_SIZE - 1);
+    // Explicit order so --skip resumes at the same artist across runs —
+    // without it, PostgREST's row order isn't guaranteed stable.
+    let q = supabase.from(table).select(select).order('id').range(from, from + PAGE_SIZE - 1);
     if (filterFn) q = filterFn(q);
     const { data, error } = await q;
     if (error) throw new Error(`fetch ${table} failed: ${error.message}`);
@@ -107,10 +114,27 @@ async function fetchAllRows(table, select, filterFn) {
   return all;
 }
 
+// MusicBrainz's special "Various Artists" entity is credited on tens of
+// thousands of compilation release-groups — browsing it page by page would
+// take hours and tells us nothing useful (a compilation's mbid isn't really
+// "this artist's release-group" in any meaningful sense for our purposes).
+const VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377';
+
+// Safety net for any other unexpectedly prolific artist (remix/DJ credits
+// etc.) — if MB reports more release-groups than this, browsing them all
+// isn't worth the time; treat the artist as unverifiable instead of hanging.
+const MAX_RELEASE_GROUPS_PER_ARTIST = 500;
+
 /** Browses ALL release-groups for an artist (paginated past MB's 100-per-page
  *  cap) — deliberately unfiltered by type, since we need to know whether the
- *  stored mbid matches ANY real release-group, not just studio albums. */
+ *  stored mbid matches ANY real release-group, not just studio albums.
+ *  Returns { groups, skipped } — skipped is a reason string when the artist
+ *  was too large to browse exhaustively. */
 async function browseAllReleaseGroups(artistMbid) {
+  if (artistMbid === VARIOUS_ARTISTS_MBID) {
+    return { groups: [], skipped: 'Various Artists — not browsable in a reasonable time' };
+  }
+
   const groups = [];
   let offset = 0;
   for (;;) {
@@ -120,14 +144,17 @@ async function browseAllReleaseGroups(artistMbid) {
       throw new Error(`browse failed: HTTP ${res.status}`);
     }
     const data = await res.json();
+    const total = data['release-group-count'] ?? 0;
+    if (total > MAX_RELEASE_GROUPS_PER_ARTIST) {
+      return { groups: [], skipped: `${total} release-groups on MB — too many to browse exhaustively` };
+    }
     const page = data['release-groups'] || [];
     groups.push(...page);
-    const total = data['release-group-count'] ?? page.length;
     offset += page.length;
     if (page.length === 0 || offset >= total) break;
     await delay(DELAY_MS);
   }
-  return groups;
+  return { groups, skipped: null };
 }
 
 function expectedType(rg) {
@@ -171,23 +198,35 @@ async function main() {
   }
 
   // Only artists that actually have albums to check are worth an MB call.
-  const artistsToCheck = artists.filter((ar) => albumsByArtist.has(ar.id)).slice(0, ARTIST_LIMIT);
-  console.log(`  ${artistsToCheck.length} of those artists have ≥1 album in DB — auditing each\n`);
+  const eligibleArtists = artists.filter((ar) => albumsByArtist.has(ar.id));
+  const artistsToCheck = eligibleArtists.slice(
+    ARTIST_SKIP,
+    ARTIST_LIMIT === Infinity ? undefined : ARTIST_SKIP + ARTIST_LIMIT
+  );
+  console.log(`  ${eligibleArtists.length} of those artists have ≥1 album in DB${ARTIST_SKIP ? ` — resuming from #${ARTIST_SKIP + 1}` : ''} — auditing ${artistsToCheck.length}\n`);
 
   const storedReleaseNotGroup = [];
   const mbidNotFoundAnywhere = [];
   const typeMismatch = [];
+  const skippedArtists = [];
   let artistErrors = 0;
   let albumsChecked = 0;
 
   for (let i = 0; i < artistsToCheck.length; i++) {
     const artist = artistsToCheck[i];
     const artistAlbums = albumsByArtist.get(artist.id) || [];
-    process.stdout.write(`[${i + 1}/${artistsToCheck.length}] ${artist.name} (${artistAlbums.length} album(s)) … `);
+    process.stdout.write(`[${ARTIST_SKIP + i + 1}/${eligibleArtists.length}] ${artist.name} (${artistAlbums.length} album(s)) … `);
 
     let realGroups;
     try {
-      realGroups = await browseAllReleaseGroups(artist.mbid);
+      const result = await browseAllReleaseGroups(artist.mbid);
+      if (result.skipped) {
+        console.log(`⊘ skipped — ${result.skipped}`);
+        skippedArtists.push({ artistId: artist.id, artistName: artist.name, reason: result.skipped, albumCount: artistAlbums.length });
+        await delay(DELAY_MS);
+        continue;
+      }
+      realGroups = result.groups;
     } catch (err) {
       console.log(`✗ MB browse failed: ${err.message}`);
       artistErrors++;
@@ -256,11 +295,18 @@ async function main() {
   }
 
   console.log('\n──────────────────────────────────────────');
-  console.log(`Artists audited          : ${artistsToCheck.length} (${artistErrors} MB errors, skipped)`);
+  console.log(`Artists audited          : ${artistsToCheck.length} (${artistErrors} MB errors, ${skippedArtists.length} too-large skipped)`);
   console.log(`Albums checked           : ${albumsChecked}`);
   console.log(`STORED_RELEASE_NOT_GROUP : ${storedReleaseNotGroup.length}  (right album/artist, mbid is a release not a release-group)`);
   console.log(`MBID_NOT_FOUND_ANYWHERE  : ${mbidNotFoundAnywhere.length}  (true wrong match — same category as Luidji)`);
   console.log(`TYPE_MISMATCH only       : ${typeMismatch.length}  (mbid correct, but stored type column is wrong)`);
+
+  if (skippedArtists.length > 0) {
+    console.log('\n=== SKIPPED — too many release-groups on MB to browse exhaustively (needs manual check if it matters) ===');
+    for (const s of skippedArtists) {
+      console.log(`  • ${s.artistName} (${s.artistId}, ${s.albumCount} album(s) in DB) — ${s.reason}`);
+    }
+  }
 
   if (storedReleaseNotGroup.length > 0) {
     console.log('\n=== STORED_RELEASE_NOT_GROUP — mbid is a valid release of this artist, just not the release-group id ===');
@@ -286,9 +332,11 @@ async function main() {
   if (OUT_FILE) {
     const report = {
       generatedAt: new Date().toISOString(),
+      artistSkip: ARTIST_SKIP,
       artistsAudited: artistsToCheck.length,
       artistErrors,
       albumsChecked,
+      skippedArtists,
       storedReleaseNotGroup,
       mbidNotFoundAnywhere,
       typeMismatch,

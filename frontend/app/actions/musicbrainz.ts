@@ -445,6 +445,7 @@ function parseMbRecordingSearch(raw: unknown): MBRecordingSearchResult {
             'release-group': releaseGroup ? {
               id: stringValue(releaseGroup.id) ?? '',
               'primary-type': stringValue(releaseGroup['primary-type']) ?? undefined,
+              'secondary-types': arrayValue(releaseGroup['secondary-types']).flatMap((v) => stringValue(v) ? [stringValue(v)!] : []),
             } : undefined,
           }];
         }),
@@ -474,7 +475,7 @@ interface MBRecording {
   releases?: Array<{
     id: string;
     title: string;
-    'release-group'?: { id: string; 'primary-type'?: string };
+    'release-group'?: { id: string; 'primary-type'?: string; 'secondary-types'?: string[] };
   }>;
 }
 
@@ -1925,11 +1926,15 @@ export async function searchMusicBrainzRecordings(
       .filter((r) => r.releases && r.releases.length > 0)
       .map((r) => {
         const artistName = r['artist-credit']?.[0]?.artist?.name || 'Unknown';
-        // Prefer the first non-single release (Albums first, then anything)
-        const release = r.releases!.find((rel) => {
-          const pt = rel['release-group']?.['primary-type'];
-          return pt === 'Album' || pt === 'EP';
-        }) || r.releases![0];
+        // Prefer the first non-single, non-compilation release (Albums/EPs first, then
+        // anything) — a popular recording appears on dozens of "Various Artists"
+        // compilations on MusicBrainz, and those are primary-type "Album" too, so a
+        // primary-type-only check (the old behaviour here) would happily pick one of
+        // those over the artist's actual album/single (e.g. "Hits Été 2025" instead
+        // of the real release) — isAcceptableReleaseGroup also excludes Compilation/Live/etc.
+        const release = r.releases!.find((rel) =>
+          rel['release-group'] && isAcceptableReleaseGroup(rel['release-group'])
+        ) || r.releases![0];
         const rgMbid = release?.['release-group']?.id || '';
         const coverUrl = rgMbid
           ? `https://coverartarchive.org/release-group/${rgMbid}/front`

@@ -9,15 +9,11 @@
  * No Supabase auth required — hits MB API directly.
  */
 
+import { isAcceptableReleaseGroup } from '../lib/musicbrainzReleasePolicy.mjs';
+
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
 const MB_RATE_LIMIT_MS = 1100; // MB allows 1 req/sec
-
-const EXCLUDED_SECONDARY_TYPES = new Set([
-  'Live', 'Compilation', 'Remix', 'Demo',
-  'Mixtape/Street', 'Spokenword', 'Interview',
-  'Audiobook', 'Audio drama', 'Field recording',
-]);
 
 // ---------------------------------------------------------------------------
 // Helpers (mirrors SearchOverlay.tsx)
@@ -102,10 +98,7 @@ async function searchMBAlbums(query) {
   const scoreThreshold = terms.length === 1 ? 60 : 30;
   const filtered = raw.filter((rg) => {
     if ((rg.score || 0) < scoreThreshold) return false;
-    const primaryType = rg['primary-type'] || '';
-    if (!['Album', 'EP'].includes(primaryType)) return false;
-    const secondaryTypes = rg['secondary-types'] || [];
-    return !secondaryTypes.some((t) => EXCLUDED_SECONDARY_TYPES.has(t));
+    return isAcceptableReleaseGroup(rg);
   });
 
   return { raw, filtered };
@@ -232,10 +225,7 @@ for (let i = 0; i < queries.length; i++) {
 
   const excluded = raw.filter((rg) => {
     if ((rg.score || 0) < 60) return true;
-    const pt = rg['primary-type'] || '';
-    if (!['Album', 'EP'].includes(pt)) return true;
-    const st = rg['secondary-types'] || [];
-    return st.some((t) => EXCLUDED_SECONDARY_TYPES.has(t));
+    return !isAcceptableReleaseGroup(rg);
   });
   if (excluded.length > 0) {
     console.log(`  ${YELLOW}⚠ ${excluded.length} exclus (score<60 ou type/secondary type)${RESET}`);

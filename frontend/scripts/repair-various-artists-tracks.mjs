@@ -31,6 +31,8 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { pickBestRelease } from '../lib/musicbrainzReleasePolicy.mjs';
 import { normalize } from '../lib/textNormalize.mjs';
+import { canonicalAlbumKey } from '../lib/albumCanonical.mjs';
+import { canonicalTrackTitle } from '../lib/trackCanonical.mjs';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const USER_AGENT = 'Waveform/1.0 (https://waveformapp.online)';
@@ -74,10 +76,17 @@ const CASES = [
     targetReleaseGroupId: 'a1c34990-62bb-4da9-8b1a-4ca62f8df3ee', // Reunion - Ricchi e Poveri
     mode: 'most',
   },
-  // "You Know You Like It" deliberately excluded — the only acceptable (non-
-  // compilation) match found, DJ Snake's "Encore", only has it as "(DJ Premier
-  // remix)" — a different recording from whatever the user actually rated.
-  // Needs a manual decision, not an automatic substitution.
+  // "You Know You Like It" — la précédente investigation n'avait cherché que
+  // sur "Encore" (DJ Snake), où seul un "(DJ Premier remix)" matchait. Une
+  // recherche directe par titre de recording trouve le vrai single studio
+  // "DJ Snake, AlunaGeorge" (a134c516), pas un remix.
+  {
+    label: 'You Know You Like It',
+    oldTrackId: 'b072bab0-e857-45a7-9911-5912cb3d7b6f',
+    oldAlbumId: '09e57449-c49f-44c9-a02f-952cbc7357da', // Ministry of Sound: Summer Anthems 2016
+    targetReleaseGroupId: 'a134c516-968a-40e2-a91e-06af346b226d', // You Know You Like It (Single) - DJ Snake, AlunaGeorge
+    mode: 'fewest',
+  },
   {
     label: '99 Luftballons',
     oldTrackId: '2a4b7027-0fab-4a64-bfb2-e5ba6185bc6f',
@@ -182,10 +191,17 @@ async function writeAlbumImport(resolved) {
     mbid: resolved.rgId,
     release_date: normalizeDate(resolved.releaseDate),
     type: resolved.primaryType,
+    canonical_key: canonicalAlbumKey(resolved.albumTitle, resolved.artistName),
   });
   if (albumErr) throw new Error(`album insert failed: ${albumErr.message}`);
 
-  const trackRows = resolved.tracks.map((t) => ({ id: randomUUID(), album_id: albumId, artist_id: artistId, ...t }));
+  const trackRows = resolved.tracks.map((t) => ({
+    id: randomUUID(),
+    album_id: albumId,
+    artist_id: artistId,
+    ...t,
+    canonical_title: canonicalTrackTitle(t.title),
+  }));
   const { error: tracksErr } = await supabase.from('tracks').insert(trackRows);
   if (tracksErr) {
     await supabase.from('albums').delete().eq('id', albumId);

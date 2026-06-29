@@ -25,6 +25,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { looseNormalize, isArtistMatch, searchReleaseGroupCascade, pickCandidate } from '../lib/musicbrainzMatch.mjs';
 import { enrichOneAlbum } from '../lib/albumEnrichment.mjs';
+import { canonicalAlbumKey } from '../lib/albumCanonical.mjs';
+import { canonicalTrackTitle } from '../lib/trackCanonical.mjs';
 
 const MB_API = 'https://musicbrainz.org/ws/2';
 const MB_UA = 'Waveform/1.0 (https://waveformapp.online)';
@@ -225,6 +227,21 @@ async function importAlbum(mbid) {
     artistId = newArtist.id;
   }
 
+  // Canonical-title duplicate check — mirroir du même check dans
+  // importAlbumFromMusicBrainz (app/actions/musicbrainz.ts). Sans lui, ce worker
+  // recréait un album séparé (sans canonical_key) pour toute réédition/remaster
+  // dont le titre brut Last.fm/RYM ("Title (Deluxe Edition)") matchait un
+  // release-group MusicBrainz différent de celui déjà en base.
+  const canonicalKey = canonicalAlbumKey(preview.title, preview.artist);
+  const { data: canonicalMatch } = await supabase
+    .from('albums')
+    .select('id')
+    .eq('artist_id', artistId)
+    .eq('canonical_key', canonicalKey)
+    .limit(1)
+    .maybeSingle();
+  if (canonicalMatch) return canonicalMatch.id;
+
   const coverUrl = await uploadCover(canonicalMbid);
 
   const { data: newAlbum, error: albumError } = await supabase
@@ -236,6 +253,7 @@ async function importAlbum(mbid) {
       release_date: normalizeReleaseDate(preview.date),
       cover_url: coverUrl,
       type: preview.primaryType ?? 'Album',
+      canonical_key: canonicalKey,
     })
     .select('id')
     .single();
@@ -250,6 +268,7 @@ async function importAlbum(mbid) {
       disc_no: t.discNo,
       duration_ms: t.duration,
       mbid: t.mbid,
+      canonical_title: canonicalTrackTitle(t.title),
     }));
     await supabase.from('tracks').insert(trackRows);
   }

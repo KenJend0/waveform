@@ -19,6 +19,8 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { isAcceptableReleaseGroup, pickBestRelease } from '../lib/musicbrainzReleasePolicy.mjs';
 import { isArtistMatch } from '../lib/musicbrainzMatch.mjs';
+import { canonicalAlbumKey } from '../lib/albumCanonical.mjs';
+import { canonicalTrackTitle } from '../lib/trackCanonical.mjs';
 
 const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2';
 const COVER_ART_API = 'https://coverartarchive.org';
@@ -515,6 +517,21 @@ async function importAlbum(title, artist) {
     createdArtist = true;
   }
 
+  // Canonical-title duplicate check — mêmes raisons que importAlbumFromMusicBrainz
+  // (app/actions/musicbrainz.ts) : un release-group MB différent (réédition/remaster)
+  // pour le même album doit rediriger vers l'existant plutôt que créer un doublon.
+  const canonicalKey = canonicalAlbumKey(rgTitle, rgArtist);
+  const { data: canonicalMatch } = await supabase
+    .from('albums')
+    .select('id')
+    .eq('artist_id', artistId)
+    .eq('canonical_key', canonicalKey)
+    .limit(1)
+    .maybeSingle();
+  if (canonicalMatch) {
+    return { status: 'skipped', reason: 'Already imported (canonical key match)', albumId: canonicalMatch.id };
+  }
+
   // If the album/tracks insert fails below, an artist created for THIS attempt
   // must not survive as an orphan with no album — this produced 14 orphan
   // artists in the DB (some with the album TITLE wrongly stored as the artist
@@ -537,6 +554,8 @@ async function importAlbum(title, artist) {
     mbid: rgMbid,
     release_date: normalizeDate(rgDate),
     cover_url: coverUrl || null,
+    type: rg['primary-type'] || 'Album',
+    canonical_key: canonicalKey,
   });
 
   if (albumErr) {
@@ -555,6 +574,7 @@ async function importAlbum(title, artist) {
       disc_no: m.position ?? 1,
       duration_ms: t.length ?? t['track_or_recording_length'] ?? null,
       mbid: t.id,
+      canonical_title: canonicalTrackTitle(t.title),
     }))
   );
 

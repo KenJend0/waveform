@@ -21,7 +21,11 @@ export function normalizeForMatch(s) {
  * ("Hotel + Casino" vs "Hotel & Casino", apostrophes, deux-points...).
  */
 export function looseNormalize(s) {
-  return normalizeForMatch(s).replace(/[^a-z0-9]+/g, ' ').trim();
+  // \p{L}/\p{N} (Unicode letter/number), not [a-z0-9] — the ASCII-only range
+  // strips every character of a non-Latin title (Japanese, Arabic, Cyrillic...),
+  // collapsing it to empty and making isArtistMatch/pickCandidate falsely
+  // match any two non-Latin titles by the same artist as identical.
+  return normalizeForMatch(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 
 /**

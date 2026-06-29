@@ -42,7 +42,10 @@ export function stripEditionSuffix(title) {
  *  creating duplicate albums for reissues/remasters, and at display time to
  *  merge search/discography results pointing at the same underlying work. */
 export function canonicalAlbumKey(title, artistName) {
-  const t = stripArticle(normalize(stripEditionSuffix(title)));
-  const a = stripArticle(normalize(artistName));
+  // A title/name made entirely of punctuation/symbols normalizes to empty —
+  // fall back to the raw lowercased value so two different albums/artists
+  // sharing such a title don't collide on the same (empty) key part.
+  const t = stripArticle(normalize(stripEditionSuffix(title))) || title.toLowerCase().trim();
+  const a = stripArticle(normalize(artistName)) || artistName.toLowerCase().trim();
   return `${t}|||${a}`;
 }

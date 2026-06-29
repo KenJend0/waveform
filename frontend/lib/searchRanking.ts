@@ -1,20 +1,10 @@
 import type { SearchResultUI } from "@/app/actions/search";
+import { canonicalAlbumKey } from "@/lib/albumCanonical";
+import { normalize, stripArticle } from "@/lib/textNormalize";
+
+export { normalize, stripArticle };
 
 const TRIBUTE_KEYWORDS = ["tribute", "karaoke", "backing track", "made famous", "originally performed"];
-
-export function normalize(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-export function stripArticle(s: string): string {
-  return s.replace(/^(the|a|an) /, "");
-}
 
 export function computeRank(item: SearchResultUI, query: string): number {
   const t = stripArticle(normalize(item.title));
@@ -56,7 +46,7 @@ export function mergeAndRank(
   const internalAlbumKeys = new Set(
     internal
       .filter((r) => r.kind === "album")
-      .map((r) => `${r.title.toLowerCase()}|||${(r.subtitle || "").toLowerCase()}`)
+      .map((r) => canonicalAlbumKey(r.title, r.subtitle || ""))
   );
   const internalArtistNames = new Set(
     internal
@@ -75,7 +65,7 @@ export function mergeAndRank(
   const dedupedExternal = external.filter((ext) => {
     if (internalIds.has(ext.id)) return false;
     if (ext.kind === "album") {
-      const key = `${ext.title.toLowerCase()}|||${(ext.subtitle || "").toLowerCase()}`;
+      const key = canonicalAlbumKey(ext.title, ext.subtitle || "");
       if (internalAlbumKeys.has(key)) return false;
     }
     if (ext.kind === "artist") {

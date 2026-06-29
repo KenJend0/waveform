@@ -5,6 +5,7 @@ import { logAuthedProductEvent } from '@/lib/productEvents';
 import { getAuthUser, createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase/server';
 import { uploadCoverToSupabase } from '@/lib/storage';
 import { enrichAlbumMetadata } from './metadata';
+import { canonicalAlbumKey } from '@/lib/albumCanonical';
 import type { SearchResultUI } from './search';
 import {
   arrayValue,
@@ -27,11 +28,22 @@ const MB_SEARCH_TIMEOUT_MS = 800;
 const MB_RECORDING_SEARCH_TIMEOUT_MS = 2000;
 
 // Secondary types that indicate non-studio releases (live, compilation, etc.)
+// Used for search/import — Live is excluded there because a "Live" release-group
+// matching a search query is virtually always the wrong homonym, not what the
+// user is searching/importing for.
 const EXCLUDED_SECONDARY_TYPES = new Set([
   'Live', 'Compilation', 'Remix', 'Demo',
   'Spokenword', 'Interview',
   'Audiobook', 'Audio drama', 'Field recording',
 ]);
+
+// Same exclusion list minus Live — used for the artist discography (getArtistReleases),
+// where Live IS a legitimate release category an artist's page should show
+// (e.g. "Alive 2007", "The Köln Concert" are canonically live albums, not
+// homonym mismatches of a studio release).
+const ARTIST_RELEASES_EXCLUDED_SECONDARY_TYPES = new Set(
+  [...EXCLUDED_SECONDARY_TYPES].filter((t) => t !== 'Live')
+);
 
 function normalizeReleaseDate(date?: string | null): string | null {
   if (!date) return null;
@@ -158,7 +170,7 @@ interface MBArtistDetail {
 interface MBReleaseGroupLookupDetail {
   id: string;
   'primary-type'?: string;
-  releases?: Array<{ id: string; status?: string }>;
+  releases?: Array<{ id: string; status?: string; trackCount: number }>;
 }
 
 interface MBReleaseBrowseItem {
@@ -277,7 +289,11 @@ function parseMbReleaseGroupLookup(raw: unknown): MBReleaseGroupLookupDetail | n
       const row = recordValue(item);
       const releaseId = stringValue(row?.id);
       if (!releaseId) return [];
-      return [{ id: releaseId, status: stringValue(row?.status) ?? undefined }];
+      const trackCount = arrayValue(row?.media).reduce((sum: number, m) => {
+        const medium = recordValue(m);
+        return sum + (numberValue(medium?.['track-count']) ?? 0);
+      }, 0);
+      return [{ id: releaseId, status: stringValue(row?.status) ?? undefined, trackCount }];
     }),
   };
 }
@@ -1049,7 +1065,7 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
 
     if (releaseResponse.status === 404) {
       const rgResponse = await fetch(
-        `${MUSICBRAINZ_API}/release-group/${encodeURIComponent(mbid)}?inc=releases&fmt=json`,
+        `${MUSICBRAINZ_API}/release-group/${encodeURIComponent(mbid)}?inc=releases+media&fmt=json`,
         { headers: { 'User-Agent': USER_AGENT } }
       );
       if (!rgResponse.ok) {
@@ -1065,8 +1081,16 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       if (releases.length === 0) {
         return { success: false, error: 'No releases found for this release group' };
       }
-      // Préfère une release "Official" — la première de la liste peut être un promo/bootleg sans tracklist
-      const officialRelease = releases.find((r) => r.status === 'Official') ?? releases[0];
+      // Préfère une release "Official" — la première de la liste peut être un promo/bootleg sans tracklist.
+      // Parmi les Official, prend celle avec le moins de pistes : un release-group de single peut
+      // regrouper un CD 2 titres, un maxi 4 titres et un vinyle avec un B-side sans rapport — la
+      // tracklist la plus courte est la plus proche du single "canonique" attendu par l'utilisateur.
+      const officialReleases = releases.filter((r) => r.status === 'Official');
+      const candidates = officialReleases.length > 0 ? officialReleases : releases;
+      const withTracks = candidates.filter((r) => r.trackCount > 0);
+      const officialRelease = withTracks.length > 0
+        ? withTracks.reduce((min, r) => (r.trackCount < min.trackCount ? r : min))
+        : candidates[0];
       const firstReleaseId: string = officialRelease.id;
       releaseResponse = await fetch(
         `${MUSICBRAINZ_API}/release/${encodeURIComponent(firstReleaseId)}?inc=artist-credits+recordings+release-groups&fmt=json`,
@@ -1091,14 +1115,19 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
       (m.tracks || []).map((t) => ({ ...t, _discNo: m.position }))
     );
 
-    // Get release-group ID and primary-type for consistent cover lookup and type classification
-    const releaseGroupId = data['release-group']?.id || mbid;
+    // Get release-group ID and primary-type for consistent cover lookup and type classification.
+    // MUST fail explicitly if MB doesn't give us a release-group — falling back to `mbid` here
+    // silently stores a release MBID as if it were a release-group MBID, breaking the invariant
+    // every other part of the pipeline relies on (albums.mbid is always a release-group MBID).
+    const releaseGroupId = data['release-group']?.id;
+    if (!releaseGroupId) {
+      logInvalidExternalResponse('musicbrainz.releaseDetail', `release ${data.id} has no release-group`);
+      return { success: false, error: 'Album has no release-group on MusicBrainz' };
+    }
     const primaryType: string | null = rgPrimaryType || data['release-group']?.['primary-type'] || null;
 
     // Fetch cover art from CoverArt Archive — uses fetchCoverUrl (2 retries, consistent with refreshAlbumCover)
-    const coverUrl = releaseGroupId
-      ? await fetchCoverUrl(releaseGroupId, 'release-group', 2).catch(() => null)
-      : null;
+    const coverUrl = await fetchCoverUrl(releaseGroupId, 'release-group', 2).catch(() => null);
 
     return {
       success: true,
@@ -1123,6 +1152,32 @@ export async function previewAlbumFromMusicBrainz(mbid: string) {
   } catch (err) {
     return { success: false, error: 'An error occurred' };
   }
+}
+
+/** Builds the idempotent "already imported" response for an existing album,
+ *  redirecting to its first track when the album is a single. */
+async function buildExistingAlbumResponse(
+  supabase: Awaited<ReturnType<typeof createSupabaseServer>>,
+  albumId: string,
+  isSingle: boolean
+) {
+  if (isSingle) {
+    const { data: firstTrack } = await supabase
+      .from('tracks')
+      .select('id')
+      .eq('album_id', albumId)
+      .order('track_no', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const trackId = firstTrack?.id ?? null;
+    return {
+      success: true,
+      albumId,
+      redirectUrl: trackId ? `/tracks/${trackId}` : `/albums/${albumId}`,
+      imported: false,
+    };
+  }
+  return { success: true, albumId, redirectUrl: `/albums/${albumId}`, imported: false };
 }
 
 /**
@@ -1190,23 +1245,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
     }
 
     if (existingAlbum) {
-      if (isSingle) {
-        const { data: firstTrack } = await supabase
-          .from('tracks')
-          .select('id')
-          .eq('album_id', existingAlbum.id)
-          .order('track_no', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        const trackId = firstTrack?.id ?? null;
-        return {
-          success: true,
-          albumId: existingAlbum.id,
-          redirectUrl: trackId ? `/tracks/${trackId}` : `/albums/${existingAlbum.id}`,
-          imported: false,
-        };
-      }
-      return { success: true, albumId: existingAlbum.id, redirectUrl: `/albums/${existingAlbum.id}`, imported: false };
+      return buildExistingAlbumResponse(supabase, existingAlbum.id, isSingle);
     }
 
     // Get or create artist
@@ -1241,6 +1280,26 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
       createdArtist = true;
     }
 
+    // Canonical-title duplicate check — catches reissues/remasters/deluxe editions that
+    // MusicBrainz models as a *different* release-group (different mbid) but that are the
+    // same underlying album. The exact-mbid check above can't see these.
+    const canonicalKey = canonicalAlbumKey(preview.title, preview.artist);
+    const { data: canonicalMatch, error: canonicalError } = await supabase
+      .from('albums')
+      .select('id')
+      .eq('artist_id', artistId)
+      .eq('canonical_key', canonicalKey)
+      .limit(1)
+      .maybeSingle();
+
+    // canonicalError is non-null when the canonical_key column isn't migrated yet —
+    // skip the check silently in that case rather than failing the import.
+    // Note: a freshly-created artist can never have a canonical match (no albums
+    // reference it yet), so this only fires for pre-existing artists.
+    if (!canonicalError && canonicalMatch) {
+      return buildExistingAlbumResponse(supabase, canonicalMatch.id, isSingle);
+    }
+
     // Upload cover to Supabase Storage synchronously so the album is born with a stable URL
     let finalCoverUrl: string | null = preview.coverUrl || null;
     if (preview.coverUrl && canonicalMbid) {
@@ -1250,7 +1309,7 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
 
     // Create album
     const newAlbumId = crypto.randomUUID();
-    const { error: albumError } = await supabase
+    let { error: albumError } = await supabase
       .from('albums')
       .insert({
         id: newAlbumId,
@@ -1260,7 +1319,23 @@ export async function importAlbumFromMusicBrainz(mbid: string) {
         release_date: normalizeReleaseDate(preview.date),
         cover_url: finalCoverUrl,
         type: preview.primaryType ?? 'Album',
+        canonical_key: canonicalKey,
       });
+
+    // canonical_key column not migrated yet — retry without it rather than failing the import.
+    if (albumError?.message?.includes('canonical_key')) {
+      ({ error: albumError } = await supabase
+        .from('albums')
+        .insert({
+          id: newAlbumId,
+          title: preview.title,
+          artist_id: artistId,
+          mbid: canonicalMbid,
+          release_date: normalizeReleaseDate(preview.date),
+          cover_url: finalCoverUrl,
+          type: preview.primaryType ?? 'Album',
+        }));
+    }
 
     if (albumError) {
       if (createdArtist) {
@@ -1577,7 +1652,7 @@ export async function getArtistReleases(mbid: string): Promise<ArtistReleasesRes
         return false;
       }
       const secondaries: string[] = rg['secondary-types'] || [];
-      const excluded = secondaries.some(t => EXCLUDED_SECONDARY_TYPES.has(t));
+      const excluded = secondaries.some(t => ARTIST_RELEASES_EXCLUDED_SECONDARY_TYPES.has(t));
       if (excluded) {
         console.log(`[getArtistReleases]   skip "${rg.title}" (secondary-types: ${secondaries.join(', ')})`);
       }
@@ -1589,12 +1664,15 @@ export async function getArtistReleases(mbid: string): Promise<ArtistReleasesRes
     const result = filtered
       .map(rg => {
         console.log(`[getArtistReleases]   "${rg.title}" (${rg['primary-type']}, ${rg['first-release-date'] || 'no date'}) — rgId=${rg.id}`);
+        // A Live secondary-type overrides the displayed type — the artist page's
+        // "Lives" filter groups these regardless of their Album/EP primary-type.
+        const isLive = (rg['secondary-types'] || []).includes('Live');
         return {
           mbid: rg.id,             // release-group MBID (browse endpoint doesn't support inc=releases)
           releaseGroupMbid: rg.id,
           title: rg.title,
           date: rg['first-release-date'] || null,
-          type: rg['primary-type'] || null,
+          type: isLive ? 'Live' : (rg['primary-type'] || null),
         };
       })
       .sort((a, b) => {

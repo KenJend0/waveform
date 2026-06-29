@@ -873,6 +873,17 @@ export async function getSimilarAlbums(
 
     const supabase = await createSupabaseServer();
 
+    // 0. Artiste de l'album courant — pour exclure ses propres albums des
+    // candidats (deux albums du même artiste partagent presque toujours la
+    // majorité de leurs genres, ce qui les ferait dominer le classement par
+    // chevauchement de genres sans rapport avec une vraie similarité).
+    const { data: myAlbum } = await supabase.from('albums').select('artist_id').eq('id', albumId).maybeSingle();
+    const sameArtistAlbumIds = new Set<string>();
+    if (myAlbum?.artist_id) {
+      const { data: sameArtistAlbums } = await supabase.from('albums').select('id').eq('artist_id', myAlbum.artist_id);
+      for (const a of sameArtistAlbums ?? []) sameArtistAlbumIds.add(a.id);
+    }
+
     // 1. Genres de l'album courant (top 6 par poids)
     const { data: myGenres } = await supabase
       .from('album_genres')
@@ -887,14 +898,15 @@ export async function getSimilarAlbums(
     const myWeightMap = new Map(myGenres.map((g) => [g.genre_id, g.weight]));
 
     // 2. Autres albums partageant ces genres (limité à 500 pour éviter scan complet sur genres populaires)
-    const { data: candidates } = await supabase
+    const { data: rawCandidates } = await supabase
       .from('album_genres')
       .select('album_id, genre_id, weight')
       .in('genre_id', genreIds)
       .neq('album_id', albumId)
       .limit(500);
 
-    if (!candidates || candidates.length === 0) return [];
+    const candidates = (rawCandidates ?? []).filter((c) => !sameArtistAlbumIds.has(c.album_id));
+    if (candidates.length === 0) return [];
 
     // 3. Score = somme des produits de poids (genre overlap pondéré)
     const scoreMap = new Map<string, { score: number; shared: number }>();

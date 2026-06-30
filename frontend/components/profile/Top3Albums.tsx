@@ -15,12 +15,11 @@ export type FavoriteAlbum = {
 
 type Props = {
   userId: string;
-  isMe?: boolean;
   initialAlbums?: FavoriteAlbum[];
   hideIfEmpty?: boolean;
 };
 
-export default function Top3Albums({ userId, isMe, initialAlbums, hideIfEmpty }: Props) {
+export default function Top3Albums({ userId, initialAlbums, hideIfEmpty }: Props) {
   const [albums, setAlbums] = useState<FavoriteAlbum[]>(initialAlbums ?? []);
   const [loading, setLoading] = useState(!initialAlbums);
 
@@ -49,20 +48,6 @@ export default function Top3Albums({ userId, isMe, initialAlbums, hideIfEmpty }:
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-3">
-        <p className="font-display font-normal text-[15px] text-text-warm">
-          {albums.length === 1 ? "Album favori" : "Albums favoris"}
-        </p>
-        {isMe && (
-          <Link
-            href="/settings/favorite-albums"
-            className="font-display italic text-sm text-accent border-b border-accent pb-px shrink-0 hover:text-accent-deep hover:border-accent-deep transition-colors"
-          >
-            éditer
-          </Link>
-        )}
-      </div>
-
       {albums.length === 0 ? (
         <p className="text-sm text-text-tertiary">Aucun album favori</p>
       ) : (

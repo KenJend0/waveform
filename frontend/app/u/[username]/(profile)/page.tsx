@@ -32,6 +32,7 @@ import BackButton from "@/components/BackButton";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import PublicProfileTabs from "@/components/profile/PublicProfileTabs";
 import Top3Albums from "@/components/profile/Top3Albums";
+import ExpandableText from "@/components/ExpandableText";
 import RatingDistribution from "@/components/profile/RatingDistribution";
 import { RatingFilterProvider } from "@/components/profile/RatingFilterContext";
 import { getCurrentStreak } from "@/app/actions/profile";
@@ -231,7 +232,13 @@ export default async function PublicProfilePage({
               </div>
 
               {bio && (
-                <p className="text-meta text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">{bio}</p>
+                <div className="max-w-lg mt-5">
+                  <ExpandableText
+                    text={bio}
+                    className="text-meta text-text-secondary leading-relaxed whitespace-pre-line"
+                    clampLines={4}
+                  />
+                </div>
               )}
 
               {/* Albums favoris */}

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import { showToast } from "@/components/Toast";
 import Top3Albums, { FavoriteAlbum } from "@/components/profile/Top3Albums";
+import ExpandableText from "@/components/ExpandableText";
 
 type Props = {
   user: {
@@ -150,15 +151,18 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-meta text-text-secondary leading-relaxed max-w-lg mt-5 whitespace-pre-line">
-            {user.bio}
-          </p>
+          <div className="max-w-lg mt-5">
+            <ExpandableText
+              text={user.bio}
+              className="text-meta text-text-secondary leading-relaxed whitespace-pre-line"
+              clampLines={4}
+            />
+          </div>
         )}
 
         {/* Albums favoris */}
         <Top3Albums
           userId={user.id}
-          isMe={!!user.is_me}
           initialAlbums={favoriteAlbums}
           hideIfEmpty={!user.is_me}
         />

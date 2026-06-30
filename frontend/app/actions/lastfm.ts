@@ -4,6 +4,7 @@ import { getAuthUser, createSupabaseAdmin } from '@/lib/supabase/server';
 import { createList } from './lists';
 import type { RawExternalItem } from '@/lib/externalImport';
 import { isRecord, logInvalidExternalResponse, recordValue, stringValue } from '@/lib/externalValidation';
+import { triggerExternalImportsWorkflow } from '@/lib/githubDispatch';
 
 const LASTFM_API = 'https://ws.audioscrobbler.com/2.0';
 const COOLDOWN_HOURS = 24;
@@ -133,6 +134,8 @@ export async function startLastfmImport(username: string) {
   if (error || !importRow) {
     return { success: false as const, error: "Erreur lors de la création de l'import" };
   }
+
+  await triggerExternalImportsWorkflow();
 
   return { success: true as const, importId: importRow.id, listId: list.id, total: topAlbums.length };
 }

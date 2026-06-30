@@ -3,6 +3,7 @@
 import { getAuthUser, createSupabaseAdmin } from '@/lib/supabase/server';
 import { parseRymCsv } from '@/lib/rymCsv';
 import type { RawExternalItem } from '@/lib/externalImport';
+import { triggerExternalImportsWorkflow } from '@/lib/githubDispatch';
 
 const COOLDOWN_HOURS = 24;
 const DEFAULT_ROWS = 500;
@@ -83,6 +84,8 @@ export async function startRymImport(fileContent: string, fileName: string, requ
   if (error || !importRow) {
     return { success: false as const, error: "Erreur lors de la création de l'import" };
   }
+
+  await triggerExternalImportsWorkflow();
 
   return { success: true as const, importId: importRow.id, total: items.length };
 }

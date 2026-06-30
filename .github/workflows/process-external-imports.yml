@@ -1,8 +1,13 @@
 name: Process External Imports
 
 on:
+  # Filet de sécurité — le déclenchement normal est désormais un workflow_dispatch
+  # tiré par l'app à chaque import lancé (cf. lib/githubDispatch.ts), donc le cron
+  # n'a plus besoin de tourner toutes les 15 min pour un volume d'imports faible.
+  # Cette planification ne fait que rattraper les cas où le dispatch a échoué
+  # silencieusement (token absent/expiré, panne GitHub) — d'où l'intervalle large.
   schedule:
-    - cron: '7,22,37,52 * * * *'   # toutes les 15 min, décalé des minutes rondes (contention GitHub Actions)
+    - cron: '37 * * * *'   # toutes les heures, décalé de la minute ronde (contention GitHub Actions)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -13,6 +18,14 @@ on:
         description: "Nombre max d'imports traités"
         type: string
         required: false
+
+# Un seul run à la fois — process-external-imports.mjs n'a pas de verrou de ligne sur
+# external_imports, donc deux runs concurrents (ex: deux imports lancés à quelques
+# secondes d'intervalle) pourraient retraiter la même ligne en double. queue (pas
+# cancel-in-progress) pour ne perdre aucun déclenchement, juste les sérialiser.
+concurrency:
+  group: process-external-imports
+  cancel-in-progress: false
 
 jobs:
   process:

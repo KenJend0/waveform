@@ -820,7 +820,10 @@ async function runPhase3() {
   for (const album of albums) {
     console.log(`  ${album.title} (${album.mbid})`);
     try {
-      const coverRes = await fetch(`${CAA_URL}/${album.mbid}/front`, {
+      // front-1200 (pas /front) : CoverArt Archive sert sinon le scan pleine résolution
+      // (parfois 15-40 Mo), qui dépasse la limite de 5 Mo du bucket Supabase Storage
+      // "covers" et fait échouer l'upload silencieusement pour ces albums.
+      const coverRes = await fetch(`${CAA_URL}/${album.mbid}/front-1200`, {
         signal: AbortSignal.timeout(15_000),
       });
 

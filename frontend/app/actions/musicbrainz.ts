@@ -557,7 +557,10 @@ export async function fetchCoverUrl(mbid: string, entityType: 'release-group' | 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds
 
-      const coverArchiveUrl = `https://coverartarchive.org/${entityType}/${encodeURIComponent(mbid)}/front`;
+      // front-1200 (pas /front) : CoverArt Archive sert sinon le scan pleine résolution
+      // (parfois 15-40 Mo), qui dépasse la limite de 5 Mo du bucket Supabase Storage
+      // "covers" et fait échouer l'upload silencieusement pour ces albums.
+      const coverArchiveUrl = `https://coverartarchive.org/${entityType}/${encodeURIComponent(mbid)}/front-1200`;
       const coverResponse = await fetch(coverArchiveUrl, {
         headers: { 'User-Agent': USER_AGENT },
         redirect: 'manual',

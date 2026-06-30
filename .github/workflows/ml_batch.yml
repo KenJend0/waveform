@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 3 * * *"   # daily at 03:00 UTC
   workflow_dispatch:        # manual trigger from GitHub UI
+    inputs:
+      dry_run:
+        description: "Run all steps with --dry-run (no writes to Supabase)"
+        type: boolean
+        default: false
 
 jobs:
   compute:
@@ -14,6 +19,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      DRY_RUN_FLAG: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,16 +34,19 @@ jobs:
         run: pip install -r ml/requirements.txt
 
       - name: Step 1 — Compute user taste vectors & cosine similarity
-        run: python ml/scripts/compute_user_vectors.py
+        run: python ml/scripts/compute_user_vectors.py $DRY_RUN_FLAG
 
       - name: Step 2 — Backfill genres (albums sans données genre)
-        run: python ml/scripts/backfill_genres.py --limit 200
+        run: python ml/scripts/backfill_genres.py --limit 200 $DRY_RUN_FLAG
 
       - name: Step 3 — Compute album recommendations (cosine CF)
-        run: python ml/scripts/compute_recommendations.py --method cosine_cf
+        run: python ml/scripts/compute_recommendations.py --method cosine_cf $DRY_RUN_FLAG
 
       - name: Step 4 — Compute track recommendations (cosine CF)
-        run: python ml/scripts/compute_track_recommendations.py --method cosine_cf
+        run: python ml/scripts/compute_track_recommendations.py --method cosine_cf $DRY_RUN_FLAG
+
+      - name: Step 5 — Compute hybrid recommendations (cosine CF + genre content)
+        run: python ml/scripts/compute_hybrid_recommendations.py --method hybrid $DRY_RUN_FLAG
 
   evaluate:
     name: Evaluate metrics

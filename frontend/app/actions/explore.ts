@@ -76,6 +76,38 @@ export type ForYouTrack = {
     cover_url: string | null;
 };
 
+// Taille du pool de candidats qualifiés dans lequel on pioche la sélection du jour —
+// permet de faire tourner "Pour toi" même quand le classement sous-jacent (recos
+// précalculées ou Jaccard) ne change pas d'un jour à l'autre.
+const REC_POOL_SIZE = 12;
+
+/**
+ * Pioche déterministe-par-jour dans un pool déjà trié par pertinence : même
+ * entrée (clé + date du jour) → même résultat, mais ça change à chaque jour UTC.
+ * Ne renomme pas le classement, ne dégrade pas la pertinence — juste une fenêtre
+ * glissante sur les meilleurs candidats plutôt que toujours le tout premier rang.
+ */
+function pickDailyRotation<T>(pool: T[], seedKey: string, take: number): T[] {
+    if (pool.length <= take) return pool;
+    const today = new Date().toISOString().slice(0, 10); // jour UTC
+    const seedStr = `${seedKey}:${today}`;
+    let hash = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+        hash = (hash * 31 + seedStr.charCodeAt(i)) | 0;
+    }
+    let seed = hash >>> 0;
+    const rng = () => {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        return seed / 4294967296;
+    };
+    const shuffled = [...pool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, take);
+}
+
 /**
  * Albums populaires sur Waveform cette semaine (écoutes + sauvegardes agrégées).
  */
@@ -183,19 +215,26 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
     const dismissedIds = new Set(((feedback ?? []) as Array<{ album_id: string | null }>).map((f) => f.album_id).filter((id): id is string => id != null));
     const ratedAlbumIds = new Set((ratedAlbums || []).map((r) => r.album_id).filter(Boolean));
 
-    // Priorité : recommandations pré-calculées par le pipeline ML
-    let precomputedQuery = supabase
-        .from('user_recommendations')
-        .select('album_id, rank, albums(id, title, cover_url, artists(name))')
-        .eq('user_id', user.id)
-        .eq('method', 'cosine_cf')
-        .order('rank')
-        .limit(limit + dismissedIds.size + ratedAlbumIds.size);
+    // Priorité : recommandations pré-calculées par le pipeline ML.
+    // 'hybrid' (cosine CF + contenu genre) d'abord — couvre aussi le cold-start
+    // CF (peu/pas de voisins) via le signal genre seul. Repli sur 'cosine_cf'
+    // pur si le batch hybride n'a pas encore tourné pour cet user.
+    const fetchPrecomputed = async (method: string) => {
+        const { data } = await supabase
+            .from('user_recommendations')
+            .select('album_id, rank, albums(id, title, cover_url, artists(name))')
+            .eq('user_id', user.id)
+            .eq('method', method)
+            .order('rank')
+            .limit(REC_POOL_SIZE + dismissedIds.size + ratedAlbumIds.size);
+        const pool = (data || [])
+            .filter((row) => !dismissedIds.has(row.album_id) && !ratedAlbumIds.has(row.album_id))
+            .slice(0, REC_POOL_SIZE);
+        return pickDailyRotation(pool, `${user.id}:albums:${method}`, limit);
+    };
 
-    const { data: precomputedRaw } = await precomputedQuery;
-    const precomputed = (precomputedRaw || [])
-        .filter((row) => !dismissedIds.has(row.album_id) && !ratedAlbumIds.has(row.album_id))
-        .slice(0, limit);
+    const hybridPrecomputed = await fetchPrecomputed('hybrid');
+    const precomputed = hybridPrecomputed.length > 0 ? hybridPrecomputed : await fetchPrecomputed('cosine_cf');
 
     if (precomputed && precomputed.length > 0) {
         return precomputed.map((row) => {
@@ -279,13 +318,14 @@ export async function getForYouSuggestions(limit = 6): Promise<ForYouAlbum[]> {
 
     if (scores.size === 0) return [];
 
-    const topScores = [...scores.entries()]
+    const pool = [...scores.entries()]
         .sort(
             (a, b) =>
                 b[1].neighborCount - a[1].neighborCount ||
                 b[1].total / b[1].neighborCount - a[1].total / a[1].neighborCount
         )
-        .slice(0, limit);
+        .slice(0, REC_POOL_SIZE);
+    const topScores = pickDailyRotation(pool, `${user.id}:albums:jaccard`, limit);
 
     return topScores.map(([albumId, info]) => ({
         album_id: albumId,
@@ -556,7 +596,7 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
         .eq('user_id', user.id)
         .eq('method', 'cosine_cf')
         .order('rank')
-        .limit(limit + dismissedTrackIds.size + ratedTrackIds.size);
+        .limit(REC_POOL_SIZE + dismissedTrackIds.size + ratedTrackIds.size);
 
     interface RecommendedTrackRow {
         track_id: string;
@@ -566,9 +606,10 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
         } | null;
     }
 
-    const precomputed = ((rawData ?? []) as RecommendedTrackRow[])
+    const trackPool = ((rawData ?? []) as RecommendedTrackRow[])
         .filter((row) => !dismissedTrackIds.has(row.track_id) && !ratedTrackIds.has(row.track_id))
-        .slice(0, limit);
+        .slice(0, REC_POOL_SIZE);
+    const precomputed = pickDailyRotation(trackPool, `${user.id}:tracks:cosine_cf`, limit);
 
     if (precomputed.length > 0) {
         return precomputed.map((row) => {
@@ -652,13 +693,14 @@ export async function getForYouTracks(limit = 6): Promise<ForYouTrack[]> {
 
     if (scores.size === 0) return [];
 
-    const topScores = [...scores.entries()]
+    const trackScorePool = [...scores.entries()]
         .sort(
             (a, b) =>
                 b[1].neighborCount - a[1].neighborCount ||
                 b[1].total / b[1].neighborCount - a[1].total / a[1].neighborCount
         )
-        .slice(0, limit);
+        .slice(0, REC_POOL_SIZE);
+    const topScores = pickDailyRotation(trackScorePool, `${user.id}:tracks:jaccard`, limit);
 
     return topScores.map(([trackId, info]) => ({
         track_id: trackId,

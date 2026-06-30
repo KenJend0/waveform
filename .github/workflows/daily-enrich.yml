@@ -60,6 +60,19 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{}"
 
+      # Le nettoyage de l'avatar à la suppression d'un compte n'existe qu'en
+      # TypeScript (deleteAccount(), Settings) — une suppression depuis le
+      # dashboard Supabase Auth le contourne et laisse le fichier orphelin.
+      # Un trigger SQL direct sur storage.objects est impossible (bloqué par
+      # storage.protect_delete()), d'où ce nettoyage périodique via la Storage API.
+      - name: Cleanup orphaned avatars
+        if: ${{ inputs.dry_run != true }}
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/cleanup-orphaned-avatars.mjs --apply
+
       # Filet de rattrapage pour les albums créés sans canonical_key par des
       # chemins d'écriture hors importAlbumFromMusicBrainz (notamment le worker
       # process-external-imports.mjs, qui tourne en continu sur des titres bruts

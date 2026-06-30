@@ -436,7 +436,7 @@ ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_entry_comments_count"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
 BEGIN
@@ -454,7 +454,7 @@ ALTER FUNCTION "public"."update_entry_comments_count"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_entry_likes_count"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
 BEGIN
@@ -472,13 +472,14 @@ ALTER FUNCTION "public"."update_entry_likes_count"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_list_likes_count"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
     AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE user_lists SET likes_count = likes_count + 1 WHERE id = NEW.list_id;
+    UPDATE public.user_lists SET likes_count = likes_count + 1 WHERE id = NEW.list_id;
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE user_lists SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = OLD.list_id;
+    UPDATE public.user_lists SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = OLD.list_id;
   END IF;
   RETURN NULL;
 END;
@@ -489,13 +490,14 @@ ALTER FUNCTION "public"."update_list_likes_count"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_track_entry_comments_count"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
     AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE track_diary_entries SET comments_count = comments_count + 1 WHERE id = NEW.entry_id;
+    UPDATE public.track_diary_entries SET comments_count = comments_count + 1 WHERE id = NEW.entry_id;
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE track_diary_entries SET comments_count = GREATEST(comments_count - 1, 0) WHERE id = OLD.entry_id;
+    UPDATE public.track_diary_entries SET comments_count = GREATEST(comments_count - 1, 0) WHERE id = OLD.entry_id;
   END IF;
   RETURN NULL;
 END;
@@ -506,13 +508,14 @@ ALTER FUNCTION "public"."update_track_entry_comments_count"() OWNER TO "postgres
 
 
 CREATE OR REPLACE FUNCTION "public"."update_track_entry_likes_count"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
     AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE track_diary_entries SET likes_count = likes_count + 1 WHERE id = NEW.entry_id;
+    UPDATE public.track_diary_entries SET likes_count = likes_count + 1 WHERE id = NEW.entry_id;
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE track_diary_entries SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = OLD.entry_id;
+    UPDATE public.track_diary_entries SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = OLD.entry_id;
   END IF;
   RETURN NULL;
 END;
@@ -2034,6 +2037,11 @@ ALTER TABLE ONLY "public"."list_likes"
 
 
 
+ALTER TABLE ONLY "public"."product_events"
+    ADD CONSTRAINT "product_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -2151,6 +2159,11 @@ ALTER TABLE ONLY "public"."user_blocks"
 
 ALTER TABLE ONLY "public"."user_favorite_albums"
     ADD CONSTRAINT "user_favorite_albums_album_id_fkey" FOREIGN KEY ("album_id") REFERENCES "public"."albums"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_favorite_albums"
+    ADD CONSTRAINT "user_favorite_albums_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 

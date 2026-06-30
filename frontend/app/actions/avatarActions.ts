@@ -41,6 +41,14 @@ export async function uploadAvatar(
     // Use admin client to bypass Storage RLS
     const admin = createSupabaseAdmin();
 
+    // Remove the existing file before re-uploading instead of relying on
+    // upsert: true — upsert keeps the same internal Storage object id, and
+    // Supabase's CDN appears to cache by that id rather than the full URL
+    // (confirmed: the ?v= cache-buster on the public URL below doesn't bust
+    // it), so a same-id overwrite can keep serving the old cached bytes.
+    // A fresh delete+upload always gets a new id, forcing a real cache miss.
+    await admin.storage.from('avatars').remove([`${userId}.jpg`]);
+
     const { error: uploadError } = await admin.storage
       .from('avatars')
       .upload(`${userId}.jpg`, jpegBuffer, {

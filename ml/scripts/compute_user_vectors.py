@@ -36,6 +36,19 @@ from utils.supabase_client import get_client
 MAX_NEIGHBOURS = 50   # top-N similar users stored per user
 MIN_RATINGS = 3       # users with fewer ratings are skipped (not enough signal)
 BATCH_SIZE = 200      # rows per Supabase upsert call
+DISMISS_SYNTHETIC_RATING = 2.0  # implicit "not for me" signal injected into the matrix
+
+
+def fetch_dismissed_pairs() -> list[tuple[str, str]]:
+    """Return (user_id, album_id) pairs explicitly dismissed via "Pas pour moi"."""
+    client = get_client()
+    resp = (
+        client.table("recommendation_feedback")
+        .select("user_id, album_id")
+        .not_.is_("album_id", "null")
+        .execute()
+    )
+    return [(row["user_id"], row["album_id"]) for row in (resp.data or [])]
 
 
 def fetch_diary_entries() -> list[dict[str, Any]]:
@@ -202,6 +215,17 @@ def main(dry_run: bool, top_n: int) -> None:
     print("Fetching diary entries...")
     entries = fetch_diary_entries()
     print(f"  {len(entries)} entries (latest per user/album)")
+
+    print("Fetching dismissed recommendations (implicit negative signal)...")
+    rated_pairs = {(e["user_id"], e["album_id"]) for e in entries}
+    dismissed_pairs = {
+        pair for pair in fetch_dismissed_pairs() if pair not in rated_pairs
+    }
+    print(f"  {len(dismissed_pairs)} dismiss-only pairs injected as rating={DISMISS_SYNTHETIC_RATING}")
+    entries = entries + [
+        {"user_id": u, "album_id": a, "rating": DISMISS_SYNTHETIC_RATING}
+        for u, a in dismissed_pairs
+    ]
 
     print("Building user-item matrix...")
     matrix, user_ids, album_ids = build_matrix(entries)

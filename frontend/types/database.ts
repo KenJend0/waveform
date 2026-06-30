@@ -498,33 +498,6 @@ export type Database = {
           },
         ]
       }
-      external_ids: {
-        Row: {
-          created_at: string
-          entity_id: string
-          entity_type: string
-          id: string
-          source: string
-          value: string
-        }
-        Insert: {
-          created_at?: string
-          entity_id: string
-          entity_type: string
-          id?: string
-          source: string
-          value: string
-        }
-        Update: {
-          created_at?: string
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          source?: string
-          value?: string
-        }
-        Relationships: []
-      }
       external_imports: {
         Row: {
           completed_at: string | null
@@ -994,35 +967,6 @@ export type Database = {
         }
         Relationships: []
       }
-      saved_albums: {
-        Row: {
-          album_id: string
-          id: string
-          saved_at: string
-          user_id: string
-        }
-        Insert: {
-          album_id: string
-          id?: string
-          saved_at?: string
-          user_id: string
-        }
-        Update: {
-          album_id?: string
-          id?: string
-          saved_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "saved_albums_album_id_fkey"
-            columns: ["album_id"]
-            isOneToOne: false
-            referencedRelation: "albums"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       saved_lists: {
         Row: {
           id: string
@@ -1159,9 +1103,11 @@ export type Database = {
         Row: {
           album_id: string
           artist_id: string
+          comments_count: number
           created_at: string
           id: string
           is_public: boolean
+          likes_count: number
           listened_at: string
           rating: number | null
           rec_source: string | null
@@ -1174,9 +1120,11 @@ export type Database = {
         Insert: {
           album_id: string
           artist_id: string
+          comments_count?: number
           created_at?: string
           id?: string
           is_public?: boolean
+          likes_count?: number
           listened_at?: string
           rating?: number | null
           rec_source?: string | null
@@ -1189,9 +1137,11 @@ export type Database = {
         Update: {
           album_id?: string
           artist_id?: string
+          comments_count?: number
           created_at?: string
           id?: string
           is_public?: boolean
+          likes_count?: number
           listened_at?: string
           rating?: number | null
           rec_source?: string | null
@@ -1258,38 +1208,6 @@ export type Database = {
           },
         ]
       }
-      track_metadata: {
-        Row: {
-          apple_music_url: string | null
-          deezer_url: string | null
-          fetched_at: string
-          spotify_url: string | null
-          track_id: string
-        }
-        Insert: {
-          apple_music_url?: string | null
-          deezer_url?: string | null
-          fetched_at?: string
-          spotify_url?: string | null
-          track_id: string
-        }
-        Update: {
-          apple_music_url?: string | null
-          deezer_url?: string | null
-          fetched_at?: string
-          spotify_url?: string | null
-          track_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "track_metadata_track_id_fkey"
-            columns: ["track_id"]
-            isOneToOne: true
-            referencedRelation: "tracks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       track_featured_artists: {
         Row: {
           artist_id: string
@@ -1327,6 +1245,38 @@ export type Database = {
             foreignKeyName: "track_featured_artists_track_id_fkey"
             columns: ["track_id"]
             isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      track_metadata: {
+        Row: {
+          apple_music_url: string | null
+          deezer_url: string | null
+          fetched_at: string
+          spotify_url: string | null
+          track_id: string
+        }
+        Insert: {
+          apple_music_url?: string | null
+          deezer_url?: string | null
+          fetched_at?: string
+          spotify_url?: string | null
+          track_id: string
+        }
+        Update: {
+          apple_music_url?: string | null
+          deezer_url?: string | null
+          fetched_at?: string
+          spotify_url?: string | null
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "track_metadata_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: true
             referencedRelation: "tracks"
             referencedColumns: ["id"]
           },
@@ -1449,6 +1399,7 @@ export type Database = {
           id: string
           is_default: boolean
           is_public: boolean
+          likes_count: number
           title: string
           updated_at: string
           user_id: string
@@ -1459,6 +1410,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           is_public?: boolean
+          likes_count?: number
           title: string
           updated_at?: string
           user_id: string
@@ -1469,6 +1421,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           is_public?: boolean
+          likes_count?: number
           title?: string
           updated_at?: string
           user_id?: string
@@ -1670,20 +1623,6 @@ export type Database = {
           },
         ]
       }
-      beta_dashboard_weekly: {
-        Row: {
-          activated_users: number | null
-          auth_errors: number | null
-          import_failures: number | null
-          onboarded_users: number | null
-          search_no_results: number | null
-          signup_users: number | null
-          social_users: number | null
-          wau: number | null
-          week: string | null
-        }
-        Relationships: []
-      }
       diary_entry_stats: {
         Row: {
           comments_count: number | null
@@ -1697,6 +1636,16 @@ export type Database = {
           comments_count: number | null
           entry_id: string | null
           likes_count: number | null
+        }
+        Insert: {
+          comments_count?: never
+          entry_id?: string | null
+          likes_count?: never
+        }
+        Update: {
+          comments_count?: never
+          entry_id?: string | null
+          likes_count?: never
         }
         Relationships: []
       }
@@ -1789,6 +1738,7 @@ export type Database = {
         }[]
       }
       immutable_unaccent: { Args: { "": string }; Returns: string }
+      refresh_album_stats_mat: { Args: never; Returns: undefined }
       replace_favorite_albums: { Args: { p_albums: Json }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

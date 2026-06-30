@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseServer } from '@/lib/supabase/server';
-import type { FeaturedCredit } from '@/lib/creditedArtists';
+import { parseFeaturedRows, type FeaturedCredit, type RawFeaturedRow } from '@/lib/creditedArtists';
 
 export type AlbumTrackItem = {
   id: string;
@@ -28,15 +28,6 @@ export type TrackDetail = {
   artist_name: string;
   featuredArtists: FeaturedCredit[];
 };
-
-type RawFeaturedRow = { position: number; joinphrase: string | null; artists: { id: string; name: string } | null };
-
-function parseFeaturedRows(rows: RawFeaturedRow[] | null | undefined): FeaturedCredit[] {
-  return (rows ?? [])
-    .filter((r): r is RawFeaturedRow & { artists: { id: string; name: string } } => !!r.artists)
-    .sort((a, b) => a.position - b.position)
-    .map((r) => ({ artist: r.artists, joinphrase: r.joinphrase }));
-}
 
 export async function getTrack(id: string): Promise<TrackDetail | null> {
   const supabase = await createSupabaseServer();

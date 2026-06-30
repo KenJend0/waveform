@@ -20,6 +20,7 @@ import {
   type TrackDiaryComment,
 } from '@/app/actions/track-diary';
 import { reportContent } from '@/app/actions/moderation';
+import { creditParts } from '@/lib/creditedArtists';
 
 function relativeTime(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
@@ -271,9 +272,16 @@ export default function TrackDiaryEntryClient({ entry, currentUser }: Props) {
               </h1>
             </Link>
             <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">
-              <Link href={`/artists/${entry.artist.id}`} className="font-medium text-[13.5px] text-text-secondary hover:text-text-primary transition-colors">
-                {entry.artist.name}
-              </Link>
+              <span className="font-medium text-[13.5px] text-text-secondary">
+                {creditParts(entry.artist, entry.featuredArtists).map((part, i) => (
+                  <span key={part.artist.id || i}>
+                    {part.prefix}
+                    <Link href={`/artists/${part.artist.id}`} className="hover:text-text-primary transition-colors">
+                      {part.artist.name}
+                    </Link>
+                  </span>
+                ))}
+              </span>
               <span className="w-[3px] h-[3px] rounded-full bg-[#B5B0A6]" />
               <Link href={`/albums/${entry.album.id}`} className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors">
                 {entry.album.title}

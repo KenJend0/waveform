@@ -7,6 +7,7 @@ import { checkActionRateLimit } from '@/lib/serverRateLimit';
 import { findBannedContentWord } from '@/lib/bannedWords';
 import { logAuthedProductEvent } from '@/lib/productEvents';
 import { diaryValidationMessage, parseDiaryRating, parseListenedAt } from '@/lib/diaryInputValidation';
+import { parseFeaturedRows, type FeaturedCredit, type RawFeaturedRow } from '@/lib/creditedArtists';
 
 // Formes des relations imbriquées renvoyées par Supabase (tracks → albums → artists).
 // Les tables track_diary_* sont maintenant dans les types générés, mais les
@@ -581,6 +582,7 @@ export type TrackDiaryEntryDetail = {
   track: { id: string; title: string; track_no: number | null; duration_ms: number | null };
   album: { id: string; title: string; cover_url: string | null; release_date: string | null };
   artist: { id: string; name: string };
+  featuredArtists: FeaturedCredit[];
   stats: { likes_count: number; comments_count: number };
   has_liked: boolean;
   comments: TrackDiaryComment[];
@@ -601,7 +603,7 @@ export async function getTrackDiaryEntry(
   if (error || !data) return { success: false, error: 'Entrée introuvable' };
   if (!data.is_public && data.user_id !== currentUser?.id) return { success: false, error: 'Entrée introuvable' };
 
-  const [trackRes, albumRes, authorRes, artistRes, statsRes, likedRes, commentsRes] = await Promise.all([
+  const [trackRes, albumRes, authorRes, artistRes, statsRes, likedRes, commentsRes, featuredRes] = await Promise.all([
     supabase.from('tracks').select('id, title, track_no, duration_ms').eq('id', data.track_id).maybeSingle(),
     supabase.from('albums').select('id, title, cover_url, release_date').eq('id', data.album_id).maybeSingle(),
     supabase.from('profiles').select('id, username, display_name, avatar_url').eq('id', data.user_id).maybeSingle(),
@@ -614,6 +616,8 @@ export async function getTrackDiaryEntry(
       : Promise.resolve({ data: null }),
     // Comments
     supabase.from('track_diary_comments').select('id, body, created_at, user_id, parent_comment_id').eq('entry_id', entryId).order('created_at', { ascending: true }),
+    // Featured artists on this track
+    supabase.from('track_featured_artists').select('position, joinphrase, artists(id, name)').eq('track_id', data.track_id),
   ]);
 
   if (!trackRes.data || !albumRes.data || !authorRes.data || !artistRes.data) {
@@ -669,6 +673,7 @@ export async function getTrackDiaryEntry(
       track: trackRes.data,
       album: albumRes.data,
       artist: artistRes.data,
+      featuredArtists: parseFeaturedRows(featuredRes.data as RawFeaturedRow[] | null),
       stats: { likes_count: statsRes.data?.likes_count ?? 0, comments_count: statsRes.data?.comments_count ?? 0 },
       has_liked: !!likedRes.data,
       comments: topLevelComments,

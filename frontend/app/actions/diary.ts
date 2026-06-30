@@ -7,6 +7,7 @@ import { fanoutEvent } from './feed';
 import { checkActionRateLimit } from '@/lib/serverRateLimit';
 import { findBannedContentWord } from '@/lib/bannedWords';
 import { diaryValidationMessage, parseDiaryRating, parseListenedAt } from '@/lib/diaryInputValidation';
+import { parseFeaturedRows, type FeaturedCredit, type RawFeaturedRow } from '@/lib/creditedArtists';
 
 export interface UpsertDiaryEntryInput {
   albumId: string;
@@ -1244,6 +1245,7 @@ export type DiaryEntryDetail = {
     id: string;
     name: string;
   };
+  featuredArtists: FeaturedCredit[];
   stats: {
     likes_count: number;
     comments_count: number;
@@ -1285,6 +1287,11 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
           artists (
             id,
             name
+          ),
+          album_featured_artists (
+            position,
+            joinphrase,
+            artists ( id, name )
           )
         )
       `)
@@ -1412,6 +1419,7 @@ export async function getDiaryEntry(entryId: string): Promise<GetDiaryEntryResul
           id: artist?.id || '',
           name: artist?.name || 'Unknown Artist',
         },
+        featuredArtists: parseFeaturedRows(album?.album_featured_artists as RawFeaturedRow[] | null),
         stats,
         has_liked: hasLiked,
         comments,

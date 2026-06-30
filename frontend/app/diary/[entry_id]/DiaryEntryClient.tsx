@@ -14,6 +14,7 @@ import EditDiaryEntryButton from '@/components/EditDiaryEntryButton';
 import LikesBottomSheet from '@/components/LikesBottomSheet';
 import { useAuth } from '@/lib/AuthContext';
 import type { DiaryEntryDetail, DiaryEntryComment } from '@/app/actions/diary';
+import { creditParts } from '@/lib/creditedArtists';
 
 function relativeTime(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
@@ -290,9 +291,16 @@ export default function DiaryEntryClient({ entry, currentUser }: DiaryEntryClien
               </h1>
             </Link>
             <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">
-              <Link href={`/artists/${entry.artist.id}`} className="font-medium text-[13.5px] text-text-secondary hover:text-text-primary transition-colors">
-                {entry.artist.name}
-              </Link>
+              <span className="font-medium text-[13.5px] text-text-secondary">
+                {creditParts(entry.artist, entry.featuredArtists).map((part, i) => (
+                  <span key={part.artist.id || i}>
+                    {part.prefix}
+                    <Link href={`/artists/${part.artist.id}`} className="hover:text-text-primary transition-colors">
+                      {part.artist.name}
+                    </Link>
+                  </span>
+                ))}
+              </span>
               {entry.album.release_date && (
                 <>
                   <span className="w-[3px] h-[3px] rounded-full bg-[#B5B0A6]" />

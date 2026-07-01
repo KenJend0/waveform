@@ -803,7 +803,7 @@ export async function createList(data: {
       properties: { list_id: list.id, is_public: data.isPublic ?? false },
     });
 
-    return { ...list, item_count: 0, cover_urls: [], saves_count: 0, preview_items: [] };
+    return { ...list, item_count: 0, cover_urls: [], custom_cover_url: null, saves_count: 0, preview_items: [] };
 }
 
 /**

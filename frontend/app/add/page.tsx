@@ -3,7 +3,7 @@ import { getDefaultListAlbums, getDefaultListTracks, getUserLists, getUnratedSav
 import { getForYouSuggestions, getDiscoveryAlbums, getForYouTracks } from "@/app/actions/explore";
 import { buildAddQueue } from "@/lib/buildAddQueue";
 import AddPageClient from "./AddPageClient";
-import UnauthCTA from "@/components/UnauthCTA";
+import UnauthCTA from "@/components/auth/UnauthCTA";
 
 export default async function AddPage() {
     const user = await getAuthUser();

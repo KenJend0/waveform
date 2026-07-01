@@ -3,20 +3,65 @@ export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthUser, userNeedsOnboarding } from "@/lib/supabase/server";
-import { getTrendingThisWeek, getForYouSuggestions, getDiscoveryAlbums, getSimilarUsers, getForYouTracks, getProfileTier } from "@/app/actions/explore";
+import {
+    getTrendingThisWeek,
+    getForYouSuggestions,
+    getDiscoveryAlbums,
+    getSimilarUsers,
+    getForYouTracks,
+    getProfileTier,
+    type TrendingAlbum,
+    type ForYouAlbum,
+    type DiscoveryResult,
+    type SimilarUser,
+    type ForYouTrack,
+} from "@/app/actions/explore";
 import { getPublicLists, type UserList } from "@/app/actions/lists";
 import { getTrendingTracks } from "@/app/actions/track-diary";
+import { type TrackWithStats } from "@/app/actions/track-diary";
 import { getCuratorPick, type CuratorPick } from "@/app/actions/curator";
 import StickySearchBar from "@/components/explore/StickySearchBar";
-import PourToiSection from "@/components/PourToiSection";
-import OnboardingCTASection from "@/components/OnboardingCTASection";
-import DiscoverySection from "@/components/DiscoverySection";
-import SimilarUsersSection from "@/components/SimilarUsersSection";
-import TrendingSection from "@/components/TrendingSection";
-import CuratorPickSection from "@/components/CuratorPickSection";
-import ListCard from "@/components/ListCard";
-import { type TrendingAlbum, type ForYouAlbum, type DiscoveryResult, type SimilarUser, type ForYouTrack } from "@/app/actions/explore";
-import { type TrackWithStats } from "@/app/actions/track-diary";
+import PourToiSection from "@/components/explore/PourToiSection";
+import OnboardingCTASection from "@/components/auth/OnboardingCTASection";
+import DiscoverySection from "@/components/explore/DiscoverySection";
+import SimilarUsersSection from "@/components/user/SimilarUsersSection";
+import TrendingSection from "@/components/explore/TrendingSection";
+import CuratorPickSection from "@/components/explore/CuratorPickSection";
+import ListCard from "@/components/lists/ListCard";
+
+function CommunityListsSection({ lists, compact = false }: { lists: UserList[]; compact?: boolean }) {
+    if (lists.length === 0) return null;
+
+    return (
+        <section>
+            <div className="flex items-start justify-between mb-5">
+                <div>
+                    <h2 className="text-h2 text-text-primary">
+                        Listes <em className="italic text-accent-deep">populaires</em>
+                    </h2>
+                    <p className="text-sm text-text-secondary mt-1">
+                        Sélections musicales partagées par la communauté.
+                    </p>
+                </div>
+                <Link
+                    href="/lists"
+                    className="font-display italic text-sm text-accent border-b border-accent pb-px shrink-0 hover:text-accent-deep hover:border-accent-deep transition-colors mt-1"
+                >
+                    voir tout
+                </Link>
+            </div>
+            <div className={compact ? "grid grid-cols-2 gap-4" : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"}>
+                {lists.map((list) => (
+                    <ListCard
+                        key={list.id}
+                        list={list}
+                        href={`/lists/${list.id}`}
+                    />
+                ))}
+            </div>
+        </section>
+    );
+}
 
 export default async function ExplorePage() {
     const user = await getAuthUser();
@@ -55,7 +100,7 @@ export default async function ExplorePage() {
 
     return (
         <div>
-            <section className="px-6 lg:px-8 pt-6 lg:pt-8 pb-5">
+            <section className="mx-auto max-w-6xl px-6 lg:px-8 pt-6 lg:pt-8 pb-5">
                 <h1 className="text-h1 text-text-primary mb-2">
                     Découvrir
                 </h1>
@@ -64,9 +109,11 @@ export default async function ExplorePage() {
                 </p>
             </section>
 
-            <StickySearchBar />
+            <div className="mx-auto max-w-6xl">
+                <StickySearchBar />
+            </div>
 
-            <main className="px-6 lg:px-8 pb-28 lg:pb-10">
+            <main className="mx-auto max-w-6xl px-6 lg:px-8 pb-28 lg:pb-10">
                 {isEmpty ? (
                     <div className="text-center py-16 space-y-6">
                         <div className="space-y-3">
@@ -82,54 +129,32 @@ export default async function ExplorePage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-12">
-                        {/* Pour toi (établi) ou invitation à noter ses premiers albums (nouveau) */}
-                        {tier === 'established' && <PourToiSection albums={forYou} tracks={forYouTracks} />}
-                        {tier === 'new' && <OnboardingCTASection />}
+                    <>
+                        <div className="space-y-12 lg:hidden">
+                            {tier === 'established' && <PourToiSection albums={forYou} tracks={forYouTracks} />}
+                            {tier === 'new' && <OnboardingCTASection />}
+                            {curatorPick && <CuratorPickSection pick={curatorPick} />}
+                            <TrendingSection albums={trending} tracks={trendingTracks} />
+                            <DiscoverySection result={discovery} />
+                            <CommunityListsSection lists={communityLists} />
+                            {tier === 'established' && <SimilarUsersSection users={similarUsers} />}
+                        </div>
 
-                        {/* Sélection du créateur — contenu éditorial permanent, indépendant du volume/ML */}
-                        {curatorPick && <CuratorPickSection pick={curatorPick} />}
+                        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10 lg:items-start">
+                            <div className="min-w-0 space-y-12">
+                                {tier === 'established' && <PourToiSection albums={forYou} tracks={forYouTracks} />}
+                                {tier === 'new' && <OnboardingCTASection />}
+                                <TrendingSection albums={trending} tracks={trendingTracks} />
+                                <DiscoverySection result={discovery} />
+                            </div>
 
-                        {/* Tendances — albums + titres populaires cette semaine */}
-                        <TrendingSection albums={trending} tracks={trendingTracks} />
-
-                        {/* Hors de ta bulle / À découvrir — selon signal social disponible */}
-                        <DiscoverySection result={discovery} />
-
-                        {/* Listes de la communauté */}
-                        {communityLists.length > 0 && (
-                            <section>
-                                <div className="flex items-start justify-between mb-5">
-                                    <div>
-                                        <h2 className="text-h2 text-text-primary">
-                                            Listes <em className="italic text-accent-deep">populaires</em>
-                                        </h2>
-                                        <p className="text-sm text-text-secondary mt-1">
-                                            Sélections musicales partagées par la communauté.
-                                        </p>
-                                    </div>
-                                    <Link
-                                        href="/lists"
-                                        className="font-display italic text-sm text-accent border-b border-accent pb-px shrink-0 hover:text-accent-deep hover:border-accent-deep transition-colors mt-1"
-                                    >
-                                        voir tout
-                                    </Link>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    {communityLists.map((list) => (
-                                        <ListCard
-                                            key={list.id}
-                                            list={list}
-                                            href={`/lists/${list.id}`}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {/* Goûts similaires — n'a de sens qu'avec un historique établi, pas de fallback ici */}
-                        {tier === 'established' && <SimilarUsersSection users={similarUsers} />}
-                    </div>
+                            <aside className="sticky top-24 space-y-10">
+                                {curatorPick && <CuratorPickSection pick={curatorPick} variant="compact" />}
+                                <CommunityListsSection lists={communityLists.slice(0, 4)} compact />
+                                {tier === 'established' && <SimilarUsersSection users={similarUsers} />}
+                            </aside>
+                        </div>
+                    </>
                 )}
             </main>
         </div>

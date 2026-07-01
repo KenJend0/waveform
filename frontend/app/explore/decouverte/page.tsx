@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/ui/BackButton";
 import { getDiscoveryAlbums, type DiscoveryResult } from "@/app/actions/explore";
 import DecouverteContent from "./DecouverteContent";
 

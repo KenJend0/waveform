@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toggleSaveList, type UserList } from "@/app/actions/lists";
 import { useAuth } from "@/lib/AuthContext";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 import { toastErrorMessage } from "@/lib/toastErrors";
 
 export function useListSave(list: UserList) {

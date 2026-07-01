@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { type DiscoveryAlbum } from "@/app/actions/explore";
-import DiscoverCard from "@/components/DiscoverCard";
+import DiscoverCard from "@/components/explore/DiscoverCard";
 
 export default function DecouverteContent({ albums }: { albums: DiscoveryAlbum[] }) {
     const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, FileText, Shield, ScrollText, Trash2, HelpCircle } from "lucide-react";
-import LegalSection from "@/components/LegalSection";
+import LegalSection from "@/components/legal/LegalSection";
 
 export const metadata: Metadata = {
     title: "Aide & support",

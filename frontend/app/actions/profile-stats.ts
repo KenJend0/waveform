@@ -55,7 +55,8 @@ export async function getUserStatsData(userId: string): Promise<StatsData> {
       .eq('user_id', userId)
       .order('listened_at', { ascending: true }),
 
-    supabase.rpc('get_angles_morts', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).rpc('get_angles_morts', {
       p_user_id: userId,
       p_min_rating: 7.0,
       p_min_listeners: 5,

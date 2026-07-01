@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,8 +7,8 @@ import { X } from "lucide-react";
 
 import SearchAlbumModal from "@/components/profile/SearchAlbumModal";
 import { useAuth } from "@/lib/AuthContext";
-import BackButton from "@/components/BackButton";
-import { showToast } from "@/components/Toast";
+import BackButton from "@/components/ui/BackButton";
+import { showToast } from "@/components/ui/Toast";
 import { toastErrorMessageFromStatus } from "@/lib/toastErrors";
 
 type Album = {

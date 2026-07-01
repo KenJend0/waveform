@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LegalPageShell from "@/components/LegalPageShell";
+import LegalPageShell from "@/components/legal/LegalPageShell";
 
 export const metadata: Metadata = {
     title: {

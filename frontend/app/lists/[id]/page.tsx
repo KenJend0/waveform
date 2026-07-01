@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAuthUser } from "@/lib/supabase/server";
 import { getListWithItems } from "@/app/actions/lists";
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/ui/BackButton";
 import ListPageContent from "./ListPageContent";
 
 export const dynamic = "force-dynamic";

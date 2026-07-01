@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -6,7 +6,7 @@ import { supabase } from './supabase/client';
 import { AuthApiError, type User as SupabaseUser } from '@supabase/supabase-js';
 import { ensureProfile } from '@/app/actions/profile';
 import { hasUnseenActivity } from '@/app/actions/feed';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/ui/Toast';
 
 type AuthContextType = {
   user: SupabaseUser | null;

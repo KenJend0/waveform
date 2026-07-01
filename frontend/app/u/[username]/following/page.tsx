@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import FollowingList from "@/components/FollowingList";
+import FollowingList from "@/components/user/FollowingList";
 
 interface FollowingPageProps {
   params: Promise<{

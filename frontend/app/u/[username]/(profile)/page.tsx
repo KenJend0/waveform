@@ -28,11 +28,11 @@ export async function generateMetadata({ params }: any) {
 import { Flame } from "lucide-react";
 import FollowButton from "@/components/social/FollowButton";
 import ProfileActionsMenu from "@/components/social/ProfileActionsMenu";
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/ui/BackButton";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import PublicProfileTabs from "@/components/profile/PublicProfileTabs";
 import Top3Albums from "@/components/profile/Top3Albums";
-import ExpandableText from "@/components/ExpandableText";
+import ExpandableText from "@/components/ui/ExpandableText";
 import RatingDistribution from "@/components/profile/RatingDistribution";
 import { RatingFilterProvider } from "@/components/profile/RatingFilterContext";
 import { getCurrentStreak } from "@/app/actions/profile";

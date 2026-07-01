@@ -65,3 +65,5 @@ nul
 frontend/scripts/*-report.json
 
 .claude
+
+.agents

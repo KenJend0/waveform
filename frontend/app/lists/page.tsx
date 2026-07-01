@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/ui/BackButton";
 import { getPublicLists, type UserList } from "@/app/actions/lists";
-import ListCard from "@/components/ListCard";
+import ListCard from "@/components/lists/ListCard";
 
 export default async function ListsPage() {
     let lists: UserList[] = [];

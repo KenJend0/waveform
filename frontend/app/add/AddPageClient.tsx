@@ -2,19 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import AlbumSearchForDiary from "@/components/AlbumSearchForDiary";
-import TrackSearchForDiary, { type TrackUI } from "@/components/TrackSearchForDiary";
-import StarRating from "@/components/StarRating";
-import { CoverImage } from "@/components/CoverImage";
-import ListSwitcher from "@/components/ListSwitcher";
+import AlbumSearchForDiary from "@/components/album/AlbumSearchForDiary";
+import TrackSearchForDiary, { type TrackUI } from "@/components/track/TrackSearchForDiary";
+import StarRating from "@/components/ui/StarRating";
+import { CoverImage } from "@/components/album/CoverImage";
+import ListSwitcher from "@/components/lists/ListSwitcher";
 import AddQueueMobile from "@/components/add/AddQueueMobile";
 import { upsertDiaryEntry, getLatestDiaryEntryForAlbum } from "@/app/actions/diary";
 import { upsertTrackDiaryEntry, getLatestTrackDiaryEntry } from "@/app/actions/track-diary";
 import { type ListAlbumItem, type ListTrackItem, type UserList, getListContents } from "@/app/actions/lists";
 import { type ForYouAlbum, type ForYouTrack, type DiscoveryAlbum } from "@/app/actions/explore";
-import { type AddQueueItem } from "@/lib/buildAddQueue";
+import { type AddQueueItem, ADD_QUEUE_SOURCE_LABELS } from "@/lib/buildAddQueue";
 import { CLASSIC_ALBUMS } from "@/lib/classicAlbums";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
+import { Disc3, Music } from "lucide-react";
 
 type EntityType = "album" | "track";
 
@@ -104,6 +105,160 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     );
 }
 
+function QueueCover({ item }: { item: AddQueueItem }) {
+    const Icon = item.kind === "album" ? Disc3 : Music;
+
+    return (
+        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-cover-sm bg-background-secondary">
+            {item.coverUrl ? (
+                <CoverImage
+                    src={item.coverUrl}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    placeholder={<div className="h-full w-full bg-background-tertiary" />}
+                />
+            ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                    <Icon size={17} className="text-text-disabled" />
+                </div>
+            )}
+        </div>
+    );
+}
+
+function AddQueueDesktop({
+    items,
+    activeKey,
+    onSelect,
+}: {
+    items: AddQueueItem[];
+    activeKey: string | null;
+    onSelect: (item: AddQueueItem) => void;
+}) {
+    const visible = items.slice(0, 10);
+
+    return (
+        <aside className="sticky top-24">
+            <div className="mb-4 flex items-end justify-between gap-3">
+                <div>
+                    <h2 className="text-h2 text-text-primary">
+                        File <em className="italic text-accent-deep">à noter</em>
+                    </h2>
+                    <p className="mt-1 text-sm text-text-secondary">
+                        {items.length} écoute{items.length > 1 ? "s" : ""} prêtes.
+                    </p>
+                </div>
+            </div>
+
+            <div className="rounded-card-lg border border-border bg-paper-hi p-2 shadow-sidebar">
+                {visible.length > 0 ? (
+                    <div className="space-y-1">
+                        {visible.map((item, index) => {
+                            const key = `${item.kind}-${item.id}`;
+                            const active = key === activeKey;
+
+                            return (
+                                <button
+                                    key={`${key}-${index}`}
+                                    type="button"
+                                    onClick={() => onSelect(item)}
+                                    className={`group flex w-full items-center gap-3 rounded-[9px] px-2 py-2 text-left transition-colors duration-150 ${
+                                        active
+                                            ? "bg-background-secondary"
+                                            : "hover:bg-background-secondary/70"
+                                    }`}
+                                >
+                                    <QueueCover item={item} />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="mb-0.5 flex items-center gap-1.5">
+                                            <span className="font-display italic text-[13px] leading-none text-accent">
+                                                {String(index + 1).padStart(2, "0")}
+                                            </span>
+                                            <span className="truncate text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
+                                                {ADD_QUEUE_SOURCE_LABELS[item.source]}
+                                            </span>
+                                        </div>
+                                        <p className="truncate font-display text-[15px] leading-tight text-text-warm group-hover:text-accent">
+                                            {item.title}
+                                        </p>
+                                        <p className="mt-0.5 truncate text-[12px] text-text-secondary">
+                                            {item.artist}
+                                            {item.kind === "track" && item.albumTitle ? ` · ${item.albumTitle}` : ""}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="px-3 py-8 text-center text-meta text-text-tertiary">
+                        Rien à noter pour le moment.
+                    </p>
+                )}
+            </div>
+        </aside>
+    );
+}
+
+function DesktopSearchPanel({
+    entityType,
+    onEntityTypeChange,
+    selectedAlbumId,
+    selectedTrackId,
+    onSelectAlbum,
+    onSelectTrack,
+}: {
+    entityType: EntityType;
+    onEntityTypeChange: (type: EntityType) => void;
+    selectedAlbumId?: string | null;
+    selectedTrackId?: string | null;
+    onSelectAlbum: (album: SelectedAlbum) => void;
+    onSelectTrack: (track: TrackUI) => void;
+}) {
+    return (
+        <div className="rounded-card-lg border border-border bg-paper-hi p-4 shadow-sidebar">
+            <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-h2 text-text-primary">
+                        Chercher une <em className="italic text-accent-deep">écoute</em>
+                    </h2>
+                </div>
+                <div className="flex rounded-full border border-border bg-background p-1">
+                    <button
+                        type="button"
+                        onClick={() => onEntityTypeChange("album")}
+                        className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
+                            entityType === "album"
+                                ? "bg-text-warm text-paper-hi"
+                                : "text-text-secondary hover:bg-background-secondary hover:text-text-primary"
+                        }`}
+                    >
+                        Album
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onEntityTypeChange("track")}
+                        className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
+                            entityType === "track"
+                                ? "bg-text-warm text-paper-hi"
+                                : "text-text-secondary hover:bg-background-secondary hover:text-text-primary"
+                        }`}
+                    >
+                        Titre
+                    </button>
+                </div>
+            </div>
+
+            {entityType === "album" ? (
+                <AlbumSearchForDiary key={selectedAlbumId ?? "none"} onSelectAlbum={onSelectAlbum} />
+            ) : (
+                <TrackSearchForDiary key={selectedTrackId ?? "none"} onSelectTrack={onSelectTrack} />
+            )}
+        </div>
+    );
+}
+
 export default function AddPageClient({
     defaultListItems,
     defaultListTracks,
@@ -148,6 +303,11 @@ export default function AddPageClient({
     };
 
     const selectedListTitle = userLists.find((l) => l.id === selectedListId)?.title ?? null;
+    const activeQueueKey = selectedAlbum
+        ? `album-${selectedAlbum.id}`
+        : selectedTrack
+            ? `track-${selectedTrack.id}`
+            : null;
 
     const albumGrid = useMemo<SuggestionTile[]>(() => {
         const tiles: SuggestionTile[] = [];
@@ -253,6 +413,33 @@ export default function AddPageClient({
         setStep("form");
     };
 
+    const handleQueueSelect = async (item: AddQueueItem) => {
+        if (item.kind === "album") {
+            setEntityType("album");
+            await handleAlbumSelect({
+                id: item.id,
+                title: item.title,
+                artist_name: item.artist,
+                coverUrl: item.coverUrl,
+                year: item.year,
+                source: item.source === "foryou" ? "for_you" : undefined,
+            });
+            return;
+        }
+
+        setEntityType("track");
+        await handleTrackSelect({
+            id: item.id,
+            title: item.title,
+            artist_name: item.artist,
+            album_id: item.albumId,
+            album_title: item.albumTitle,
+            artist_id: item.artistId,
+            coverUrl: item.coverUrl,
+            source: item.source === "foryou" ? "for_you" : undefined,
+        });
+    };
+
     const handleSubmitDiary = async () => {
         if (!selectedAlbum || !listenedAt) return;
         setIsLoading(true);
@@ -308,11 +495,181 @@ export default function AddPageClient({
         }
     };
 
+    const renderDesktopForm = () => {
+        if (step !== "form") {
+            return (
+                <div className="flex min-h-[620px] flex-col items-center justify-center rounded-card-lg border border-border bg-paper-hi px-10 py-12 text-center shadow-sidebar">
+                    <div className="mb-6 flex h-36 w-36 items-center justify-center rounded-cover bg-background-secondary">
+                        <Disc3 size={34} className="text-text-disabled" />
+                    </div>
+                    <h2 className="max-w-sm font-display text-[30px] leading-tight text-text-warm">
+                        Choisis une écoute à noter
+                    </h2>
+                    <p className="mt-3 max-w-md text-meta leading-relaxed text-text-secondary">
+                        Cherche un album ou un titre, pioche dans tes suggestions, ou reprends un élément de ta file.
+                    </p>
+                </div>
+            );
+        }
+
+        const isAlbum = entityType === "album" && selectedAlbum;
+        const isTrack = entityType === "track" && selectedTrack;
+        if (!isAlbum && !isTrack) return null;
+
+        const title = selectedAlbum?.title ?? selectedTrack?.title ?? "";
+        const artist = selectedAlbum?.artist_name ?? selectedTrack?.artist_name ?? "";
+        const coverUrl = selectedAlbum?.coverUrl ?? selectedTrack?.coverUrl ?? null;
+        const meta = isAlbum
+            ? [selectedAlbum?.year].filter(Boolean).join(" · ")
+            : selectedTrack?.album_title ?? "";
+        const submit = isAlbum ? handleSubmitDiary : handleSubmitTrackDiary;
+        const resetSelection = () => {
+            setStep("select");
+            setSelectedAlbum(null);
+            setSelectedTrack(null);
+            setPreviousEntry(null);
+        };
+
+        return (
+            <div className="rounded-card-lg border border-border bg-paper-hi p-5 shadow-sidebar">
+                <div className="flex items-start gap-5 border-b border-border pb-5">
+                    <div className="w-36 flex-shrink-0">
+                        <div className="relative aspect-square overflow-hidden rounded-cover bg-background-secondary shadow-cover">
+                            {coverUrl ? (
+                                <CoverImage
+                                    key={coverUrl}
+                                    src={coverUrl}
+                                    alt={title}
+                                    fill
+                                    className="object-cover"
+                                    placeholder={<div className="h-full w-full bg-background-tertiary" />}
+                                />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-background-tertiary">
+                                    {(isAlbum ? <Disc3 size={28} /> : <Music size={28} />)}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <h2 className="font-display text-[30px] leading-tight text-text-warm">
+                                {title}
+                            </h2>
+                            {previousEntry !== null && (
+                                <span className="font-display italic text-[13px] text-text-secondary whitespace-nowrap">
+                                    · Ré-écoute{previousEntry.rating !== null ? <> · <span className="text-accent">{previousEntry.rating}/10</span></> : ""}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-meta text-text-secondary">
+                            {artist}
+                            {meta ? <span className="text-text-tertiary"> · {meta}</span> : null}
+                        </p>
+                        <button
+                            onClick={resetSelection}
+                            className="mt-3 font-display italic text-sm text-accent border-b border-accent pb-px hover:text-accent-deep hover:border-accent-deep transition-colors duration-150"
+                        >
+                            changer
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mt-5 space-y-5">
+                    <div className="rounded-card border border-border bg-background p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                            <label className="text-meta text-text-secondary">Note</label>
+                            <span className="font-display italic text-[15px] leading-none text-accent">
+                                {rating !== null ? `${rating} / 10` : "–"}
+                            </span>
+                        </div>
+                        <div className="max-w-full overflow-hidden">
+                            <StarRating value={rating} onChange={setRating} />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+                        <div>
+                            <label className="mb-2 block text-meta text-text-secondary">Date d'écoute</label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={listenedAt}
+                                    max={today}
+                                    onChange={(e) => setListenedAt(e.target.value)}
+                                    className="w-full rounded-input border border-border bg-background px-4 py-3 pr-10 text-text-primary appearance-none focus:outline-none focus:border-accent focus:ring-0"
+                                />
+                                <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary">
+                                    <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 8H5v9h14v-9ZM5 6v2h14V6H5Z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-meta text-text-secondary">Quelques mots</label>
+                            <textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder="Ce que tu as ressenti, si tu en as envie."
+                                className="h-28 w-full resize-none rounded-input border border-border bg-background px-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent focus:ring-0"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={submit}
+                        disabled={isLoading}
+                        className="w-full rounded-button bg-text-warm px-6 py-3 font-medium text-paper-hi transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:bg-border disabled:text-text-disabled"
+                    >
+                        {isLoading ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <>
             <AddQueueMobile initialQueue={initialQueue} />
 
             <div className="hidden lg:block">
+                <div className="mx-auto max-w-6xl px-8 pt-8 pb-5">
+                    <div>
+                        <div>
+                            <h1 className="text-h1 text-text-primary mb-2">
+                                Ajouter une <em className="italic text-accent-deep">écoute</em>
+                            </h1>
+                            <p className="text-meta text-text-secondary">
+                                Cherche, pioche dans ta file, note sans quitter le flux.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_320px] items-start gap-8 px-8 pb-12">
+                    <section className="min-w-0 space-y-6">
+                        <DesktopSearchPanel
+                            entityType={entityType}
+                            onEntityTypeChange={handleEntityTypeChange}
+                            selectedAlbumId={selectedAlbum?.id}
+                            selectedTrackId={selectedTrack?.id}
+                            onSelectAlbum={handleAlbumSelect}
+                            onSelectTrack={handleTrackSelect}
+                        />
+                        {!isLoading && renderDesktopForm()}
+                    </section>
+
+                    <AddQueueDesktop
+                        items={initialQueue}
+                        activeKey={activeQueueKey}
+                        onSelect={handleQueueSelect}
+                    />
+                </main>
+            </div>
+
+            {false && (
+            <div className="hidden">
             <div className="p-6 lg:px-8 pb-0">
                 <div>
                     <h1 className="text-h1 text-text-primary mb-2">
@@ -362,11 +719,11 @@ export default function AddPageClient({
                                         <div className="pb-6 border-b border-border">
                                             <div className="flex items-start gap-4 mb-4">
                                                 <div className="relative w-20 h-20 rounded-cover-sm overflow-hidden flex-shrink-0 bg-background-secondary">
-                                                    {selectedAlbum.coverUrl ? (
+                                                    {selectedAlbum!.coverUrl ? (
                                                         <CoverImage
-                                                            key={selectedAlbum.coverUrl}
-                                                            src={selectedAlbum.coverUrl}
-                                                            alt={selectedAlbum.title}
+                                                            key={selectedAlbum!.coverUrl}
+                                                            src={selectedAlbum!.coverUrl as string}
+                                                            alt={selectedAlbum!.title}
                                                             fill
                                                             className="object-cover"
                                                             placeholder={<div className="w-full h-full bg-background-tertiary" />}
@@ -378,17 +735,17 @@ export default function AddPageClient({
                                                 <div className="min-w-0 pt-1">
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                                         <h2 className="font-display font-normal text-h2 text-text-warm leading-tight">
-                                                            {selectedAlbum.title}
+                                                            {selectedAlbum!.title}
                                                         </h2>
                                                         {previousEntry !== null && (
                                                             <span className="font-display italic text-[13px] text-text-secondary whitespace-nowrap">
-                                                                · Ré-écoute{previousEntry.rating !== null ? <> · <span className="text-accent">{previousEntry.rating}/10</span></> : ""}
+                                                                · Ré-écoute{previousEntry!.rating !== null ? <> · <span className="text-accent">{previousEntry!.rating}/10</span></> : ""}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <p className="text-meta text-text-secondary">
-                                                        {selectedAlbum.artist_name}
-                                                        {selectedAlbum.year ? ` · ${selectedAlbum.year}` : ""}
+                                                        {selectedAlbum!.artist_name}
+                                                        {selectedAlbum!.year ? ` · ${selectedAlbum!.year}` : ""}
                                                     </p>
                                                 </div>
                                             </div>
@@ -449,11 +806,11 @@ export default function AddPageClient({
                                         <div className="pb-6 border-b border-border">
                                             <div className="flex items-start gap-4 mb-4">
                                                 <div className="relative w-20 h-20 rounded-cover-sm overflow-hidden flex-shrink-0 bg-background-secondary">
-                                                    {selectedTrack.coverUrl ? (
+                                                    {selectedTrack!.coverUrl ? (
                                                         <CoverImage
-                                                            key={selectedTrack.coverUrl}
-                                                            src={selectedTrack.coverUrl}
-                                                            alt={selectedTrack.title}
+                                                            key={selectedTrack!.coverUrl}
+                                                            src={selectedTrack!.coverUrl as string}
+                                                            alt={selectedTrack!.title}
                                                             fill
                                                             className="object-cover"
                                                             placeholder={<div className="w-full h-full bg-background-tertiary" />}
@@ -465,17 +822,17 @@ export default function AddPageClient({
                                                 <div className="min-w-0 pt-1">
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                                         <h2 className="font-display font-normal text-h2 text-text-warm leading-tight">
-                                                            {selectedTrack.title}
+                                                            {selectedTrack!.title}
                                                         </h2>
                                                         {previousEntry !== null && (
                                                             <span className="font-display italic text-[13px] text-text-secondary whitespace-nowrap">
-                                                                · Ré-écoute{previousEntry.rating !== null ? <> · <span className="text-accent">{previousEntry.rating}/10</span></> : ""}
+                                                                · Ré-écoute{previousEntry!.rating !== null ? <> · <span className="text-accent">{previousEntry!.rating}/10</span></> : ""}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <p className="text-meta text-text-secondary">
-                                                        {selectedTrack.artist_name}
-                                                        {selectedTrack.album_title && <span className="text-text-tertiary"> · {selectedTrack.album_title}</span>}
+                                                        {selectedTrack!.artist_name}
+                                                        {selectedTrack!.album_title && <span className="text-text-tertiary"> · {selectedTrack!.album_title}</span>}
                                                     </p>
                                                 </div>
                                             </div>
@@ -569,6 +926,7 @@ export default function AddPageClient({
                 </div>
             </main>
             </div>
+            )}
         </>
     );
 }

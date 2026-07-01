@@ -1,8 +1,8 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/ui/BackButton';
 import { createSupabaseServer, getAuthUser } from '@/lib/supabase/server';
-import { ArtistPageContent } from '@/components/ArtistPageContent';
+import { ArtistPageContent } from '@/components/artist/ArtistPageContent';
 import { getArtistReleases } from '@/app/actions/musicbrainz';
 import { getOrFetchArtistMeta, getSimilarArtists } from '@/app/actions/artists';
 

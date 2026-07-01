@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
-import AvatarCropModal from "@/components/AvatarCropModal";
+import AvatarCropModal from "@/components/ui/AvatarCropModal";
 import Image from "next/image";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
 import { uploadAvatar, deleteAvatar as deleteAvatarAction } from "@/app/actions/avatarActions";
@@ -18,8 +18,8 @@ import { exportUserData } from "@/app/actions/export";
 import { startLastfmImport } from "@/app/actions/lastfm";
 import { startRymImport, countRymCsvRows } from "@/app/actions/rym";
 import { getActiveImports } from "@/app/actions/externalImport";
-import BackButton from "@/components/BackButton";
-import { showToast } from "@/components/Toast";
+import BackButton from "@/components/ui/BackButton";
+import { showToast } from "@/components/ui/Toast";
 
 type Profile = {
     id: string;

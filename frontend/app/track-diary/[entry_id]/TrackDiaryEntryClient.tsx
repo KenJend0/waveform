@@ -5,11 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Heart, Trash2, CornerDownLeft, Flag, Share2, Link2, MoreHorizontal, Edit2 } from 'lucide-react';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/ui/Toast';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
-import BackButton from '@/components/BackButton';
-import EditTrackDiaryEntryButton from '@/components/EditTrackDiaryEntryButton';
-import LikesBottomSheet from '@/components/LikesBottomSheet';
+import BackButton from '@/components/ui/BackButton';
+import EditTrackDiaryEntryButton from '@/components/track/EditTrackDiaryEntryButton';
+import LikesBottomSheet from '@/components/ui/LikesBottomSheet';
 import { useAuth } from '@/lib/AuthContext';
 import {
   toggleTrackDiaryLike,

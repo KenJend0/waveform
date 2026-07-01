@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import LegalPageShell from "@/components/LegalPageShell";
-import LegalSection from "@/components/LegalSection";
+import LegalPageShell from "@/components/legal/LegalPageShell";
+import LegalSection from "@/components/legal/LegalSection";
 
 export const metadata: Metadata = {
     title: "FAQ — Waveform",

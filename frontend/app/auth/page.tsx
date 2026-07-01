@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import AuthForm from '@/components/AuthForm';
+import AuthForm from '@/components/auth/AuthForm';
 
 
 export default function AuthPage() {

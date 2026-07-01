@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { createSupabaseServer, getAuthUser } from "@/lib/supabase/server";
 import { ensureProfile, getCurrentStreak } from "@/app/actions/profile";
-import UnauthCTA from "@/components/UnauthCTA";
+import UnauthCTA from "@/components/auth/UnauthCTA";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import RatingDistribution from "@/components/profile/RatingDistribution";

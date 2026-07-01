@@ -1,12 +1,12 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getMyFeed, getPublicFeed } from '@/app/actions/feed';
 import { getSimilarUsers } from '@/app/actions/explore';
 import { createSupabaseServer, getAuthUser, userNeedsOnboarding } from '@/lib/supabase/server';
 import FeedInfiniteList from '@/components/feed/FeedInfiniteList';
 import PublicFeedCard from '@/components/feed/PublicFeedCard';
-import SimilarUsersSection from '@/components/SimilarUsersSection';
-import UnauthCTA from '@/components/UnauthCTA';
+import SimilarUsersSection from '@/components/user/SimilarUsersSection';
+import UnauthCTA from '@/components/auth/UnauthCTA';
 
 export default async function FeedPage() {
   const user = await getAuthUser();

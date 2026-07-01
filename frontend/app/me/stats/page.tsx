@@ -1,8 +1,8 @@
-import { redirect } from 'next/navigation';
+﻿import { redirect } from 'next/navigation';
 import { getAuthUser } from '@/lib/supabase/server';
 import { getUserStatsData } from '@/app/actions/profile-stats';
 import ProfileStatsPage from '@/components/profile/stats/ProfileStatsPage';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/ui/BackButton';
 
 export const revalidate = 0;
 

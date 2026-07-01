@@ -1,4 +1,4 @@
-﻿// frontend/app/search/page.tsx
+// frontend/app/search/page.tsx
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
@@ -11,9 +11,9 @@ import { computeRank } from "@/lib/searchRanking";
 import { getArtistImagesByMbids } from "@/app/actions/artists";
 import type { AlbumSearchResult, ArtistSearchResult } from "@/app/actions/musicbrainz";
 import { Disc3, User, Music } from "lucide-react";
-import { CoverImage } from "@/components/CoverImage";
-import BackButton from "@/components/BackButton";
-import { showToast } from "@/components/Toast";
+import { CoverImage } from "@/components/album/CoverImage";
+import BackButton from "@/components/ui/BackButton";
+import { showToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
 
 import { saveRecentSearch } from '@/lib/recentSearches';

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ChartRow from "@/components/ChartRow";
+import ChartRow from "@/components/explore/ChartRow";
 import { type TrendingAlbum } from "@/app/actions/explore";
 import { type TrackWithStats } from "@/app/actions/track-diary";
 

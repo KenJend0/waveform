@@ -1,15 +1,15 @@
 ﻿import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
-import Toast from "@/components/Toast";
+import Toast from "@/components/ui/Toast";
 import { AuthProvider } from "@/lib/AuthContext";
-import AuthenticatedLayout from "@/components/AuthenticatedLayout";
-import DebugErrorBoundary from "@/components/DebugErrorBoundary";
+import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
+import DebugErrorBoundary from "@/components/ui/DebugErrorBoundary";
 import { BackgroundColorProvider } from "@/lib/BackgroundColorContext";
-import { BackgroundWrapper } from "@/components/BackgroundWrapper";
-import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
-import NavigationTracker from "@/components/NavigationTracker";
-import InstagramBanner from "@/components/InstagramBanner";
-import InstallBanner from "@/components/InstallBanner";
+import { BackgroundWrapper } from "@/components/layout/BackgroundWrapper";
+import ServiceWorkerRegistration from "@/components/background/ServiceWorkerRegistration";
+import NavigationTracker from "@/components/background/NavigationTracker";
+import InstagramBanner from "@/components/background/InstagramBanner";
+import InstallBanner from "@/components/background/InstallBanner";
 import { Inter, Instrument_Serif } from 'next/font/google';
 import type { Metadata, Viewport } from 'next';
 

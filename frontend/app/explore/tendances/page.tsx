@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/ui/BackButton";
 import { getTrendingThisWeek } from "@/app/actions/explore";
 import { getTrendingTracks } from "@/app/actions/track-diary";
 import TendancesContent from "./TendancesContent";

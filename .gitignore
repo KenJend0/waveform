@@ -8,18 +8,24 @@
 .env.*.local
 frontend/.env.local
 frontend/.env.*.local
+apps/web/.env.local
+apps/web/.env.*.local
+apps/mobile/.env.local
+apps/mobile/.env.*.local
 supabase
 supabase_rls*
 
 # ── Node ─────────────────────────────────────────────────────
 node_modules/
-frontend/node_modules/
 
 # ── Next.js ──────────────────────────────────────────────────
-frontend/.next/
-frontend/out/
-frontend/.vercel
-frontend/next-env.d.ts
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel
+apps/web/next-env.d.ts
+
+# ── Script audit reports (generated, not source) ──────────────
+apps/web/scripts/*-report.json
 
 # ── Build ────────────────────────────────────────────────────
 dist/
@@ -61,8 +67,6 @@ nul
 .eslintcache
 /coverage/
 
-# ── Script audit reports (generated, not source) ──────────────
-frontend/scripts/*-report.json
 
 .claude
 

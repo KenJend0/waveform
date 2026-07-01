@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Settings, Heart, LifeBuoy, LogOut, Shield } from "lucide-react";
+import { Menu, Settings, Heart, LifeBuoy, LogOut, Shield, BarChart2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { showToast } from "@/components/Toast";
 
@@ -72,6 +72,14 @@ export default function ProfileMenuClient() {
           >
             <Heart size={16} />
             Albums favoris
+          </Link>
+          <Link
+            href="/me/stats"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
+          >
+            <BarChart2 size={16} />
+            Mes stats
           </Link>
           <Link
             href="/legal"

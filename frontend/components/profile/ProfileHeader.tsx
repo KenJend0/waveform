@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, LogOut, Settings, Heart, LifeBuoy, Shield, Flame } from "lucide-react";
+import { Menu, LogOut, Settings, Heart, LifeBuoy, Shield, Flame, BarChart2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
@@ -81,6 +81,14 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
                 >
                   <Heart size={16} />
                   Albums favoris
+                </Link>
+                <Link
+                  href="/me/stats"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
+                >
+                  <BarChart2 size={16} />
+                  Mes stats
                 </Link>
                 <Link
                   href="/legal"

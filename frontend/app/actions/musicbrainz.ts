@@ -1190,6 +1190,18 @@ async function getOrCreateArtistByMbid(
   return { artistId: newArtistId, created: true, error: null };
 }
 
+export async function importArtistFromMusicBrainz(
+  mbid: string,
+  name: string
+): Promise<{ success: boolean; artistId?: string; error?: string }> {
+  const supabase = await createSupabaseServer();
+  const result = await getOrCreateArtistByMbid(supabase, mbid, name);
+  if (!result.artistId) {
+    return { success: false, error: result.error ?? 'Import failed' };
+  }
+  return { success: true, artistId: result.artistId };
+}
+
 /** Resolves (get-or-create) every featured artist credit in one pass, deduped by MBID —
  *  the same featured artist commonly appears on several tracks of the same album.
  *  Best-effort: a credit whose artist can't be resolved is dropped, not fatal to the import. */

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { searchInternal, type SearchResultUI } from "@/app/actions/search";
-import { searchMusicBrainzAlbums, searchMusicBrainzArtists, importAlbumFromMusicBrainz, searchMusicBrainzRecordings, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
+import { searchMusicBrainzAlbums, searchMusicBrainzArtists, importAlbumFromMusicBrainz, importArtistFromMusicBrainz, searchMusicBrainzRecordings, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
 import { getArtistImagesByMbids } from "@/app/actions/artists";
 import { showToast } from "@/components/Toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -109,7 +109,17 @@ function ResultRow({
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function SearchOverlay() {
+type SearchOverlayProps = {
+  variant?: "default" | "header";
+  shortcutEnabled?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+export default function SearchOverlay({
+  variant = "default",
+  shortcutEnabled = true,
+  onOpenChange,
+}: SearchOverlayProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -129,12 +139,13 @@ export default function SearchOverlay() {
       setRecentSearches(getRecentSearches());
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen]);
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   // Keyboard shortcut: Cmd/Ctrl+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if (shortcutEnabled && (e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setIsOpen((v) => !v);
       }
@@ -142,7 +153,7 @@ export default function SearchOverlay() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [shortcutEnabled]);
 
   // Search effect
   useEffect(() => {
@@ -365,6 +376,31 @@ export default function SearchOverlay() {
         return;
       }
 
+      if (item.kind === "artist" && item.source === "musicbrainz") {
+        if (!user) {
+          showToast("Connecte-toi pour accéder à cet artiste", "error");
+          return;
+        }
+        setImportingId(item.id);
+        try {
+          const result = await importArtistFromMusicBrainz(item.id, item.title);
+          if (result.success && result.artistId) {
+            setIsOpen(false);
+            setResults([]);
+            setQ("");
+            setArtist("");
+            router.push(`/artists/${result.artistId}`);
+          } else {
+            showToast("Erreur lors de l'import de l'artiste", "error");
+          }
+        } catch {
+          showToast("Erreur lors de l'import de l'artiste", "error");
+        } finally {
+          setImportingId(null);
+        }
+        return;
+      }
+
       setIsOpen(false);
       setResults([]);
       setQ("");
@@ -375,11 +411,7 @@ export default function SearchOverlay() {
       } else if (item.kind === "track") {
         router.push(`/tracks/${item.id}`);
       } else if (item.kind === "artist") {
-        router.push(
-          item.source === "musicbrainz"
-            ? `/artists/preview/${item.id}`
-            : `/artists/${item.id}`
-        );
+        router.push(`/artists/${item.id}`);
       } else if (item.kind === "user") {
         router.push(`/u/${item.slug ?? item.title}`);
       }
@@ -411,20 +443,33 @@ export default function SearchOverlay() {
 
   const hasResults = results.length > 0;
   const isSearching = loading || loadingExtended;
+  const isHeaderVariant = variant === "header";
 
   return (
     <>
       {/* Trigger */}
-      <div className="w-full max-w-2xl mx-auto">
+      <div className={isHeaderVariant ? "w-full" : "w-full max-w-2xl mx-auto"}>
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setIsOpen(true)}
-          className="bg-[#FAF8F4] border border-accent/40 ring-1 ring-accent/15 rounded-[14px] px-4 py-3 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:border-accent hover:ring-accent/30 hover:shadow-sm"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setIsOpen(true);
+            }
+          }}
+          className={
+            isHeaderVariant
+              ? "bg-paper-hi/90 border border-border rounded-full h-10 px-3 flex items-center gap-2 cursor-pointer select-none outline-none transition-all duration-150 hover:border-accent hover:bg-paper-hi focus:outline-none focus-visible:border-accent"
+              : "bg-[#FAF8F4] border border-accent/40 ring-1 ring-accent/15 rounded-[14px] px-4 py-3 flex items-center gap-3 cursor-pointer select-none outline-none transition-all duration-150 hover:border-accent hover:ring-accent/30 hover:shadow-sm focus:outline-none focus-visible:border-accent"
+          }
         >
-          <Search size={18} className="text-accent flex-shrink-0" />
-          <span className="flex-1 text-[14px] text-text-tertiary truncate">
-            Album, titre, artiste, profil…
+          <Search size={isHeaderVariant ? 15 : 18} className="text-accent flex-shrink-0" />
+          <span className={`flex-1 truncate ${isHeaderVariant ? "text-[13px] text-text-secondary" : "text-[14px] text-text-tertiary"}`}>
+            {isHeaderVariant ? "Rechercher" : "Album, titre, artiste, profil…"}
           </span>
-          <span className="hidden sm:inline-flex items-center gap-1 bg-background-secondary border border-[#D8D3CB] text-text-tertiary text-[10px] font-medium px-1.5 py-0.5 rounded-[5px] flex-shrink-0">
+          <span className={`${isHeaderVariant ? "hidden xl:inline-flex" : "hidden sm:inline-flex"} items-center gap-1 bg-background-secondary border border-[#D8D3CB] text-text-tertiary text-[10px] font-medium px-1.5 py-0.5 rounded-[5px] flex-shrink-0`}>
             <span>⌘</span><span>K</span>
           </span>
         </div>
@@ -434,11 +479,15 @@ export default function SearchOverlay() {
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-[#2A2520]/20 z-50 flex items-start justify-center"
+          className="fixed inset-0 bg-[#2A2520]/20 z-[60] flex items-start justify-center"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="bg-[#FAF8F4] w-full max-w-2xl rounded-b-[16px] mt-0 max-h-[88vh] overflow-hidden flex flex-col border border-[#D8D3CB] border-t-0 shadow-[0_8px_32px_-4px_rgba(42,37,32,0.14)]"
+            className={`bg-[#FAF8F4] w-full max-w-2xl max-h-[88vh] overflow-hidden flex flex-col border border-[#D8D3CB] shadow-[0_8px_32px_-4px_rgba(42,37,32,0.14)] ${
+              isHeaderVariant
+                ? "mt-16 rounded-b-[16px] md:rounded-[16px] md:border-t"
+                : "mt-0 rounded-b-[16px] border-t-0"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

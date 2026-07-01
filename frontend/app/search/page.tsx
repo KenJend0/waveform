@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { searchMusicBrainzAlbums, searchMusicBrainzArtists, importAlbumFromMusicBrainz, searchMusicBrainzRecordings, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
+import { searchMusicBrainzAlbums, searchMusicBrainzArtists, importAlbumFromMusicBrainz, importArtistFromMusicBrainz, searchMusicBrainzRecordings, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
 import { searchInternal, type SearchResultUI } from "@/app/actions/search";
 import { computeRank } from "@/lib/searchRanking";
 import { getArtistImagesByMbids } from "@/app/actions/artists";
@@ -111,11 +111,18 @@ function AlbumRow({
   );
 }
 
-function ArtistRow({ artist, imageUrl }: { artist: ArtistSearchResult; imageUrl?: string | null }) {
+function ArtistRow({ artist, imageUrl, onImport, importing, disabled }: {
+  artist: ArtistSearchResult;
+  imageUrl?: string | null;
+  onImport: (mbid: string, name: string) => void;
+  importing: boolean;
+  disabled: boolean;
+}) {
   return (
-    <Link
-      href={`/artists/preview/${artist.id}`}
-      className="group flex items-center gap-3 px-3 py-2.5 rounded-[10px] hover:bg-background-secondary transition-colors duration-150"
+    <button
+      onClick={() => onImport(artist.id, artist.name)}
+      disabled={disabled}
+      className={`group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[10px] hover:bg-background-secondary transition-colors duration-150 ${disabled && !importing ? "opacity-40" : ""}`}
     >
       <div className="w-11 h-11 rounded-full bg-background-tertiary overflow-hidden flex-shrink-0 flex items-center justify-center">
         {imageUrl ? (
@@ -125,16 +132,25 @@ function ArtistRow({ artist, imageUrl }: { artist: ArtistSearchResult; imageUrl?
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-text-primary truncate leading-snug group-hover:text-[#8E6F5E] transition-colors duration-150">
-          {artist.name}
-        </p>
-        {(artist.type || artist.country) && (
-          <p className="text-sm text-text-secondary truncate mt-0.5 leading-snug">
-            {[artist.type, artist.country].filter(Boolean).join(" · ")}
-          </p>
+        {importing ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#8E6F5E] flex-shrink-0" />
+            <span className="text-meta text-text-secondary">Chargement…</span>
+          </div>
+        ) : (
+          <>
+            <p className="font-medium text-text-primary truncate leading-snug group-hover:text-[#8E6F5E] transition-colors duration-150">
+              {artist.name}
+            </p>
+            {(artist.type || artist.country) && (
+              <p className="text-sm text-text-secondary truncate mt-0.5 leading-snug">
+                {[artist.type, artist.country].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </>
         )}
       </div>
-    </Link>
+    </button>
   );
 }
 
@@ -460,6 +476,27 @@ function SearchPageContent() {
     }
   };
 
+  const handleArtistImport = async (mbid: string, name: string) => {
+    if (importingId) return;
+    if (!user) {
+      showToast("Connecte-toi pour accéder à cet artiste", "error");
+      return;
+    }
+    setImportingId(mbid);
+    try {
+      const result = await importArtistFromMusicBrainz(mbid, name);
+      if (result.success && result.artistId) {
+        router.push(`/artists/${result.artistId}`);
+      } else {
+        showToast("Erreur lors du chargement de l'artiste", "error");
+        setImportingId(null);
+      }
+    } catch {
+      showToast("Erreur lors du chargement de l'artiste", "error");
+      setImportingId(null);
+    }
+  };
+
   const hasResults = albums.length > 0 || artists.length > 0 || users.length > 0 || tracks.length > 0;
 
   const filterLabel: Record<FilterType, string> = {
@@ -563,7 +600,7 @@ function SearchPageContent() {
                 )}
                 <div className="space-y-0.5">
                   {artists.map((artist) => (
-                    <ArtistRow key={artist.id} artist={artist} imageUrl={artistImages[artist.id]} />
+                    <ArtistRow key={artist.id} artist={artist} imageUrl={artistImages[artist.id]} onImport={handleArtistImport} importing={importingId === artist.id} disabled={!!importingId && importingId !== artist.id} />
                   ))}
                 </div>
                 {allArtists.length > artistsLimit && (

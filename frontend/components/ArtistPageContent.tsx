@@ -89,10 +89,6 @@ type Apparition = {
 type ArtistPageContentProps = {
     artist?: Artist;
     albums?: Album[];
-    previewName?: string;
-    previewMbid?: string;
-    previewCountry?: string;
-    previewType?: string;
     imageUrl?: string | null;
     mbReleases?: MBRelease[];
     artistStats?: {
@@ -109,10 +105,6 @@ type ArtistPageContentProps = {
 export function ArtistPageContent({
     artist,
     albums = [],
-    previewName,
-    previewMbid,
-    previewCountry,
-    previewType,
     imageUrl,
     mbReleases = [],
     artistStats,
@@ -126,8 +118,7 @@ export function ArtistPageContent({
     const [isNetworkOpen, setIsNetworkOpen] = useState(false);
     const [typeFilter, setTypeFilter] = useState<ReleaseType | 'Tous'>('Tous');
 
-    const isPreviewMode = !artist && previewMbid;
-    const artistName = artist?.name || previewName || '';
+    const artistName = artist?.name || '';
 
     const discography = useMemo(() => {
         // Build a map from release-group MBID → MB type for DB albums
@@ -156,7 +147,7 @@ export function ArtistPageContent({
                 cover: null,
                 coverFromArchive: true,
                 releaseGroupMbid: r.releaseGroupMbid,
-                href: `/albums/preview/${r.mbid}`,
+                href: '',
                 inDatabase: false,
                 mbid: r.mbid,
                 releaseType: r.type as ReleaseType | null,
@@ -230,12 +221,6 @@ export function ArtistPageContent({
                         <h1 className="text-[32px] font-medium text-text-primary tracking-[-0.02em] leading-[1.2]">
                             {artistName}
                         </h1>
-                        {previewType && (
-                            <p className="text-meta text-text-secondary mt-1">{previewType}</p>
-                        )}
-                        {previewCountry && (
-                            <p className="text-meta text-text-secondary mt-0.5">{previewCountry}</p>
-                        )}
                     </div>
                 </div>
 

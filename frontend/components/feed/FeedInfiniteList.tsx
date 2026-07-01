@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, ChevronUp, Disc3, Heart } from 'lucide-react';
 import { FeedEvent, FeedScope, getMyFeed, markActivitySeen } from '@/app/actions/feed';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
-import { CoverImage } from '@/components/CoverImage';
+import { CoverImage } from '@/components/album/CoverImage';
 import { getTimeAgo } from '@/lib/utils/formatDate';
 import FeedCardReviewCreated from './cards/FeedCardReviewCreated';
 import FeedCardUserFollowed from './cards/FeedCardUserFollowed';
@@ -18,7 +18,7 @@ import FeedCardTrackReviewLiked from './cards/FeedCardTrackReviewLiked';
 import FeedCardTrackCommentCreated from './cards/FeedCardTrackCommentCreated';
 import { ActorLink } from './cards/FeedActorLink';
 import { FeedAvatarGlyph } from './cards/FeedAvatarGlyph';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/ui/Toast';
 import FeedDiscoverPeople from './FeedDiscoverPeople';
 import { type SimilarUser } from '@/app/actions/explore';
 

@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage } from "@/components/album/CoverImage";
 import { Heart, MessageCircle } from "lucide-react";
 import type { UnifiedReview } from "@/app/actions/diary";
 import { toggleDiaryLike } from "@/app/actions/diary";
 import { toggleTrackDiaryLike } from "@/app/actions/track-diary";
-import { showToast } from "@/components/Toast";
-import LikesBottomSheet from "@/components/LikesBottomSheet";
+import { showToast } from "@/components/ui/Toast";
+import LikesBottomSheet from "@/components/ui/LikesBottomSheet";
 import { useAuth } from "@/lib/AuthContext";
 import { useRatingFilter } from "./RatingFilterContext";
 

@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollow } from "@/app/actions/social";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
 
 interface FollowButtonProps {

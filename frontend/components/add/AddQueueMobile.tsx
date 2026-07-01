@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
-import StarRating from "@/components/StarRating";
-import { CoverImage } from "@/components/CoverImage";
+import StarRating from "@/components/ui/StarRating";
+import { CoverImage } from "@/components/album/CoverImage";
 import { searchInternal, type SearchResultUI } from "@/app/actions/search";
 import { searchMusicBrainzAlbums, searchMusicBrainzRecordings, importAlbumFromMusicBrainz, importTrackFromMusicBrainz } from "@/app/actions/musicbrainz";
 import { mergeAndRank } from "@/lib/searchRanking";
 import { upsertDiaryEntry } from "@/app/actions/diary";
 import { upsertTrackDiaryEntry } from "@/app/actions/track-diary";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 import { type AddQueueItem, ADD_QUEUE_SOURCE_LABELS } from "@/lib/buildAddQueue";
 import { ChevronDown, ChevronUp, ChevronRight, Search, X, Disc3, Music } from "lucide-react";
 

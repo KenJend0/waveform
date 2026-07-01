@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Ban, CircleSlash } from "lucide-react";
 import { toggleBlock } from "@/app/actions/social";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 
 interface ProfileActionsMenuProps {
   userId: string;

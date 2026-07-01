@@ -6,9 +6,9 @@ import { Menu, LogOut, Settings, Heart, LifeBuoy, Shield, Flame, BarChart2 } fro
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/avatars/DefaultAvatar";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 import Top3Albums, { FavoriteAlbum } from "@/components/profile/Top3Albums";
-import ExpandableText from "@/components/ExpandableText";
+import ExpandableText from "@/components/ui/ExpandableText";
 
 type Props = {
   user: {

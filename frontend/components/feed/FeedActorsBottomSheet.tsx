@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import BottomSheet from '@/components/BottomSheet';
+import BottomSheet from '@/components/ui/BottomSheet';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
 import type { FeedActor } from '@/app/actions/feed';
 

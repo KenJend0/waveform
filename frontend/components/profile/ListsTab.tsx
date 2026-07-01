@@ -4,9 +4,9 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Lock, Globe, Trash2 } from "lucide-react";
-import ListCard from "@/components/ListCard";
+import ListCard from "@/components/lists/ListCard";
 import { createList, deleteList, updateList, type UserList } from "@/app/actions/lists";
-import { showToast } from "@/components/Toast";
+import { showToast } from "@/components/ui/Toast";
 import { toastErrorMessage } from "@/lib/toastErrors";
 import { useDismissOnOutsideOrScroll } from "@/lib/useDismissOnOutsideOrScroll";
 

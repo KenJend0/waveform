@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage } from "@/components/album/CoverImage";
 
 type AlbumSuggest = {
   id: string;

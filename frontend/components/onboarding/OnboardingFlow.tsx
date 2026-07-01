@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { setOnboardingUsername, checkUsernameAvailability } from '@/app/actions/profile';
 import FollowButton from '@/components/social/FollowButton';
 import { UserAvatar } from '@/components/avatars/DefaultAvatar';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/ui/Toast';
 import { trackProductEvent } from '@/lib/productEventsClient';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9]{3,32}$/;

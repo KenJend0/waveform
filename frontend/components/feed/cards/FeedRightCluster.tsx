@@ -1,6 +1,6 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Disc3 } from 'lucide-react';
-import { CoverImage } from '@/components/CoverImage';
+import { CoverImage } from '@/components/album/CoverImage';
 
 interface FeedRightClusterProps {
   rating?: number | null;

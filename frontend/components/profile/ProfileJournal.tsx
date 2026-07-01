@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage } from "@/components/album/CoverImage";
 
 type Entry = {
   id: string;

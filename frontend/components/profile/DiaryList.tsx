@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage } from "@/components/album/CoverImage";
 import type { DiaryEntryUI, DiarySort } from "@/app/actions/diary";
 import { getUserDiary } from "@/app/actions/diary";
 import type { TrackDiaryEntryUI, TrackDiarySort } from "@/app/actions/track-diary";

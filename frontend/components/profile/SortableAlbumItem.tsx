@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, X } from "lucide-react";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage } from "@/components/album/CoverImage";
 
 type Album = {
   id: string;

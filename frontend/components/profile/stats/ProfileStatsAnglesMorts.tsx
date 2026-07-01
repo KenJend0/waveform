@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { CoverImage } from '@/components/CoverImage';
+import { CoverImage } from '@/components/album/CoverImage';
 import { getTopFamilySlugs } from '@/lib/stats-dimensions';
 import type { AnglesMortsAlbum, StatsGenreEntry } from '@/app/actions/profile-stats';
 

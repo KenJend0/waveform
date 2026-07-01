@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CoverImage } from "@/components/CoverImage";
-import { showToast } from "@/components/Toast";
+import { CoverImage } from "@/components/album/CoverImage";
+import { showToast } from "@/components/ui/Toast";
 
 export type FavoriteAlbum = {
   id: string;

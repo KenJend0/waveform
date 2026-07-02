@@ -77,21 +77,21 @@ Application mobile native (React Native / Expo) partageant le même backend Supa
 
 Briques réutilisables que tout le reste va utiliser.
 
-- [ ] `CoverImage` — avec fallback, équivalent du composant web
-- [ ] `StarRating` — notation 0–10
-- [ ] `Toast` — notifications éphémères
-- [ ] `BottomSheet` — modal qui remonte du bas
-- [ ] `BackButton` — retour natif
-- [ ] `Avatar` — 12 avatars SVG + avatar par défaut
-- [ ] `AlbumCard` — cover + titre + artiste + année
-- [ ] `ArtistCard` — photo + nom
-- [ ] `TrackCard` — titre + artiste + album
-- [ ] `UserCard` — avatar + username
-- [ ] `GenrePills` — tags genre cliquables
-- [ ] `StreamingLinks` — boutons Spotify / Apple Music / Deezer
-- [ ] `StarRating` — composant de notation interactif
-- [ ] Skeleton loaders (états de chargement)
-- [ ] `PullToRefresh` — rafraîchissement par glissement
+- [x] `CoverImage` — avec fallback, équivalent du composant web (expo-image)
+- [x] `StarRating` — notation 0–10
+- [x] `Toast` — notifications éphémères
+- [x] `BottomSheet` — modal qui remonte du bas (@gorhom/bottom-sheet)
+- [x] `BackButton` — retour natif
+- [x] `Avatar` —  avatar par défaut
+- [x] `AlbumCard` — cover + titre + artiste + année
+- [x] `ArtistCard` — photo + nom
+- [x] `TrackCard` — titre + artiste + album
+- [x] `UserCard` — avatar + username
+- [x] `GenrePills` — tags genre cliquables
+- [x] `StreamingLinks` — boutons Spotify / Apple Music / Deezer
+- [x] `StarRating` — composant de notation interactif
+- [x] Skeleton loaders (états de chargement)
+- [x] `PullToRefresh` — rafraîchissement par glissement
 
 ---
 

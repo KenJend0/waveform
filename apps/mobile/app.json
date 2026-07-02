@@ -36,7 +36,8 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-image"
     ],
     "extra": {
       "router": {},

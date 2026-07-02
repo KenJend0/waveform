@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../lib/AuthContext';
 import { useNavScrollHandler } from '../../../lib/useNavScrollHandler';
 import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
@@ -43,6 +44,13 @@ function renderEvent(event: FeedEvent, currentUserId?: string) {
   }
 }
 
+/** La carte "critique" (REVIEW_CREATED/TRACK_REVIEW_CREATED avec texte) a un label qui
+ * chevauche sa bordure haute — deux d'affilée ont besoin d'un espacement supplémentaire
+ * pour que le label du bas ne morde pas sur la bordure du haut (miroir de isCritiqueCard web). */
+function isCritiqueCard(event: FeedEvent): boolean {
+  return (event.type === 'REVIEW_CREATED' || event.type === 'TRACK_REVIEW_CREATED') && !!event.review_excerpt;
+}
+
 function buildRenderItems(events: FeedEvent[]): RenderItem[] {
   const items: RenderItem[] = [];
   let prevLabel: string | null = null;
@@ -61,6 +69,7 @@ function buildRenderItems(events: FeedEvent[]): RenderItem[] {
 
 export default function FeedScreen() {
   const scrollHandler = useNavScrollHandler();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const [buckets, setBuckets] = useState<Record<Tab, Bucket>>({
@@ -110,13 +119,15 @@ export default function FeedScreen() {
     <Animated.FlatList
       data={renderItems}
       keyExtractor={(item: RenderItem) => item.id}
-      renderItem={({ item }: { item: RenderItem }) =>
-        item.kind === 'date' ? (
-          <FeedDateSeparator label={item.label} isFirst={item.isFirst} />
-        ) : (
-          <View className="mt-0.5">{renderEvent(item.event, user?.id)}</View>
-        )
-      }
+      renderItem={({ item, index }: { item: RenderItem; index: number }) => {
+        if (item.kind === 'date') {
+          return <FeedDateSeparator label={item.label} isFirst={item.isFirst} />;
+        }
+        const prevItem = index > 0 ? renderItems[index - 1] : null;
+        const needsClearance =
+          prevItem?.kind === 'event' && isCritiqueCard(item.event) && isCritiqueCard(prevItem.event);
+        return <View className={needsClearance ? 'mt-2' : 'mt-0.5'}>{renderEvent(item.event, user?.id)}</View>;
+      }}
       onScroll={scrollHandler}
       scrollEventThrottle={16}
       refreshControl={refreshControl}
@@ -125,7 +136,7 @@ export default function FeedScreen() {
       className="flex-1 bg-background"
       contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
       ListHeaderComponent={
-        <View className="pt-4 pb-2">
+        <View style={{ paddingTop: insets.top + 8 }} className="pb-2">
           <Text style={{ fontFamily: 'InstrumentSerif_400Regular' }} className="text-3xl text-text-primary px-3 mb-1">
             Activité
           </Text>

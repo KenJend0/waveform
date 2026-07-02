@@ -52,9 +52,9 @@ export function FeedCardReviewCreated({ event, currentUserId }: Props) {
 
   return (
     <>
-      <View className="rounded-card border border-accent px-3 pt-3 pb-2 relative">
+      <View className="mx-3 rounded-card border border-accent px-3 pt-3 pb-2 relative">
         <View className="absolute -top-2.5 self-center bg-background px-2">
-          <Text className="text-accent text-[12px]" style={{ fontFamily: 'InstrumentSerif_400Regular' }}>
+          <Text className="text-accent text-[12px]" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic' }}>
             critique
           </Text>
         </View>

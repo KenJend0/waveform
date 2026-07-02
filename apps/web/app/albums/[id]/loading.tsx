@@ -20,22 +20,30 @@ export default function Loading() {
                             <div className="h-6 w-16 bg-background-secondary rounded-full" />
                             <div className="h-6 w-20 bg-background-secondary rounded-full" />
                         </div>
-                        {/* Stats — bande horizontale */}
-                        <div className="flex border-t border-b border-border py-3 mb-4">
-                            {[0, 1, 2].map((i) => (
-                                <div
-                                    key={i}
-                                    className={`flex flex-col flex-1 ${i < 2 ? 'border-r border-border pr-4' : ''} ${i > 0 ? 'pl-4' : ''}`}
-                                >
-                                    <div className="h-6 bg-background-secondary rounded w-12 mb-1" />
-                                    <div className="h-3 bg-background-secondary rounded w-16" />
-                                </div>
-                            ))}
-                        </div>
                         {/* Action button */}
                         <div className="h-10 bg-background-secondary rounded-[10px] w-36" />
                     </div>
                 </div>
+            </div>
+
+            {/* Streaming links */}
+            <div className="flex gap-3 mt-4 mb-2">
+                {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-8 w-8 rounded-[8px] bg-background-secondary" />
+                ))}
+            </div>
+
+            {/* Stats — bande horizontale full-width */}
+            <div className="flex w-full border-t border-b border-border py-3 mb-8 mt-4">
+                {[0, 1, 2].map((i) => (
+                    <div
+                        key={i}
+                        className={`flex flex-col flex-1 ${i < 2 ? 'border-r border-border pr-4' : ''} ${i > 0 ? 'pl-4' : ''}`}
+                    >
+                        <div className="h-6 bg-background-secondary rounded w-12 mb-1" />
+                        <div className="h-3 bg-background-secondary rounded w-16" />
+                    </div>
+                ))}
             </div>
 
             {/* ── 2. Tracks ── */}
@@ -53,7 +61,7 @@ export default function Loading() {
             </section>
 
             {/* ── 3. Reviews ── */}
-            <section className="border-t border-border-divider pt-10 mb-20">
+            <section className="border-t border-border-divider pt-10 mb-12">
                 <div className="h-5 bg-background-secondary rounded-[8px] w-40 mb-8" />
                 <div className="space-y-6">
                     {[1, 2, 3].map((i) => (
@@ -64,6 +72,20 @@ export default function Loading() {
                             </div>
                             <div className="h-3.5 bg-background-secondary rounded" />
                             <div className="h-3.5 bg-background-secondary rounded w-3/4" />
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ── 4. Albums similaires ── */}
+            <section className="border-t border-border-divider pt-8 mb-12">
+                <div className="h-5 bg-background-secondary rounded-[8px] w-36 mb-6" />
+                <div className="flex gap-4 overflow-hidden">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="flex-shrink-0 w-44 sm:w-48">
+                            <div className="aspect-square rounded-[10px] bg-background-secondary mb-3" />
+                            <div className="h-3.5 bg-background-secondary rounded w-3/4 mb-1.5" />
+                            <div className="h-3 bg-background-secondary rounded w-1/2" />
                         </div>
                     ))}
                 </div>

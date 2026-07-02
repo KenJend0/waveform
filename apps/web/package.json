@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "generate-favicon": "node scripts/generate-favicon.js",
     "backfill-durations": "node --env-file=.env.local scripts/backfill-track-durations.mjs",
     "backfill-release-upgrade": "node --env-file=.env.local scripts/backfill-release-upgrade.mjs",
@@ -34,7 +34,9 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-easy-crop": "^5.5.6",
-    "react-intersection-observer": "^10.0.0",
+    "react-intersection-observer": "^10.0.0"
+  },
+  "optionalDependencies": {
     "sharp": "^0.34.5"
   },
   "devDependencies": {

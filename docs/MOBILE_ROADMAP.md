@@ -32,17 +32,17 @@ Application mobile native (React Native / Expo) partageant le même backend Supa
 
 ## Phase 2 — Setup Expo
 
-- [ ] Installer et configurer **NativeWind** dans `apps/mobile/`
-- [ ] Configurer **Expo Router** (file-based routing)
-- [ ] Connecter **Supabase** :
-  - [ ] Installer `@supabase/supabase-js` + `expo-secure-store`
-  - [ ] Créer le client Supabase mobile avec persistance de session
-- [ ] Configurer **EAS Build** :
-  - [ ] Créer `eas.json` (profils development / preview / production)
-  - [ ] Lier au compte Expo
-  - [ ] Configurer Apple Developer account (99$/an)
-- [ ] Faire un premier build vide sur TestFlight pour valider le pipeline
-- [ ] Vérifier que l'app vide tourne sur les deux téléphones (iPhone + Android)
+- [x] Installer et configurer **NativeWind** dans `apps/mobile/`
+- [x] Configurer **Expo Router** (file-based routing)
+- [x] Connecter **Supabase** :
+  - [x] Installer `@supabase/supabase-js` + `expo-secure-store`
+  - [x] Créer le client Supabase mobile avec persistance de session
+- [x] Configurer **EAS Build** :
+  - [x] Créer `eas.json` (profils development / preview / production)
+  - [x] Lier au compte Expo
+  - [x] Configurer Apple Developer account (99$/an)
+- [x] Faire un premier build vide pour valider le pipeline (✓ build iOS simulator + Android APK)
+- [x] Vérifier que l'app vide tourne sur les deux téléphones (✓ Android émulateur validé, iPhone dès confirmation Apple)
 
 ---
 

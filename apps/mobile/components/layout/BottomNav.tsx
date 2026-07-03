@@ -9,8 +9,8 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { Compass, Plus, Bell, User } from 'lucide-react-native';
-import { useScrollNav } from '../lib/ScrollNavContext';
-import { useAuth } from '../lib/AuthContext';
+import { useScrollNav } from '../../lib/ScrollNavContext';
+import { useAuth } from '../../lib/AuthContext';
 
 type NavRoute = 'explore' | 'add' | 'feed' | 'me';
 

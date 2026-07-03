@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Heart, MessageCircle, CornerUpLeft, Plus, type LucideIcon } from 'lucide-react-native';
-import { Avatar } from '../Avatar';
-import type { FeedActor } from '../../lib/feed';
+import { Avatar } from '../../avatars/Avatar';
+import type { FeedActor } from '../../../lib/feed';
 
 export type Glyph = 'like' | 'comment' | 'reply' | 'follow';
 

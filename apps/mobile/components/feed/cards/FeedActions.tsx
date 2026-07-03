@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Heart, MessageCircle } from 'lucide-react-native';
-import { toggleDiaryLike, toggleTrackDiaryLike } from '../../lib/feed';
-import { showToast } from '../Toast';
+import { toggleDiaryLike, toggleTrackDiaryLike } from '../../../lib/feed';
+import { showToast } from '../../ui/Toast';
 
 type Props = {
   entryId?: string;

@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { Disc3 } from 'lucide-react-native';
-import { CoverImage } from '../CoverImage';
-import type { ListenGroupItem } from './groupFeedEvents';
+import { CoverImage } from '../../album/CoverImage';
+import type { ListenGroupItem } from '../groupFeedEvents';
 
 function GroupCover({ src, size, iconSize }: { src?: string | null; size: number; iconSize: number }) {
   const placeholder = (

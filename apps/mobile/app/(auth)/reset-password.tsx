@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { WaveformMark } from '../../components/WaveformMark';
+import { WaveformMark } from '../../components/icons/WaveformMark';
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState('');

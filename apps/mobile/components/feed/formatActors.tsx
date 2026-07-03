@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { Text } from 'react-native';
 import type { FeedActor } from '../../lib/feed';
-import { ActorLink } from './ActorLink';
+import { ActorLink } from './cards/ActorLink';
 
 /**
  * "X et Y", "X, Y et Z", ou "X, Y et 58 autres" au-delà de 5 acteurs connus.

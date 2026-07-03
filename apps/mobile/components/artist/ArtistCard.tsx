@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Avatar } from './Avatar';
+import { Avatar } from '../avatars/Avatar';
 
 type Props = {
   artist: { id: string; name: string; photoUrl?: string | null };

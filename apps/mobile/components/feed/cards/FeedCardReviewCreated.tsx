@@ -1,14 +1,14 @@
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
-import type { FeedEvent } from '../../lib/feed';
-import { getTimeAgo } from '../../lib/formatDate';
-import { Avatar } from '../Avatar';
+import type { FeedEvent } from '../../../lib/feed';
+import { getTimeAgo } from '../../../lib/formatDate';
+import { Avatar } from '../../avatars/Avatar';
 import { ActorLink } from './ActorLink';
 import { FeedTextLines } from './FeedTextLines';
 import { FeedRightCluster } from './FeedRightCluster';
 import { FeedActions } from './FeedActions';
-import { CommentSheet } from './CommentSheet';
+import { CommentSheet } from '../CommentSheet';
 import { FeedInlineReviewExcerpt } from './FeedReviewExcerpt';
 import { useState } from 'react';
 

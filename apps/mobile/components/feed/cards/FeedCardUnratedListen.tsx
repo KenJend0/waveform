@@ -1,8 +1,8 @@
 import { Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { FeedEvent } from '../../lib/feed';
-import { getTimeAgo } from '../../lib/formatDate';
-import { Avatar } from '../Avatar';
+import type { FeedEvent } from '../../../lib/feed';
+import { getTimeAgo } from '../../../lib/formatDate';
+import { Avatar } from '../../avatars/Avatar';
 import { ActorLink } from './ActorLink';
 import { FeedTextLines } from './FeedTextLines';
 import { FeedRightCluster } from './FeedRightCluster';

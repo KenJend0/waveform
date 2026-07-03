@@ -1,11 +1,11 @@
 import { Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { FeedEvent } from '../../lib/feed';
-import { getTimeAgo } from '../../lib/formatDate';
+import type { FeedEvent } from '../../../lib/feed';
+import { getTimeAgo } from '../../../lib/formatDate';
 import { ActorLink } from './ActorLink';
 import { FeedAvatarCluster } from './FeedAvatarCluster';
 import { FeedTextLines } from './FeedTextLines';
-import { formatActors } from './formatActors';
+import { formatActors } from '../formatActors';
 
 type Props = { event: FeedEvent & { type: 'USER_FOLLOWED' }; currentUserId?: string };
 

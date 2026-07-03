@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { TopTabs } from 'expo-router/js-top-tabs';
 import { ScrollNavProvider } from '../../lib/ScrollNavContext';
-import BottomNav from '../../components/BottomNav';
+import BottomNav from '../../components/layout/BottomNav';
 import { useAuth } from '../../lib/AuthContext';
 
 export default function TabsLayout() {

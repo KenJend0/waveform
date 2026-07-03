@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CoverImage } from './CoverImage';
+import { CoverImage } from '../album/CoverImage';
 
 type Props = {
   track: {

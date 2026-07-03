@@ -11,7 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AuthProvider } from '../lib/AuthContext';
-import { ToastHost } from '../components/Toast';
+import { ToastHost } from '../components/ui/Toast';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

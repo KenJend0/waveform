@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronDown, ChevronUp, Disc3 } from 'lucide-react-native';
-import { getTimeAgo } from '../../lib/formatDate';
+import { getTimeAgo } from '../../../lib/formatDate';
 import { ActorLink } from './ActorLink';
-import { CoverImage } from '../CoverImage';
+import { CoverImage } from '../../album/CoverImage';
 import { FeedAvatarCluster } from './FeedAvatarCluster';
 import { GroupCoverStack, GroupRatingBadge } from './GroupCoverStack';
-import { formatPreviewTitles, type LikeGroup } from './groupFeedEvents';
+import { formatPreviewTitles, type LikeGroup } from '../groupFeedEvents';
 
 type Props = { group: LikeGroup; currentUserId?: string };
 

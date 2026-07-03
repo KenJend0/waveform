@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Text } from 'react-native';
-import type { FeedActor } from '../../lib/feed';
-import { formatActors } from './formatActors';
+import type { FeedActor } from '../../../lib/feed';
+import { formatActors } from '../formatActors';
 import { ActorLink } from './ActorLink';
 
 type Params = {

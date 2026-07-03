@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import { Disc3 } from 'lucide-react-native';
-import { CoverImage } from '../CoverImage';
+import { CoverImage } from '../../album/CoverImage';
 
 type Props = {
   rating?: number | null;

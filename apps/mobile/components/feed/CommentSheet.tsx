@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { BottomSheet } from '../BottomSheet';
+import { BottomSheet } from '../ui/BottomSheet';
 import { addComment, addTrackComment } from '../../lib/feed';
-import { showToast } from '../Toast';
+import { showToast } from '../ui/Toast';
 
 type Props = {
   isOpen: boolean;

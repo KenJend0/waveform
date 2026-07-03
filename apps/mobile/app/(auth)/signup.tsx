@@ -11,7 +11,7 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
-import { WaveformMark } from '../../components/WaveformMark';
+import { WaveformMark } from '../../components/icons/WaveformMark';
 
 export default function SignupScreen() {
   const router = useRouter();

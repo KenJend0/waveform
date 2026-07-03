@@ -34,7 +34,7 @@ export function FeedCardUserFollowed({ event, currentUserId }: Props) {
   );
 
   return (
-    <Pressable onPress={() => router.push(`/u/${event.actor.username}` as any)} className="flex-row items-center gap-3 px-3 py-2">
+    <Pressable onPress={() => router.push(`/u/${event.actor.username}` as any)} className="flex-row items-center gap-3 px-6 py-2">
       <FeedAvatarCluster actor={event.actor} actors={event.actors} isAggregate={isAggregate} glyph="follow" />
       <FeedTextLines context={context} time={timeAgo} />
     </Pressable>

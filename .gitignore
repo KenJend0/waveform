@@ -12,7 +12,8 @@ apps/web/.env.local
 apps/web/.env.*.local
 apps/mobile/.env.local
 apps/mobile/.env.*.local
-/supabase
+/supabase/*
+!/supabase/functions
 supabase_rls*
 
 # ── Node ─────────────────────────────────────────────────────

@@ -37,25 +37,36 @@ export function FeedAvatarCluster({ actor, actors, isAggregate, glyph, size = 32
   const shown = (actors ?? []).slice(0, 2);
   const frontSize = Math.round(size * 0.68);
   const backSize = Math.round(size * 0.56);
+  // Épaisseur du liseré de séparation entre les deux avatars empilés — miroir de
+  // `ring-2 ring-background` (web). Contrairement au web, on ne peut pas simplement
+  // superposer un ring qui déborde de la boîte : on agrandit donc le conteneur de chaque
+  // avatar de `ring` de chaque côté (rempli de la couleur de fond) tout en gardant l'avatar
+  // lui-même à sa taille et sa position d'origine, pour ne pas le rogner.
+  const ring = 2;
 
   return (
     <View style={{ width: size, height: size }}>
       {shown.map((a, i) => {
         const miniSize = i === 0 ? frontSize : backSize;
+        const baseLeft = i === 0 ? 0 : size - miniSize;
+        const baseTop = i === 0 ? 0 : size - miniSize;
         return (
           <View
             key={a.id}
-            className="rounded-full overflow-hidden bg-background"
+            className="rounded-full items-center justify-center"
             style={{
               position: 'absolute',
-              width: miniSize,
-              height: miniSize,
-              left: i === 0 ? 0 : size - miniSize,
-              top: i === 0 ? 0 : size - miniSize,
+              width: miniSize + ring * 2,
+              height: miniSize + ring * 2,
+              left: baseLeft - ring,
+              top: baseTop - ring,
+              backgroundColor: '#F5F3EF',
               zIndex: shown.length - i,
             }}
           >
-            <Avatar src={a.avatar_url} size={miniSize} />
+            <View className="rounded-full overflow-hidden" style={{ width: miniSize, height: miniSize }}>
+              <Avatar src={a.avatar_url} size={miniSize} />
+            </View>
           </View>
         );
       })}
@@ -69,7 +80,7 @@ function GlyphBadge({ style, size }: { style: { icon: LucideIcon; color: string;
   return (
     <View
       className="bg-background border border-border rounded-full items-center justify-center"
-      style={{ position: 'absolute', width: size, height: size, right: -4, bottom: -4 }}
+      style={{ position: 'absolute', width: size, height: size, right: -4, bottom: -4, zIndex: 10 }}
     >
       <Icon size={Math.round(size * 0.6)} color={style.color} fill={style.fill ?? 'transparent'} />
     </View>

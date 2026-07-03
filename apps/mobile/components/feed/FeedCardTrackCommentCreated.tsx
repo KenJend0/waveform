@@ -7,30 +7,31 @@ import { FeedTextLines } from './FeedTextLines';
 import { FeedRightCluster } from './FeedRightCluster';
 import { buildInteractionContext } from './feedInteractionContext';
 
-type Props = { event: FeedEvent & { type: 'REVIEW_LIKED' }; currentUserId?: string };
+type Props = { event: FeedEvent & { type: 'TRACK_COMMENT_CREATED' }; currentUserId?: string };
 
-export function FeedCardReviewLiked({ event, currentUserId }: Props) {
+export function FeedCardTrackCommentCreated({ event, currentUserId }: Props) {
   const router = useRouter();
   const timeAgo = getTimeAgo(event.created_at);
   const isAggregate = Boolean(event.actors_count && event.actors_count > 1 && event.actors);
-  const entryHref = event.liked_entry_id ? `/diary/${event.liked_entry_id}` : `/albums/${event.album?.id}`;
+  const entryHref = event.entry_id ? `/track-diary/${event.entry_id}` : '#';
 
   const context = buildInteractionContext({
     currentUserId,
     actor: event.actor,
-    verb: 'aimé',
+    verb: 'commenté',
     isAggregate,
     actors: event.actors,
     actorsCount: event.actors_count,
     entryOwnerId: event.entry_owner_id,
+    alsoActed: event.current_user_also_commented,
     targetHasReview: event.target_has_review,
   });
 
   return (
     <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-6 py-2">
-      <FeedAvatarCluster actor={event.actor} actors={event.actors} isAggregate={isAggregate} glyph="like" />
-      <FeedTextLines context={context} title={event.album?.title} time={timeAgo} />
-      <FeedRightCluster coverUrl={event.album?.cover_url} />
+      <FeedAvatarCluster actor={event.actor} actors={event.actors} isAggregate={isAggregate} glyph="comment" />
+      <FeedTextLines context={context} title={event.track?.title} time={timeAgo} />
+      <FeedRightCluster coverUrl={event.track?.cover_url} />
     </Pressable>
   );
 }

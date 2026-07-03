@@ -29,7 +29,7 @@ export function FeedCardUnratedListen({ event, currentUserId }: Props) {
   );
 
   return (
-    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-3 py-2">
+    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-6 py-2">
       <Avatar src={event.actor.avatar_url} size={32} />
       <FeedTextLines context={context} title={event.album?.title} artist={event.album?.artist_name} time={timeAgo} />
       <FeedRightCluster coverUrl={event.album?.cover_url} />

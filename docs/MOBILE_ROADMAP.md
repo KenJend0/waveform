@@ -100,12 +100,14 @@ Briques réutilisables que tout le reste va utiliser.
 Dans cet ordre, du plus important au moins important.
 
 ### 6.1 Feed
-- [x] Récupération du feed (`getMyFeed` — onglets Pour moi/Réseau + agrégation des likes/follows/commentaires consécutifs, comme le web ; seul le regroupement des écoutes rapprochées en carte dépliable [ListenGroup/LikeGroup] n'est pas encore porté, voir `lib/feed.ts`)
+- [x] Récupération du feed (`getMyFeed` — onglets Pour moi/Réseau + agrégation des likes/follows/commentaires consécutifs, comme le web ; regroupement des écoutes/likes rapprochés en carte dépliable [ListenGroup/LikeGroup] porté dans `components/feed/groupFeedEvents.ts`)
 - [x] Infinite scroll
 - [x] Carte `FeedCardReviewCreated` (review album)
 - [x] Carte `FeedCardTrackReviewCreated` (review titre)
-- [x] Carte `FeedCardReviewLiked` (like review)
-- [x] Carte `FeedCardCommentCreated` (commentaire)
+- [x] Carte `FeedCardReviewLiked` (like review album)
+- [x] Carte `FeedCardTrackReviewLiked` (like review titre)
+- [x] Carte `FeedCardCommentCreated` (commentaire album)
+- [x] Carte `FeedCardTrackCommentCreated` (commentaire titre)
 - [x] Carte `FeedCardCommentReply` (réponse commentaire)
 - [x] Carte `FeedCardUserFollowed` (nouveau follower)
 - [x] Carte `FeedCardUnratedListen` (écoute sans note)

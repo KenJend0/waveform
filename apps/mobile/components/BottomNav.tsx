@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Compass, Plus, Bell, User } from 'lucide-react-native';
 import { useScrollNav } from '../lib/ScrollNavContext';
+import { useAuth } from '../lib/AuthContext';
 
 type NavRoute = 'explore' | 'add' | 'feed' | 'me';
 
@@ -28,6 +29,7 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { navCompact } = useScrollNav();
+  const { unseenActivity } = useAuth();
 
   const activeRoute = NAV_ITEMS.find((item) => pathname.startsWith(`/${item.route}`))?.route;
 
@@ -46,6 +48,7 @@ export default function BottomNav() {
             item={item}
             active={activeRoute === item.route}
             navCompact={navCompact}
+            showUnseenDot={item.route === 'feed' && unseenActivity}
             onPress={() => router.push(`/(tabs)/${item.route}`)}
           />
         ))}
@@ -58,11 +61,13 @@ function NavItem({
   item,
   active,
   navCompact,
+  showUnseenDot,
   onPress,
 }: {
   item: (typeof NAV_ITEMS)[number];
   active: boolean;
   navCompact: SharedValue<number>;
+  showUnseenDot?: boolean;
   onPress: () => void;
 }) {
   const Icon = item.icon;
@@ -85,6 +90,7 @@ function NavItem({
 
       <Animated.View style={[isAdd ? styles.addIconWrap : styles.iconWrap, iconWrapStyle]}>
         <Icon color={isAdd ? '#FAF8F4' : active ? COLOR_ACTIVE : COLOR_INACTIVE} size={isAdd ? 18 : 22} />
+        {showUnseenDot && <View style={styles.unseenDot} />}
       </Animated.View>
 
       <Animated.Text
@@ -140,6 +146,16 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  unseenDot: {
+    position: 'absolute',
+    top: -1,
+    right: -2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#8E6F5E',
   },
   addIconWrap: {
     alignItems: 'center',

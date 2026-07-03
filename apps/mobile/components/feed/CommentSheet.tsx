@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { BottomSheet } from '../BottomSheet';
-import { addComment } from '../../lib/feed';
+import { addComment, addTrackComment } from '../../lib/feed';
 import { showToast } from '../Toast';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   entryId: string | undefined;
+  type?: 'album' | 'track';
   onCommentAdded?: () => void;
 };
 
-export function CommentSheet({ isOpen, onClose, entryId, onCommentAdded }: Props) {
+export function CommentSheet({ isOpen, onClose, entryId, type = 'album', onCommentAdded }: Props) {
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,7 +20,11 @@ export function CommentSheet({ isOpen, onClose, entryId, onCommentAdded }: Props
     if (!entryId || !body.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await addComment(entryId, body);
+      if (type === 'track') {
+        await addTrackComment(entryId, body);
+      } else {
+        await addComment(entryId, body);
+      }
       setBody('');
       onCommentAdded?.();
       onClose();

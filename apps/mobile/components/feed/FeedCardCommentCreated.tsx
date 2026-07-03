@@ -28,7 +28,7 @@ export function FeedCardCommentCreated({ event, currentUserId }: Props) {
   });
 
   return (
-    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-3 py-2">
+    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-6 py-2">
       <FeedAvatarCluster actor={event.actor} actors={event.actors} isAggregate={isAggregate} glyph="comment" />
       <FeedTextLines context={context} title={event.album?.title} time={timeAgo} />
       <FeedRightCluster coverUrl={event.album?.cover_url} />

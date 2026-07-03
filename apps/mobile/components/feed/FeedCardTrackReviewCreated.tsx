@@ -9,6 +9,7 @@ import { FeedTextLines } from './FeedTextLines';
 import { FeedRightCluster } from './FeedRightCluster';
 import { FeedActions } from './FeedActions';
 import { CommentSheet } from './CommentSheet';
+import { FeedInlineReviewExcerpt } from './FeedReviewExcerpt';
 
 type Props = { event: FeedEvent & { type: 'TRACK_REVIEW_CREATED' }; currentUserId?: string };
 
@@ -36,7 +37,7 @@ export function FeedCardTrackReviewCreated({ event, currentUserId }: Props) {
     </Text>
   );
 
-  const artistOrExcerpt = hasWords ? `« ${event.review_excerpt?.trim()} »` : track?.artist_name;
+  const artistOrExcerpt = hasWords ? <FeedInlineReviewExcerpt text={event.review_excerpt} /> : track?.artist_name;
 
   const row = (
     <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3">
@@ -47,7 +48,7 @@ export function FeedCardTrackReviewCreated({ event, currentUserId }: Props) {
   );
 
   if (!hasWords) {
-    return <View className="px-3 py-2">{row}</View>;
+    return <View className="px-6 py-2">{row}</View>;
   }
 
   return (
@@ -61,18 +62,20 @@ export function FeedCardTrackReviewCreated({ event, currentUserId }: Props) {
         {row}
         <FeedActions
           entryId={event.entry_id}
+          type="track"
           currentUserId={currentUserId}
           isLiked={event.is_liked}
           likesCount={event.likes_count}
           commentsCount={commentsCount}
           onCommentPress={() => setCommentsOpen(true)}
+          time={timeAgo}
         />
-        <Text className="ml-11 mt-1 text-[11px] text-text-disabled">{timeAgo}</Text>
       </View>
       <CommentSheet
         isOpen={commentsOpen}
         onClose={() => setCommentsOpen(false)}
         entryId={event.entry_id}
+        type="track"
         onCommentAdded={() => setCommentsCount((c) => c + 1)}
       />
     </>

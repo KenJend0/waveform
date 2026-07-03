@@ -1,9 +1,17 @@
 import { View } from 'react-native';
+import { Redirect } from 'expo-router';
 import { TopTabs } from 'expo-router/js-top-tabs';
 import { ScrollNavProvider } from '../../lib/ScrollNavContext';
 import BottomNav from '../../components/BottomNav';
+import { useAuth } from '../../lib/AuthContext';
 
 export default function TabsLayout() {
+  const { session, loading } = useAuth();
+
+  if (!loading && !session) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <ScrollNavProvider>
       <View style={{ flex: 1 }}>

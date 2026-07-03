@@ -22,7 +22,7 @@ export function FeedCardCommentReply({ event }: Props) {
   );
 
   return (
-    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-3 py-2">
+    <Pressable onPress={() => router.push(entryHref as any)} className="flex-row items-center gap-3 px-6 py-2">
       <FeedAvatarCluster actor={event.actor} glyph="reply" />
       <FeedTextLines context={context} title={event.album?.title} time={timeAgo} />
       <FeedRightCluster coverUrl={event.album?.cover_url} />

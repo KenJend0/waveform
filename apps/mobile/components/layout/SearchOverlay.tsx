@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
+  Keyboard,
   Pressable,
   ScrollView,
   Text,
@@ -163,6 +164,7 @@ export function SearchOverlayHost() {
   const router = useRouter();
 
   const close = useCallback(() => {
+    Keyboard.dismiss();
     closeOverlay();
     setQ('');
     setArtist('');

@@ -443,3 +443,112 @@ export async function getTrackEntryLikes(entryId: string): Promise<TrackDiaryLik
     .filter((p): p is NonNullable<typeof p> => p != null)
     .map((p) => ({ id: p.id, username: p.username || 'unknown', avatar_url: p.avatar_url ?? null }));
 }
+
+export type TrackWithStats = {
+  track_id: string;
+  track_title: string;
+  artist_id: string;
+  artist_name: string;
+  album_id: string;
+  album_title: string;
+  cover_url: string | null;
+  avg_rating: number | null;
+  activity_count: number;
+  delta?: number | null;
+};
+
+/** Titres tendance de la semaine — miroir de getTrendingTracks (apps/web/app/actions/track-diary.ts), utilisé par /explore (Phase 7). */
+export async function getTrendingTracks(limit = 10): Promise<TrackWithStats[]> {
+  const { data: rpcRows, error: rpcError } = await supabase.rpc('get_trending_tracks', {
+    result_limit: limit,
+  });
+
+  if (!rpcError && rpcRows) {
+    const rows = rpcRows as Array<{
+      track_id: string; track_title: string | null; artist_id: string | null; artist_name: string | null;
+      album_id: string | null; album_title: string | null; cover_url: string | null;
+      avg_rating: string | number | null; activity_count: number | null; delta: number | null;
+    }>;
+    return rows.map((row) => ({
+      track_id: row.track_id,
+      track_title: row.track_title || 'Unknown',
+      artist_id: row.artist_id || '',
+      artist_name: row.artist_name || 'Unknown',
+      album_id: row.album_id || '',
+      album_title: row.album_title || 'Unknown',
+      cover_url: row.cover_url || null,
+      avg_rating: row.avg_rating !== null && row.avg_rating !== undefined ? Number(row.avg_rating) : null,
+      activity_count: row.activity_count ?? 0,
+      delta: row.delta ?? null,
+    }));
+  }
+
+  console.warn('getTrendingTracks RPC fallback:', rpcError?.message);
+
+  const now = Date.now();
+  const since = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString();
+  const eightDaysAgo = new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data, error }, { data: prevData }] = await Promise.all([
+    supabase.from('track_diary_entries').select('track_id, rating').gte('created_at', since).eq('is_public', true),
+    supabase.from('track_diary_entries').select('track_id').gte('created_at', eightDaysAgo).lt('created_at', oneDayAgo).eq('is_public', true),
+  ]);
+
+  if (error || !data || data.length === 0) return [];
+
+  const recentRows = data as Array<{ track_id: string; rating: number | null }>;
+  const prevRows = prevData as Array<{ track_id: string }> | null;
+
+  const map = new Map<string, { count: number; totalRating: number; ratingCount: number }>();
+  for (const row of recentRows) {
+    const existing = map.get(row.track_id) || { count: 0, totalRating: 0, ratingCount: 0 };
+    existing.count++;
+    if (row.rating !== null) {
+      existing.totalRating += row.rating;
+      existing.ratingCount++;
+    }
+    map.set(row.track_id, existing);
+  }
+
+  const prevCounts = new Map<string, number>();
+  for (const row of prevRows ?? []) {
+    prevCounts.set(row.track_id, (prevCounts.get(row.track_id) ?? 0) + 1);
+  }
+  const prevRankMap = new Map(
+    [...prevCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id], i) => [id, i + 1])
+  );
+
+  const sorted = [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, limit);
+  if (sorted.length === 0) return [];
+
+  const trackIds = sorted.map(([id]) => id);
+  const { data: tracks } = await supabase
+    .from('tracks')
+    .select('id, title, album_id, albums(id, title, cover_url, artist_id, artists(id, name))')
+    .in('id', trackIds);
+
+  const trackMap = new Map(((tracks ?? []) as any[]).map((t) => [t.id, t]));
+
+  return sorted
+    .map(([trackId, stats], index): TrackWithStats | null => {
+      const track = trackMap.get(trackId);
+      if (!track) return null;
+      const album = track.albums;
+      const currentRank = index + 1;
+      const prevRank = prevRankMap.get(trackId);
+      return {
+        track_id: trackId,
+        track_title: track.title || 'Unknown',
+        artist_id: album?.artist_id || '',
+        artist_name: album?.artists?.name || 'Unknown',
+        album_id: track.album_id || '',
+        album_title: album?.title || 'Unknown',
+        cover_url: album?.cover_url ?? null,
+        avg_rating: stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : null,
+        activity_count: stats.count,
+        delta: prevRank !== undefined ? prevRank - currentRank : null,
+      };
+    })
+    .filter((row): row is TrackWithStats => row != null);
+}

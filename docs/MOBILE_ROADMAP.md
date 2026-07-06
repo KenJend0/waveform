@@ -426,12 +426,58 @@ Notes de scope :
 
 ## Phase 7 — Features secondaires
 
-- [ ] **Explore** :
-  - [ ] Tendances de la semaine
-  - [ ] Section "Pour toi"
-  - [ ] Découverte (algo suggestions)
-  - [ ] Curator picks
-  - [ ] Users similaires
+- [x] **Explore** :
+  - [x] Section "Pour toi" (albums + titres, dismiss "Pas pour moi" optimiste)
+  - [x] Curator picks
+  - [x] Tendances de la semaine
+  - [x] Découverte
+  - [x] Users similaires
+  - [x] Listes populaires (section bonus, absente du checklist d'origine — présente
+        sur le web via `CommunityListsSection`, inline dans `app/explore/page.tsx`)
+
+Notes de scope :
+- **Onboarding non porté (décision de scope explicite)** : le web fait un hard
+  redirect vers `/onboarding` (choix de username, comptes suggérés à suivre) si
+  `userNeedsOnboarding` — ce flow complet n'existe pas côté mobile et n'est dans
+  aucune phase du roadmap ; hors scope de cette passe. Seul `getProfileTier()`
+  (`lib/explore.ts`, 100% RLS, seuil de 3 entrées de journal comme le web) est
+  repris pour l'affichage conditionnel déjà présent sur la page elle-même :
+  `OnboardingCTASection` (nouveau, `components/auth/`) affichée à la place de
+  "Pour toi" si `tier === 'new'`, "Pour toi"/"Users similaires" masqués si pas
+  `'established'` — exactement le même comportement que le web une fois le
+  redirect retiré.
+- **Tout porté sans dégradation** (contrairement à 6.4 où "Pour toi"/"Découverte"
+  avaient été passés en tableaux vides) : `getTrendingThisWeek`, `getForYouSuggestions`
+  (fallback Jaccard inclus), `getForYouTracks` (idem), `getDiscoveryAlbums` (modes
+  "bubble"/"discover"), `getSimilarUsers`, `getCuratorPick`, `getTrendingTracks`,
+  `getPublicLists` sont tous 100% lectures RLS/anon — confirmé avant de coder,
+  aucune Edge Function nécessaire pour cette page. Nouveaux fichiers :
+  `lib/explore.ts`, `lib/curator.ts` ; `getTrendingTracks`/`TrackWithStats` ajoutés
+  à `lib/trackDiary.ts` (n'existaient pas encore côté mobile) ; `getPublicLists`
+  ajouté à `lib/lists.ts` (miroir simplifié, sans `is_saved` — `ListCard` mobile
+  n'a pas de bouton sauvegarder pour l'instant).
+- **`buildAddQueue.ts` (6.4) peut maintenant être branché sur les vraies données** :
+  les tiers "Suggestion pour toi"/"À découvrir" de la page Ajouter étaient en
+  tableaux vides en attendant cette phase — `getForYouSuggestions`/`getForYouTracks`/
+  `getDiscoveryAlbums` existent désormais côté mobile, mais le branchement dans
+  `app/(tabs)/add/index.tsx` n'a pas été refait dans cette passe (pas demandé) :
+  à faire séparément si besoin.
+- **3 écrans, dans l'onglet `(tabs)/explore/`** : `index.tsx` (page principale),
+  `tendances.tsx` et `decouverte.tsx` (pages "voir tout", 20/24 items) — poussées
+  dans le `Stack` déjà existant de cet onglet plutôt qu'en pile plein écran hors
+  `(tabs)`, comme le web les traite en pages secondaires classiques avec
+  `BackButton`.
+- **"Listes populaires" réutilise `components/profile/ListCard.tsx`** (déjà
+  construit en 6.6/6.7) plutôt que d'en dupliquer un ; le tap sur "voir tout"
+  affiche un toast "Bientôt disponible" (comme le tap sur une liste individuelle)
+  puisque ni `/lists` ni `/lists/[id]` n'existent encore côté mobile (Phase 7
+  "Listes" séparée, pas commencée).
+- **Cartes avec bouton "Pas pour moi" non fusionnées dans `AlbumCard`/`TrackCard`**
+  existants : ce contrat (bouton de dismiss superposé à la cover) est spécifique
+  aux sections de recommandations et aurait changé le contrat de composants déjà
+  utilisés ailleurs sans lien avec les recos — `PourToiSection`/`DiscoverCard`
+  définissent leur propre petite cellule de cover, comme `DiscoverCard`/`AlbumCard`
+  (web) le font déjà séparément l'un de l'autre.
 - [ ] **Listes** :
   - [ ] Créer une liste
   - [ ] Ajouter / retirer un album

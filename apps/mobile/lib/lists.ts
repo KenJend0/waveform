@@ -138,6 +138,43 @@ export async function getPublicUserLists(userId: string): Promise<ProfileListUI[
   return lists.map((l) => ({ ...l, ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [] }) }));
 }
 
+/**
+ * Listes publiques populaires — pour la section bonus "Listes populaires" de
+ * /explore (Phase 7, pas dans le checklist d'origine — présente sur le web).
+ * Miroir simplifié de getPublicLists (web) : même tri par saves_count sur un
+ * pool des listes les plus récentes, sans is_saved (ListCard mobile n'a pas
+ * de bouton sauvegarder pour l'instant).
+ */
+export async function getPublicLists(limit = 6): Promise<ProfileListUI[]> {
+  const poolSize = Math.min(Math.max(limit * 5, 30), 200);
+
+  const { data: lists } = await supabase
+    .from('user_lists')
+    .select('id, user_id, title, is_public, is_default, saves_count, profiles(username, avatar_url)')
+    .eq('is_public', true)
+    .eq('is_default', false)
+    .order('created_at', { ascending: false })
+    .limit(poolSize);
+
+  if (!lists || lists.length === 0) return [];
+
+  const meta = await attachListMeta(lists.map((l) => l.id));
+
+  return (lists as any[])
+    .sort((a, b) => (b.saves_count ?? 0) - (a.saves_count ?? 0))
+    .slice(0, limit)
+    .map((list) => ({
+      id: list.id,
+      user_id: list.user_id,
+      title: list.title,
+      is_public: list.is_public,
+      is_default: list.is_default,
+      creator_username: list.profiles?.username ?? undefined,
+      creator_avatar: list.profiles?.avatar_url ?? null,
+      ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [] }),
+    }));
+}
+
 async function currentUserId(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   return data.session?.user.id ?? null;

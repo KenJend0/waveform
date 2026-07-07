@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -38,6 +38,7 @@ export default function DiaryEntryPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -142,7 +143,7 @@ export default function DiaryEntryPage() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} keyboardShouldPersistTaps="handled">
         <View className="px-4 pt-4">
           <BackButton label="Journal" />
 
@@ -285,6 +286,7 @@ export default function DiaryEntryPage() {
             currentUserId={user?.id ?? null}
             isAuthor={isAuthor}
             composerAvatarUrl={composerAvatarUrl}
+            scrollViewRef={scrollViewRef}
             onAddComment={async (body) => { await addComment(entry.id, body); await refreshComments(); }}
             onAddReply={async (parentId, body) => { await addComment(entry.id, body, parentId); await refreshComments(); }}
             onDelete={async (commentId) => { await deleteComment(commentId); await refreshComments(); }}

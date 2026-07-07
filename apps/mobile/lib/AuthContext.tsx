@@ -3,10 +3,12 @@ import type { Session, User } from '@supabase/supabase-js';
 import { usePathname } from 'expo-router';
 import { supabase } from './supabase';
 import { hasUnseenActivity } from './feed';
+import { ensureProfile, type Profile } from './profile';
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   unseenActivity: boolean;
   refreshUnseenActivity: () => Promise<void>;
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [unseenActivity, setUnseenActivity] = useState(false);
 
@@ -35,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       if (session?.user) {
         refreshUnseenActivity().catch(() => setUnseenActivity(false));
+        ensureProfile().then(setProfile).catch(() => setProfile(null));
       }
     });
 
@@ -45,8 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       if (session?.user) {
         refreshUnseenActivity().catch(() => setUnseenActivity(false));
+        ensureProfile().then(setProfile).catch(() => setProfile(null));
       } else {
         setUnseenActivity(false);
+        setProfile(null);
       }
     });
 
@@ -67,11 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUnseenActivity(false);
+    setProfile(null);
   };
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, loading, unseenActivity, refreshUnseenActivity, signOut }}
+      value={{ session, user: session?.user ?? null, profile, loading, unseenActivity, refreshUnseenActivity, signOut }}
     >
       {children}
     </AuthContext.Provider>

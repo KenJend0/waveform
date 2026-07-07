@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton } from '../../../components/ui/BackButton';
 import { ProfileHeader } from '../../../components/profile/ProfileHeader';
@@ -9,7 +8,6 @@ import { ProfileTabs } from '../../../components/profile/ProfileTabs';
 import { RatingDistribution } from '../../../components/profile/RatingDistribution';
 import { RatingFilterProvider } from '../../../lib/RatingFilterContext';
 import { useAuth } from '../../../lib/AuthContext';
-import { useNavScrollHandler } from '../../../lib/useNavScrollHandler';
 import { supabase } from '../../../lib/supabase';
 import { getCurrentStreak, getFavoriteAlbums, type FavoriteAlbum } from '../../../lib/profile';
 import { getUserDiary, getUserReviewsUnified, type DiaryEntryUI, type UnifiedReview } from '../../../lib/diary';
@@ -29,7 +27,6 @@ export default function PublicProfileScreen() {
   const { user: authUser } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const scrollHandler = useNavScrollHandler();
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -46,9 +43,17 @@ export default function PublicProfileScreen() {
   const [trackEntries, setTrackEntries] = useState<TrackDiaryEntryUI[]>([]);
   const [unifiedReviews, setUnifiedReviews] = useState<UnifiedReview[]>([]);
   const [lists, setLists] = useState<ProfileListUI[]>([]);
+  const requestRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!username) return;
+    // authUser passe souvent de null à l'utilisateur réel juste après le premier rendu
+    // (résolution asynchrone de la session), ce qui redéclenche cet effet une 2e fois.
+    // Sans garde, l'appel n°1 (parti avec authUser=null, donc isFollowing/isBlocking
+    // toujours faux) peut finir APRÈS l'appel n°2 (le bon) et écraser son résultat —
+    // d'où un bouton "Suivre" qui ne reflète pas le vrai statut. On n'applique que la
+    // réponse de l'appel le plus récent.
+    const requestId = ++requestRef.current;
     setLoading(true);
 
     const { data: profileRow } = await supabase
@@ -58,6 +63,7 @@ export default function PublicProfileScreen() {
       .maybeSingle();
 
     if (!profileRow) {
+      if (requestRef.current !== requestId) return;
       setNotFound(true);
       setLoading(false);
       return;
@@ -106,6 +112,8 @@ export default function PublicProfileScreen() {
       following_ = !!followStatus;
       blocking_ = !!blockStatus;
     }
+
+    if (requestRef.current !== requestId) return;
 
     setProfile(profileRow);
     setIsFollowing(following_);
@@ -165,7 +173,7 @@ export default function PublicProfileScreen() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
           <BackButton />
         </View>
@@ -200,7 +208,7 @@ export default function PublicProfileScreen() {
             </View>
           </RatingFilterProvider>
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
     </View>
   );
 }

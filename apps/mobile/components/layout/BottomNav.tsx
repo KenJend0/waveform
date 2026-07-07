@@ -1,4 +1,5 @@
 import type { ComponentProps, ComponentType } from 'react';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,11 +7,13 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Compass, Plus, Bell, User } from 'lucide-react-native';
+import { Compass, Plus, Bell } from 'lucide-react-native';
 import { useScrollNav } from '../../lib/ScrollNavContext';
 import { useAuth } from '../../lib/AuthContext';
+import { Avatar } from '../avatars/Avatar';
 
 type NavRoute = 'explore' | 'add' | 'feed' | 'me';
 
@@ -18,7 +21,6 @@ const NAV_ITEMS: { route: NavRoute; label: string; icon: ComponentType<Component
   { route: 'explore', label: 'Découvrir', icon: Compass },
   { route: 'add', label: 'Ajouter', icon: Plus },
   { route: 'feed', label: 'Activité', icon: Bell },
-  { route: 'me', label: 'Moi', icon: User },
 ];
 
 const COLOR_ACTIVE = '#2A2520';
@@ -29,15 +31,28 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { navCompact } = useScrollNav();
-  const { unseenActivity } = useAuth();
+  const { session, unseenActivity, profile } = useAuth();
 
-  const activeRoute = NAV_ITEMS.find((item) => pathname.startsWith(`/${item.route}`))?.route;
+  const allRoutes: NavRoute[] = ['explore', 'add', 'feed', 'me'];
+  const activeRoute = allRoutes.find((route) => pathname.startsWith(`/${route}`));
+  // Hors des 4 pages principales elles-mêmes (pas leurs sous-pages : /me/settings,
+  // fiches artiste/album/track, journal, etc.), la barre reste toujours compacte —
+  // mêmes règles que web/components/layout/BottomNav.tsx (comparaison stricte du pathname).
+  const isMainPage = allRoutes.some((route) => pathname === `/${route}`);
+
+  useEffect(() => {
+    if (!isMainPage) {
+      navCompact.value = withTiming(1, { duration: 200 });
+    }
+  }, [isMainPage, navCompact]);
 
   const navStyle = useAnimatedStyle(() => ({
     width: interpolate(navCompact.value, [0, 1], [300, 232], Extrapolation.CLAMP),
     borderRadius: interpolate(navCompact.value, [0, 1], [20, 999], Extrapolation.CLAMP),
     paddingHorizontal: interpolate(navCompact.value, [0, 1], [10, 6], Extrapolation.CLAMP),
   }));
+
+  if (!session) return null;
 
   return (
     <View pointerEvents="box-none" style={[styles.wrapper, { bottom: insets.bottom + 4 }]}>
@@ -52,8 +67,52 @@ export default function BottomNav() {
             onPress={() => router.push(`/(tabs)/${item.route}`)}
           />
         ))}
+        <ProfileNavItem
+          active={activeRoute === 'me'}
+          navCompact={navCompact}
+          avatarUrl={profile?.avatar_url ?? null}
+          onPress={() => router.push('/(tabs)/me')}
+        />
       </Animated.View>
     </View>
+  );
+}
+
+function ProfileNavItem({
+  active,
+  navCompact,
+  avatarUrl,
+  onPress,
+}: {
+  active: boolean;
+  navCompact: SharedValue<number>;
+  avatarUrl: string | null;
+  onPress: () => void;
+}) {
+  const iconWrapStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(navCompact.value, [0, 1], [-5, 0], Extrapolation.CLAMP) }],
+  }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(navCompact.value, [0, 1], [1, 0], Extrapolation.CLAMP),
+  }));
+
+  return (
+    <Pressable onPress={onPress} style={styles.item}>
+      {active && <View style={styles.activeIndicator} />}
+
+      <Animated.View style={[styles.iconWrap, iconWrapStyle]}>
+        <View style={[styles.avatarRing, { borderColor: active ? '#8E6F5E' : '#D8D3CB' }]}>
+          <Avatar src={avatarUrl} size={20} />
+        </View>
+      </Animated.View>
+
+      <Animated.Text
+        style={[styles.label, labelStyle, { color: active ? COLOR_ACTIVE : COLOR_INACTIVE }]}
+      >
+        Moi
+      </Animated.Text>
+    </Pressable>
   );
 }
 
@@ -147,6 +206,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  avatarRing: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   unseenDot: {
     position: 'absolute',

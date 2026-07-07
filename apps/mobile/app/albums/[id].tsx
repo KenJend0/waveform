@@ -332,7 +332,7 @@ export default function AlbumPage() {
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
         refreshControl={refreshControl}
       >
         <View style={{ paddingTop: 16 }}>

@@ -23,12 +23,13 @@ export default function UnauthTeaser({ ctaTitle, children }: UnauthTeaserProps) 
       />
 
       {/* Le conteneur reste absolute (calé sur toute la hauteur du contenu flouté) ;
-          c'est la carte elle-même qui devient sticky en lg pour rester centrée à
-          l'écran pendant le scroll, bornée par la hauteur de ce conteneur. */}
-      <div className="absolute inset-0 flex items-start justify-center px-4 pt-6 lg:pt-0">
+          c'est la carte elle-même qui devient sticky (à tous les breakpoints)
+          pour rester centrée à l'écran pendant le scroll, bornée par la
+          hauteur de ce conteneur. */}
+      <div className="absolute inset-0 flex items-start justify-center px-4">
         <UnauthCTA
           title={ctaTitle}
-          className="shadow-[0_12px_32px_-8px_rgba(42,37,32,0.18)] lg:sticky lg:top-1/2 lg:-translate-y-1/2"
+          className="shadow-[0_12px_32px_-8px_rgba(42,37,32,0.18)] sticky top-1/2 -translate-y-1/2"
         />
       </div>
     </div>

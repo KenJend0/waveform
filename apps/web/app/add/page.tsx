@@ -24,7 +24,42 @@ export default async function AddPage() {
                 </div>
 
                 <UnauthTeaser ctaTitle={<>Note tes écoutes, écris des reviews — <em className="italic text-accent-deep">garde une trace de tout ce que tu écoutes.</em></>}>
-                    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    {/* Aperçu mobile — reprend l'esthétique carte de AddQueueMobile (pile de fiches),
+                        pas le grid desktop qui n'a pas d'équivalent dans le rendu mobile réel. */}
+                    <div className="lg:hidden">
+                        <div className="flex gap-2 mb-4">
+                            <div className="px-3.5 py-1.5 rounded-pill text-[13px] font-medium bg-background-secondary text-text-secondary">
+                                Chercher un album
+                            </div>
+                            <div className="px-3.5 py-1.5 rounded-pill text-[13px] font-medium bg-background-secondary text-text-secondary">
+                                Chercher un titre
+                            </div>
+                        </div>
+
+                        {selected && (
+                            <div className="relative w-full max-w-sm mx-auto rounded-card-lg overflow-hidden bg-paper-hi border border-border">
+                                <div className="relative aspect-square bg-background-tertiary">
+                                    <CoverImage
+                                        src={selected.cover_url}
+                                        alt=""
+                                        fill
+                                        className="object-cover"
+                                        placeholder={<div className="h-full w-full bg-background-tertiary" />}
+                                    />
+                                </div>
+                                <div className="p-4">
+                                    <h2 className="font-display text-h2 text-text-warm leading-tight mb-1">
+                                        {selected.album_title}
+                                    </h2>
+                                    <p className="text-meta text-text-secondary mb-3">{selected.artist_name}</p>
+                                    <div className="flex gap-1 text-accent text-[18px] leading-none mb-3">★★★★★★★★☆☆</div>
+                                    <div className="w-full h-11 rounded-button bg-text-warm" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="hidden lg:grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
                         <section className="space-y-6">
                             <div className="rounded-input border border-border bg-background px-4 py-3 text-meta text-text-tertiary">
                                 Rechercher un album, un titre...

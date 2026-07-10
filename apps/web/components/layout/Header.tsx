@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import ProfileMenuClient from "@/components/profile/ProfileMenuClient";
 import SearchOverlay from "@/components/layout/SearchOverlay";
 import { useHeaderSearch } from "@/lib/HeaderSearchContext";
-import { Plus } from "lucide-react";
+import { Plus, LogIn } from "lucide-react";
 
 export default function Header() {
     const { user, loading, unseenActivity } = useAuth();
@@ -103,20 +103,13 @@ export default function Header() {
                     {user ? (
                         <ProfileMenuClient />
                     ) : (
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href="/auth"
-                                className="text-meta font-medium text-text-secondary transition-colors duration-150 hover:text-text-primary"
-                            >
-                                Se connecter
-                            </Link>
-                            <Link
-                                href="/auth?mode=signup"
-                                className="rounded-button bg-text-warm px-4 py-2 text-meta font-medium text-paper-hi transition-opacity duration-150 hover:opacity-90"
-                            >
-                                Créer un compte
-                            </Link>
-                        </div>
+                        <Link
+                            href="/auth"
+                            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-text-warm px-5 text-[13px] font-medium leading-none text-paper-hi shadow-[0_6px_14px_-8px_rgba(42,37,32,0.55)] transition-all duration-150 hover:opacity-90 hover:shadow-[0_8px_18px_-8px_rgba(42,37,32,0.6)]"
+                        >
+                            <LogIn size={14} strokeWidth={2} />
+                            Se connecter
+                        </Link>
                     )}
                 </div>
             </div>

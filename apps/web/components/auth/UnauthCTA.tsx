@@ -12,7 +12,7 @@ export default function UnauthCTA({
   className = '',
 }: UnauthCTAProps) {
   return (
-    <div className={`relative px-5 py-5 bg-paper-hi border border-rule rounded-card-lg overflow-hidden ${className}`}>
+    <div className={`relative max-w-2xl px-5 py-5 bg-paper-hi border border-rule rounded-card-lg overflow-hidden ${className}`}>
       <div className="absolute left-0 top-5 bottom-5 w-[3px] bg-accent rounded-r-full" />
       <p className="text-label uppercase tracking-[0.18em] text-text-tertiary mb-2">{tagline}</p>
       <p className="font-display font-normal text-[20px] text-text-warm leading-snug mb-4">{title}</p>

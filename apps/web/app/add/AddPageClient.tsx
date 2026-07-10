@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AlbumSearchForDiary from "@/components/album/AlbumSearchForDiary";
 import TrackSearchForDiary, { type TrackUI } from "@/components/track/TrackSearchForDiary";
 import StarRating from "@/components/ui/StarRating";
@@ -15,7 +16,7 @@ import { type ForYouAlbum, type ForYouTrack, type DiscoveryAlbum } from "@/app/a
 import { type AddQueueItem, ADD_QUEUE_SOURCE_LABELS } from "@/lib/buildAddQueue";
 import { CLASSIC_ALBUMS } from "@/lib/classicAlbums";
 import { showToast } from "@/components/ui/Toast";
-import { Disc3, Music } from "lucide-react";
+import { Disc3, Music, RefreshCw } from "lucide-react";
 
 type EntityType = "album" | "track";
 
@@ -127,6 +128,20 @@ function QueueCover({ item }: { item: AddQueueItem }) {
     );
 }
 
+// Nombre d'éléments affichés dans la file — volontairement limité (au lieu
+// de tout afficher) pour que la sidebar s'arrête à peu près à la même
+// hauteur que le conteneur de sélection à côté, plutôt que de le dépasser.
+const QUEUE_VISIBLE_COUNT = 6;
+
+function shuffleQueue(items: AddQueueItem[]): AddQueueItem[] {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 function AddQueueDesktop({
     items,
     activeKey,
@@ -136,10 +151,15 @@ function AddQueueDesktop({
     activeKey: string | null;
     onSelect: (item: AddQueueItem) => void;
 }) {
-    const visible = items.slice(0, 10);
+    const [order, setOrder] = useState<AddQueueItem[]>(items);
+    const visible = order.slice(0, QUEUE_VISIBLE_COUNT);
 
     return (
-        <aside className="sticky top-24">
+        // flex-col + mt-auto sur la carte : la carte reste collée en bas de la
+        // colonne (qui est étirée à la hauteur de la ligne de grille par le
+        // parent), pour que son bord bas s'aligne avec celui du conteneur de
+        // sélection à côté, quelle que soit la hauteur du titre au-dessus.
+        <aside className="sticky top-24 flex h-full flex-col">
             <div className="mb-4 flex items-end justify-between gap-3">
                 <div>
                     <h2 className="text-h2 text-text-primary">
@@ -149,9 +169,20 @@ function AddQueueDesktop({
                         {items.length} écoute{items.length > 1 ? "s" : ""} prêtes.
                     </p>
                 </div>
+                {items.length > QUEUE_VISIBLE_COUNT && (
+                    <button
+                        type="button"
+                        onClick={() => setOrder(shuffleQueue(items))}
+                        title="Voir d'autres suggestions"
+                        aria-label="Voir d'autres suggestions"
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border text-text-tertiary transition-colors duration-150 hover:border-accent hover:text-accent"
+                    >
+                        <RefreshCw size={14} />
+                    </button>
+                )}
             </div>
 
-            <div className="rounded-card-lg border border-border bg-paper-hi p-2 shadow-sidebar">
+            <div className="mt-auto rounded-card-lg border border-border bg-paper-hi p-2 shadow-sidebar">
                 {visible.length > 0 ? (
                     <div className="space-y-1">
                         {visible.map((item, index) => {
@@ -496,18 +527,32 @@ export default function AddPageClient({
     };
 
     const renderDesktopForm = () => {
+        const bookShadow = "0 1px 2px rgba(0,0,0,0.04), 0 10px 26px rgba(60,40,20,0.06)";
+
         if (step !== "form") {
             return (
-                <div className="flex min-h-[620px] flex-col items-center justify-center rounded-card-lg border border-border bg-paper-hi px-10 py-12 text-center shadow-sidebar">
-                    <div className="mb-6 flex h-36 w-36 items-center justify-center rounded-cover bg-background-secondary">
-                        <Disc3 size={34} className="text-text-disabled" />
+                <div
+                    className="relative flex min-h-[400px] flex-1 items-center justify-center overflow-hidden rounded-card-lg border border-border bg-paper-hi"
+                    style={{ boxShadow: bookShadow }}
+                >
+                    <div className="absolute inset-y-0 left-0 w-4 bg-text-warm" />
+                    <div
+                        className="absolute left-16 top-0 h-[92px] w-[34px] bg-accent-deep"
+                        style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)", boxShadow: "0 2px 4px rgba(0,0,0,0.12)" }}
+                    />
+                    <div className="flex flex-col items-center gap-5 px-10 pb-10 pt-10 pl-[70px] text-center">
+                        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+                            <circle cx="30" cy="30" r="28" stroke="#D8D3CB" strokeWidth="1.5" strokeDasharray="3 5" />
+                            <circle cx="30" cy="30" r="18" stroke="#8E6F5E" strokeWidth="1.5" />
+                            <circle cx="30" cy="30" r="3" fill="#8E6F5E" />
+                        </svg>
+                        <h2 className="font-display italic text-[26px] leading-none text-text-warm">
+                            Choisis une écoute à noter.
+                        </h2>
+                        <p className="max-w-[360px] text-[13.5px] leading-relaxed text-text-secondary">
+                            Cherche un album ou un titre, pioche dans tes suggestions, ou reprends un élément de ta file d&apos;attente.
+                        </p>
                     </div>
-                    <h2 className="max-w-sm font-display text-[30px] leading-tight text-text-warm">
-                        Choisis une écoute à noter
-                    </h2>
-                    <p className="mt-3 max-w-md text-meta leading-relaxed text-text-secondary">
-                        Cherche un album ou un titre, pioche dans tes suggestions, ou reprends un élément de ta file.
-                    </p>
                 </div>
             );
         }
@@ -529,101 +574,132 @@ export default function AddPageClient({
             setSelectedTrack(null);
             setPreviousEntry(null);
         };
+        const seeHref = isAlbum ? `/albums/${selectedAlbum!.id}` : `/tracks/${selectedTrack!.id}`;
+        const seeLabel = isAlbum ? "voir la fiche" : "voir le titre";
 
         return (
-            <div className="rounded-card-lg border border-border bg-paper-hi p-5 shadow-sidebar">
-                <div className="flex items-start gap-5 border-b border-border pb-5">
-                    <div className="w-36 flex-shrink-0">
-                        <div className="relative aspect-square overflow-hidden rounded-cover bg-background-secondary shadow-cover">
-                            {coverUrl ? (
-                                <CoverImage
-                                    key={coverUrl}
-                                    src={coverUrl}
-                                    alt={title}
-                                    fill
-                                    className="object-cover"
-                                    placeholder={<div className="h-full w-full bg-background-tertiary" />}
-                                />
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-background-tertiary">
-                                    {(isAlbum ? <Disc3 size={28} /> : <Music size={28} />)}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+            // Le conteneur comme un carnet ouvert : la cover "scotchée" sur la page de
+            // gauche, la note et le commentaire écrits sur la page de droite (papier
+            // ligné) — cliquer sur la cover reste le raccourci pour changer d'écoute,
+            // comme cliquer sur une autre cover ailleurs sur la page.
+            <div
+                className="relative flex flex-1 overflow-hidden rounded-card-lg border border-border bg-paper-hi"
+                style={{ boxShadow: bookShadow }}
+            >
+                <div className="absolute inset-y-0 left-0 w-4 bg-text-warm" />
 
-                    <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <h2 className="font-display text-[30px] leading-tight text-text-warm">
-                                {title}
-                            </h2>
-                            {previousEntry !== null && (
-                                <span className="font-display italic text-[13px] text-text-secondary whitespace-nowrap">
-                                    · Ré-écoute{previousEntry.rating !== null ? <> · <span className="text-accent">{previousEntry.rating}/10</span></> : ""}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-meta text-text-secondary">
-                            {artist}
-                            {meta ? <span className="text-text-tertiary"> · {meta}</span> : null}
+                {/* Page gauche — identité */}
+                <div className="flex w-[262px] flex-shrink-0 flex-col items-center bg-background-secondary px-6 py-8 pl-9 text-center">
+                    <button
+                        type="button"
+                        onClick={resetSelection}
+                        title="Changer d'écoute"
+                        className="group relative mb-4 h-[150px] w-[150px] flex-shrink-0 overflow-hidden border-[6px] border-paper-hi transition-transform duration-200 hover:-rotate-1"
+                        style={{ borderRadius: "4px", boxShadow: "0 3px 10px rgba(60,40,20,0.18)" }}
+                    >
+                        {coverUrl ? (
+                            <CoverImage
+                                key={coverUrl}
+                                src={coverUrl}
+                                alt={title}
+                                fill
+                                className="object-cover"
+                                placeholder={<div className="h-full w-full bg-background-tertiary" />}
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-background-tertiary">
+                                {(isAlbum ? <Disc3 size={28} /> : <Music size={28} />)}
+                            </div>
+                        )}
+                    </button>
+
+                    <h2 className="font-display text-[24px] leading-tight text-text-warm">
+                        {title}
+                    </h2>
+                    <p className="mt-1.5 text-[13.5px] text-text-secondary">
+                        {artist}
+                        {meta ? <span className="text-text-tertiary"> · {meta}</span> : null}
+                    </p>
+                    {previousEntry !== null && (
+                        <p className="mt-1 font-display italic text-[12.5px] text-text-tertiary">
+                            Ré-écoute{previousEntry.rating !== null ? <> · <span className="text-accent">{previousEntry.rating}/10</span></> : ""}
                         </p>
-                        <button
-                            onClick={resetSelection}
-                            className="mt-3 font-display italic text-sm text-accent border-b border-accent pb-px hover:text-accent-deep hover:border-accent-deep transition-colors duration-150"
-                        >
-                            changer
-                        </button>
+                    )}
+                    <Link
+                        href={seeHref}
+                        className="mt-3 inline-block border-b border-rule pb-px font-display italic text-[15px] text-accent-deep transition-colors duration-150 hover:border-text-tertiary hover:text-text-primary"
+                    >
+                        {seeLabel}
+                    </Link>
+
+                    <div className="mt-auto flex items-baseline gap-1.5 pt-4">
+                        <span className="font-display italic text-[13.5px] text-text-tertiary">écouté le</span>
+                        <input
+                            type="date"
+                            value={listenedAt}
+                            max={today}
+                            onChange={(e) => setListenedAt(e.target.value)}
+                            className="border-0 border-b border-rule bg-transparent font-display italic text-[13.5px] text-text-warm focus:outline-none focus:border-accent"
+                        />
                     </div>
                 </div>
 
-                <div className="mt-5 space-y-5">
-                    <div className="rounded-card border border-border bg-background p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <label className="text-meta text-text-secondary">Note</label>
-                            <span className="font-display italic text-[15px] leading-none text-accent">
-                                {rating !== null ? `${rating} / 10` : "–"}
-                            </span>
-                        </div>
-                        <div className="max-w-full overflow-hidden">
-                            <StarRating value={rating} onChange={setRating} />
-                        </div>
-                    </div>
+                {/* Gouttière de reliure */}
+                <div
+                    className="relative flex w-5 flex-shrink-0 flex-col items-center justify-center gap-6"
+                    style={{ background: "linear-gradient(to right, rgba(0,0,0,0.05), transparent 8px, transparent calc(100% - 8px), rgba(0,0,0,0.05))" }}
+                >
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="h-[7px] w-[7px] rounded-full bg-[#EDE9E2]" style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.18)" }} />
+                    ))}
+                </div>
 
-                    <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
-                        <div>
-                            <label className="mb-2 block text-meta text-text-secondary">Date d'écoute</label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    value={listenedAt}
-                                    max={today}
-                                    onChange={(e) => setListenedAt(e.target.value)}
-                                    className="w-full rounded-input border border-border bg-background px-4 py-3 pr-10 text-text-primary appearance-none focus:outline-none focus:border-accent focus:ring-0"
-                                />
-                                <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary">
-                                    <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 8H5v9h14v-9ZM5 6v2h14V6H5Z" />
-                                </svg>
+                {/* Page droite — note + commentaire, papier ligné */}
+                <div
+                    className="flex min-w-0 flex-1 flex-col bg-background px-8 pb-6 pt-8"
+                    style={{ backgroundImage: "repeating-linear-gradient(to bottom, transparent, transparent 27px, #DDD7CF 28px)", backgroundPosition: "0 84px" }}
+                >
+                    <div className="mb-6">
+                        <div className="mb-3 flex items-baseline justify-between">
+                            <span className="text-label uppercase tracking-[0.2em] text-text-tertiary">Ta note</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className={`font-display italic text-[24px] leading-none ${rating !== null ? "text-text-primary" : "text-text-disabled"}`}>
+                                    {rating !== null ? rating : "–"}
+                                </span>
+                                <span className="text-[12px] text-text-tertiary">/10</span>
+                                {rating !== null && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setRating(null)}
+                                        className="ml-1 text-[11px] text-text-tertiary underline decoration-rule underline-offset-2 hover:text-text-primary"
+                                    >
+                                        annuler
+                                    </button>
+                                )}
                             </div>
                         </div>
-
-                        <div>
-                            <label className="mb-2 block text-meta text-text-secondary">Quelques mots</label>
-                            <textarea
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                placeholder="Ce que tu as ressenti, si tu en as envie."
-                                className="h-28 w-full resize-none rounded-input border border-border bg-background px-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent focus:ring-0"
-                            />
-                        </div>
+                        <StarRating value={rating} onChange={setRating} />
                     </div>
 
-                    <button
-                        onClick={submit}
-                        disabled={isLoading}
-                        className="w-full rounded-button bg-text-warm px-6 py-3 font-medium text-paper-hi transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:bg-border disabled:text-text-disabled"
-                    >
-                        {isLoading ? "Enregistrement..." : "Enregistrer"}
-                    </button>
+                    <div className="mb-5 flex flex-1 flex-col">
+                        <p className="mb-2 text-label uppercase tracking-[0.2em] text-text-tertiary">Quelques mots</p>
+                        <textarea
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="Ce que tu as ressenti, si tu en as envie."
+                            className="min-h-[112px] w-full flex-1 resize-none border-none bg-transparent text-[14.5px] leading-[28px] text-text-primary placeholder:font-display placeholder:text-[15px] placeholder:italic placeholder:text-text-tertiary focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="mt-auto flex justify-end">
+                        <button
+                            onClick={submit}
+                            disabled={isLoading}
+                            className="rounded-pill bg-text-warm px-9 py-3 text-[14.5px] font-medium text-background transition-colors duration-150 hover:bg-accent-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text-disabled"
+                        >
+                            {isLoading ? "Enregistrement..." : "Enregistrer"}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -647,8 +723,8 @@ export default function AddPageClient({
                     </div>
                 </div>
 
-                <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_320px] items-start gap-8 px-8 pb-12">
-                    <section className="min-w-0 space-y-6">
+                <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_320px] gap-8 px-8 pb-12">
+                    <section className="flex min-w-0 flex-col gap-6">
                         <DesktopSearchPanel
                             entityType={entityType}
                             onEntityTypeChange={handleEntityTypeChange}

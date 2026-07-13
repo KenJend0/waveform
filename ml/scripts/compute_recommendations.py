@@ -168,17 +168,23 @@ def build_rec_rows(
 def replace_recommendations(
     user_ids: list[str], rows: list[dict], method: str, dry_run: bool
 ) -> None:
-    """Delete each processed user's previous rows for this method, then insert
-    the freshly computed ones. A plain upsert would never remove an album that
-    fell out of the new top-N, leaving stale rows that keep winning the
-    `.order('rank')` query forever — this is why recos never rotated."""
+    """Delete each processed user's previous rows, then insert the freshly
+    computed ones. A plain upsert would never remove an album that fell out
+    of the new top-N, leaving stale rows that keep winning the
+    `.order('rank')` query forever — this is why recos never rotated.
+
+    The delete is NOT scoped to `method`: PRIMARY KEY (user_id, album_id) has
+    no method column, so a row written under a different method still
+    collides with this method's insert. Since the schema can only ever hold
+    one row per (user_id, album_id) regardless of method, clearing by
+    user_id alone is what the constraint actually requires."""
     if dry_run:
         print(f"  [dry-run] would replace recommendations for {len(user_ids)} users with {len(rows)} rows")
         return
     client = get_client()
     for i in range(0, len(user_ids), BATCH_SIZE):
         batch = user_ids[i : i + BATCH_SIZE]
-        client.table("user_recommendations").delete().eq("method", method).in_("user_id", batch).execute()
+        client.table("user_recommendations").delete().in_("user_id", batch).execute()
     for i in range(0, len(rows), BATCH_SIZE):
         client.table("user_recommendations").insert(rows[i : i + BATCH_SIZE]).execute()
 

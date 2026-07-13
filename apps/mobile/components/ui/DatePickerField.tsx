@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 
@@ -42,24 +42,50 @@ export function DatePickerField({ value, onChange, maxDate }: Props) {
         <Calendar size={16} color="#9A9A9A" />
       </Pressable>
 
-      {show && (
+      {show && Platform.OS === 'android' && (
         <DateTimePicker
           value={dateObj}
           mode="date"
           maximumDate={maxDate}
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          display="default"
           onValueChange={(_event, selectedDate) => {
-            if (Platform.OS === 'android') setShow(false);
+            setShow(false);
             if (selectedDate) onChange(fromDate(selectedDate));
           }}
           onDismiss={() => setShow(false)}
         />
       )}
 
-      {show && Platform.OS === 'ios' && (
-        <Pressable onPress={() => setShow(false)} className="self-end mt-2 px-3 py-1.5">
-          <Text className="text-accent" style={{ fontFamily: 'Inter_500Medium', fontSize: 13 }}>Terminé</Text>
-        </Pressable>
+      {/* Modal séparée sur iOS : le mode "inline" s'affiche dans le flux normal, ce qui
+          poussait les boutons Enregistrer/Annuler hors du bottom sheet compact et ne se
+          refermait que via "Terminé" — ici la calendrier est un vrai overlay qui se ferme
+          au tap ailleurs, sans jamais déplacer le layout du sheet en dessous. */}
+      {Platform.OS === 'ios' && (
+        <Modal visible={show} transparent animationType="fade" onRequestClose={() => setShow(false)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: 'rgba(28,28,28,0.45)', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => setShow(false)}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              className="bg-background rounded-card px-4 pt-2 pb-1"
+              style={{ width: '90%' }}
+            >
+              <DateTimePicker
+                value={dateObj}
+                mode="date"
+                maximumDate={maxDate}
+                display="inline"
+                onValueChange={(_event, selectedDate) => {
+                  if (selectedDate) onChange(fromDate(selectedDate));
+                }}
+              />
+              <Pressable onPress={() => setShow(false)} className="self-end mt-1 px-3 py-1.5">
+                <Text className="text-accent" style={{ fontFamily: 'Inter_500Medium', fontSize: 13 }}>Terminé</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
     </View>
   );

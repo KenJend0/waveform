@@ -492,7 +492,7 @@ export default function SearchOverlay({
         >
           <Search size={isHeaderVariant ? 15 : 18} className="text-accent flex-shrink-0" />
           <span className={`flex-1 truncate ${isHeaderVariant ? "text-[13px] text-text-secondary" : "text-[14px] text-text-tertiary"}`}>
-            {isHeaderVariant ? "Rechercher" : "Album, titre, artiste, profil…"}
+            {isHeaderVariant ? "Rechercher" : "Rechercher un artiste, un album, un titre, un profil…"}
           </span>
           <span className={`${isHeaderVariant ? "hidden xl:inline-flex" : "hidden sm:inline-flex"} items-center gap-1 bg-background-secondary border border-[#D8D3CB] text-text-tertiary text-[10px] font-medium px-1.5 py-0.5 rounded-[5px] flex-shrink-0`}>
             <span>⌘</span><span>K</span>

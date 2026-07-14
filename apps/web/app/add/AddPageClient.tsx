@@ -248,11 +248,11 @@ function DesktopSearchPanel({
     onSelectTrack: (track: TrackUI) => void;
 }) {
     return (
-        <div className="rounded-card-lg border border-border bg-paper-hi p-4 shadow-sidebar">
-            <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+            <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
                     <h2 className="text-h2 text-text-primary">
-                        Chercher une <em className="italic text-accent-deep">écoute</em>
+                        Rechercher une <em className="italic text-accent-deep">écoute</em>
                     </h2>
                 </div>
                 <div className="flex rounded-full border border-border bg-background p-1">
@@ -550,7 +550,7 @@ export default function AddPageClient({
                             Choisis une écoute à noter.
                         </h2>
                         <p className="max-w-[360px] text-[13.5px] leading-relaxed text-text-secondary">
-                            Cherche un album ou un titre, pioche dans tes suggestions, ou reprends un élément de ta file d&apos;attente.
+                            Pioche dans tes suggestions, ou reprends un élément de ta file d&apos;attente.
                         </p>
                     </div>
                 </div>
@@ -575,7 +575,7 @@ export default function AddPageClient({
             setPreviousEntry(null);
         };
         const seeHref = isAlbum ? `/albums/${selectedAlbum!.id}` : `/tracks/${selectedTrack!.id}`;
-        const seeLabel = isAlbum ? "voir la fiche" : "voir le titre";
+        const seeLabel = isAlbum ? "voir l'album" : "voir le titre";
 
         return (
             // Le conteneur comme un carnet ouvert : la cover "scotchée" sur la page de
@@ -710,20 +710,7 @@ export default function AddPageClient({
             <AddQueueMobile initialQueue={initialQueue} />
 
             <div className="hidden lg:block">
-                <div className="mx-auto max-w-6xl px-8 pt-8 pb-5">
-                    <div>
-                        <div>
-                            <h1 className="text-h1 text-text-primary mb-2">
-                                Ajouter une <em className="italic text-accent-deep">écoute</em>
-                            </h1>
-                            <p className="text-meta text-text-secondary">
-                                Cherche, pioche dans ta file, note sans quitter le flux.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_320px] gap-8 px-8 pb-12">
+                <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_320px] gap-8 px-8 pt-8 pb-12">
                     <section className="flex min-w-0 flex-col gap-6">
                         <DesktopSearchPanel
                             entityType={entityType}

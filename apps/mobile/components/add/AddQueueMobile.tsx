@@ -473,10 +473,6 @@ export default function AddQueueMobile({ initialQueue }: Props) {
         className="flex-1 bg-background px-6"
         style={{ paddingTop: insets.top + 8, paddingBottom: keyboardVisible ? 12 : 100 }}
       >
-        <Text style={{ fontFamily: 'InstrumentSerif_400Regular', fontSize: 32, letterSpacing: -0.32 }} className="text-text-warm mb-3">
-          Ajouter une <Text style={{ fontFamily: 'InstrumentSerif_400Regular_Italic' }} className="text-accent-deep">écoute</Text>
-        </Text>
-
         <View className="flex-row gap-2 mb-3">
           <Pressable
             onPress={() => handleTabClick('album')}

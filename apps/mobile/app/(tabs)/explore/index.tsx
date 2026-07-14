@@ -112,16 +112,7 @@ export default function ExploreScreen() {
         // se réfère à l'index parmi les enfants directs du ScrollView ci-dessous.
         stickyHeaderIndices={[1]}
       >
-      <View className="mt-6 mb-5">
-        <Text style={{ fontFamily: 'InstrumentSerif_400Regular', fontSize: 28 }} className="text-text-primary mb-2">
-          Découvrir
-        </Text>
-        <Text className="text-text-secondary" style={{ fontFamily: 'Inter_400Regular', fontSize: 14 }}>
-          Découvre de la musique, des listes et des profils qui correspondent à tes goûts.
-        </Text>
-      </View>
-
-      <View className="bg-background pb-5">
+      <View className="mt-6 bg-background pb-5">
         <SearchTrigger />
       </View>
 

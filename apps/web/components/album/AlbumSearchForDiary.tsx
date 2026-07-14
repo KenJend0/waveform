@@ -165,7 +165,7 @@ export default function AlbumSearchForDiary({ onSelectAlbum }: Props) {
                     type="text"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Rechercher un album…"
+                    placeholder="Rechercher un album"
                     className="w-full pl-11 pr-4 py-3 bg-paper-hi border border-border rounded-card-lg text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent focus:ring-0 transition-colors duration-150"
                 />
             </div>

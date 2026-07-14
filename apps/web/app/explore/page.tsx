@@ -100,16 +100,7 @@ export default async function ExplorePage() {
 
     return (
         <div>
-            <section className="mx-auto max-w-6xl px-6 lg:px-8 pt-6 lg:pt-8 pb-5">
-                <h1 className="text-h1 text-text-primary mb-2">
-                    Découvrir
-                </h1>
-                <p className="text-text-secondary text-meta">
-                    Découvre de la musique, des listes et des profils qui correspondent à tes goûts.
-                </p>
-            </section>
-
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-6xl pt-6 lg:pt-8">
                 <StickySearchBar />
             </div>
 

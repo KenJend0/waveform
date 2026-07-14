@@ -378,7 +378,7 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                     }`}
                 >
                     {panelMode === "search" && searchEntityType === "album" ? <X size={12} strokeWidth={2.5} /> : <Search size={12} strokeWidth={2} />}
-                    Chercher un album
+                    Album
                 </button>
                 <button
                     onClick={() => handleTabClick("track")}
@@ -389,7 +389,7 @@ export default function AddQueueMobile({ initialQueue }: Props) {
                     }`}
                 >
                     {panelMode === "search" && searchEntityType === "track" ? <X size={12} strokeWidth={2.5} /> : <Search size={12} strokeWidth={2} />}
-                    Chercher un titre
+                    Titre
                 </button>
             </div>
 

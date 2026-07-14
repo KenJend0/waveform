@@ -260,12 +260,6 @@ export default function FeedScreen() {
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-background">
     <View className="bg-background pt-2 pb-3">
-      <Text style={{ fontFamily: 'InstrumentSerif_400Regular' }} className="text-3xl text-text-primary px-3 mb-1">
-        Activité
-      </Text>
-      <Text style={{ fontFamily: 'Inter_400Regular' }} className="text-text-tertiary px-3 mb-3 text-[13px]">
-        Ce qui se passe autour de toi.
-      </Text>
       <FeedTabs active={activeTab} onChange={setActiveTab} unreadCounts={visibleUnreadCounts} />
     </View>
     <Animated.FlatList

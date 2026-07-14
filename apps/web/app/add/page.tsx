@@ -14,14 +14,7 @@ export default async function AddPage() {
 
         return (
             <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 pb-28 lg:pb-12">
-                <div className="pt-8 pb-6">
-                    <h1 className="text-h1 text-text-primary mb-2">
-                        Ajouter une <em className="italic text-accent-deep">écoute</em>
-                    </h1>
-                    <p className="text-meta text-text-secondary">
-                        Cherche, pioche dans ta file, note sans quitter le flux.
-                    </p>
-                </div>
+                <div className="pt-8" />
 
                 <UnauthTeaser ctaTitle={<>Note tes écoutes, écris des reviews — <em className="italic text-accent-deep">garde une trace de tout ce que tu écoutes.</em></>}>
                     {/* Aperçu mobile — reprend l'esthétique carte de AddQueueMobile (pile de fiches),

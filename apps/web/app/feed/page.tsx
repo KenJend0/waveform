@@ -17,10 +17,7 @@ export default async function FeedPage() {
 
     return (
       <div className="mx-auto max-w-6xl px-3 pb-28 md:px-5 lg:px-8 lg:pb-12">
-        <div className="pt-8 pb-6 lg:pt-10 lg:pb-8">
-          <h1 className="text-h1 text-text-primary mb-2">Activité</h1>
-          <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
-        </div>
+        <div className="pt-8 lg:pt-10" />
 
         <UnauthTeaser ctaTitle={<>Tes likes, commentaires et abonnés t&apos;attendent — <em className="italic text-accent-deep">crée un compte pour suivre ton activité.</em></>}>
           {publicEntries.length === 0 ? (
@@ -63,11 +60,8 @@ export default async function FeedPage() {
   const similarUsers = await getSimilarUsers(3);
 
   return (
-    <div className="mx-auto max-w-6xl px-3 pb-28 md:px-5 lg:px-8 lg:pb-12">
-      <div className="pt-8 pb-6 lg:pt-10 lg:pb-8">
-        <h1 className="text-h1 text-text-primary mb-2">Activité</h1>
-        <p className="text-meta text-text-tertiary">Ce qui se passe autour de toi.</p>
-      </div>
+    <div className="mx-auto max-w-6xl px-3 pb-28 md:px-5 lg:flex lg:h-[calc(100vh-68px)] lg:flex-col lg:overflow-hidden lg:px-8 lg:pb-6">
+      <div className="pt-8 lg:pt-10 lg:shrink-0" />
 
       {hasEvents ? (
         <FeedInfiniteList
@@ -81,7 +75,7 @@ export default async function FeedPage() {
           showDiscoverPeople={true}
         />
       ) : (
-        <div className="lg:grid lg:grid-cols-[minmax(0,720px)_320px] lg:items-start lg:gap-10">
+        <div className="lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,720px)_320px] lg:items-start lg:gap-10">
           <section className="min-w-0 py-4 lg:py-6">
             <p className="text-body text-text-secondary mb-2 lg:text-[17px]">Pas encore d&apos;activité.</p>
             <p className="text-meta text-text-tertiary mb-8 leading-relaxed lg:max-w-xl lg:text-[15px]">

@@ -994,7 +994,7 @@ export default function FeedInfiniteList({
   }
 
   return (
-    <div className="pb-20 lg:pb-10" onClick={handleContainerClick}>
+    <div className="pb-20 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:pb-0" onClick={handleContainerClick}>
       <div className="sticky top-0 z-20 -mx-3 mb-3 bg-background/95 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:top-16 lg:hidden">
         <div className="grid grid-cols-2 rounded-full border border-border bg-paper-hi p-1 shadow-subtle">
           {FEED_TABS.map((tab) => {
@@ -1024,15 +1024,15 @@ export default function FeedInfiniteList({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:min-h-0 lg:flex-1">
         {FEED_TABS.map((tab, index) => (
           <div
             key={tab.id}
-            className={`${activeTab === tab.id ? '' : 'hidden lg:block'} ${
+            className={`${activeTab === tab.id ? '' : 'hidden'} ${
               index === 0 ? 'lg:pr-5' : 'lg:border-l lg:border-rule lg:pl-5'
-            }`}
+            } lg:flex lg:h-full lg:min-h-0 lg:flex-col`}
           >
-            <div className="hidden lg:flex lg:items-baseline lg:justify-between lg:gap-2 lg:pb-3 lg:mb-2">
+            <div className="hidden lg:flex lg:shrink-0 lg:items-baseline lg:justify-between lg:gap-2 lg:pb-3 lg:mb-2">
               <h2 className="text-h2 text-text-primary">{tab.label}</h2>
               {unreadCounts[tab.id] > 0 && !seenUnreadTabs.has(tab.id) && (
                 <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold leading-none text-paper-hi">
@@ -1040,7 +1040,9 @@ export default function FeedInfiniteList({
                 </span>
               )}
             </div>
-            {renderScopeBody(tab.id)}
+            <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+              {renderScopeBody(tab.id)}
+            </div>
           </div>
         ))}
       </div>

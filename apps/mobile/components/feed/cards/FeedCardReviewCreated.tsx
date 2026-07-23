@@ -8,16 +8,13 @@ import { ActorLink } from './ActorLink';
 import { FeedTextLines } from './FeedTextLines';
 import { FeedRightCluster } from './FeedRightCluster';
 import { FeedActions } from './FeedActions';
-import { CommentSheet } from '../CommentSheet';
 import { FeedInlineReviewExcerpt } from './FeedReviewExcerpt';
-import { useState } from 'react';
 
 type Props = { event: FeedEvent & { type: 'REVIEW_CREATED' }; currentUserId?: string };
 
 export function FeedCardReviewCreated({ event, currentUserId }: Props) {
   const router = useRouter();
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [commentsCount, setCommentsCount] = useState(event.comments_count ?? 0);
+  const commentsCount = event.comments_count ?? 0;
   const timeAgo = getTimeAgo(event.created_at);
   const hasWords = !!event.review_excerpt;
   const isMe = currentUserId === event.actor.id;
@@ -52,30 +49,22 @@ export function FeedCardReviewCreated({ event, currentUserId }: Props) {
   }
 
   return (
-    <>
-      <View className="mx-3 rounded-card border border-accent px-3 pt-3 pb-2 relative">
-        <View className="absolute -top-2.5 self-center bg-background px-2">
-          <Text className="text-accent text-[12px]" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic' }}>
-            critique
-          </Text>
-        </View>
-        {row}
-        <FeedActions
-          entryId={event.entry_id}
-          currentUserId={currentUserId}
-          isLiked={event.is_liked}
-          likesCount={event.likes_count}
-          commentsCount={commentsCount}
-          onCommentPress={() => setCommentsOpen(true)}
-          time={timeAgo}
-        />
+    <View className="mx-3 rounded-card border border-accent px-3 pt-3 pb-2 relative">
+      <View className="absolute -top-2.5 self-center bg-background px-2">
+        <Text className="text-accent text-[12px]" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic' }}>
+          critique
+        </Text>
       </View>
-      <CommentSheet
-        isOpen={commentsOpen}
-        onClose={() => setCommentsOpen(false)}
+      {row}
+      <FeedActions
         entryId={event.entry_id}
-        onCommentAdded={() => setCommentsCount((c) => c + 1)}
+        currentUserId={currentUserId}
+        isLiked={event.is_liked}
+        likesCount={event.likes_count}
+        commentsCount={commentsCount}
+        onCommentPress={() => router.push(`${entryHref}?scrollTo=comments` as any)}
+        time={timeAgo}
       />
-    </>
+    </View>
   );
 }

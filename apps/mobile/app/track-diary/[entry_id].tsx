@@ -35,11 +35,13 @@ const SITE_URL = 'https://sillon.fm';
 
 /** Miroir de apps/web/app/track-diary/[entry_id]/TrackDiaryEntryClient.tsx — détail d'une écoute de titre. */
 export default function TrackDiaryEntryPage() {
-  const { entry_id } = useLocalSearchParams<{ entry_id: string }>();
+  const { entry_id, scrollTo } = useLocalSearchParams<{ entry_id: string; scrollTo?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
+  const commentsY = useRef(0);
+  const scrolledToComments = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -290,17 +292,27 @@ export default function TrackDiaryEntryPage() {
             <Text style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 18, color: '#8E6F5E' }}>→</Text>
           </Pressable>
 
-          <CommentThread
-            comments={entry.comments}
-            currentUserId={user?.id ?? null}
-            isAuthor={isAuthor}
-            composerAvatarUrl={composerAvatarUrl}
-            scrollViewRef={scrollViewRef}
-            onAddComment={async (body) => { await addTrackComment(entry.id, body); await refreshComments(); }}
-            onAddReply={async (parentId, body) => { await addTrackComment(entry.id, body, parentId); await refreshComments(); }}
-            onDelete={async (commentId) => { await deleteTrackComment(commentId); await refreshComments(); }}
-            onReport={async (commentId) => { const r = await reportContent('track_diary_comment', commentId); if (!r.success) throw new Error(r.error); }}
-          />
+          <View
+            onLayout={(e) => {
+              commentsY.current = e.nativeEvent.layout.y;
+              if (scrollTo === 'comments' && !scrolledToComments.current) {
+                scrolledToComments.current = true;
+                scrollViewRef.current?.scrollTo({ y: commentsY.current - 16, animated: true });
+              }
+            }}
+          >
+            <CommentThread
+              comments={entry.comments}
+              currentUserId={user?.id ?? null}
+              isAuthor={isAuthor}
+              composerAvatarUrl={composerAvatarUrl}
+              scrollViewRef={scrollViewRef}
+              onAddComment={async (body) => { await addTrackComment(entry.id, body); await refreshComments(); }}
+              onAddReply={async (parentId, body) => { await addTrackComment(entry.id, body, parentId); await refreshComments(); }}
+              onDelete={async (commentId) => { await deleteTrackComment(commentId); await refreshComments(); }}
+              onReport={async (commentId) => { const r = await reportContent('track_diary_comment', commentId); if (!r.success) throw new Error(r.error); }}
+            />
+          </View>
         </View>
       </ScrollView>
 

@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
 import { Heart, MessageCircle } from 'lucide-react-native';
 import { toggleDiaryLike, toggleTrackDiaryLike } from '../../../lib/feed';
 import { showToast } from '../../ui/Toast';
+
+const AnimatedHeart = Animated.createAnimatedComponent(Heart);
 
 type Props = {
   entryId?: string;
@@ -22,11 +26,16 @@ export function FeedActions({ entryId, type = 'album', currentUserId, isLiked = 
   const [liked, setLiked] = useState(isLiked);
   const [count, setCount] = useState(likesCount);
   const [pending, setPending] = useState(false);
+  const heartScale = useSharedValue(1);
 
   useEffect(() => {
     setLiked(isLiked);
     setCount(likesCount);
   }, [entryId, isLiked, likesCount]);
+
+  const heartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
 
   const handleLike = async () => {
     if (!currentUserId) {
@@ -39,6 +48,10 @@ export function FeedActions({ entryId, type = 'album', currentUserId, isLiked = 
     const prevCount = count;
     setLiked(!prevLiked);
     setCount(!prevLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
+    if (!prevLiked) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      heartScale.value = withSequence(withSpring(1.35, { damping: 8, stiffness: 400 }), withSpring(1, { damping: 10 }));
+    }
     setPending(true);
     try {
       if (type === 'track') {
@@ -59,7 +72,7 @@ export function FeedActions({ entryId, type = 'album', currentUserId, isLiked = 
     <View className={`flex-row items-center mt-1.5 ${indent ? 'ml-11' : ''}`}>
       <View className="flex-row items-center gap-5">
         <Pressable onPress={handleLike} disabled={pending} className="flex-row items-center gap-1.5">
-          <Heart size={14} color={liked ? '#C86C6C' : '#9A9A9A'} fill={liked ? '#C86C6C' : 'transparent'} />
+          <AnimatedHeart style={heartAnimatedStyle} size={14} color={liked ? '#C86C6C' : '#9A9A9A'} fill={liked ? '#C86C6C' : 'transparent'} />
           {count > 0 && <Text className="text-[12px] text-text-tertiary">{count}</Text>}
         </Pressable>
         <Pressable onPress={onCommentPress} className="flex-row items-center gap-1.5">

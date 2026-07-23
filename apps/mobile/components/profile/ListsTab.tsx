@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { ListCard } from './ListCard';
@@ -27,6 +27,15 @@ type ListFilter = 'mine' | 'saved' | 'all';
 export const ListsTab = memo(function ListsTab({ lists: initialLists, savedLists: initialSavedLists = [], isOwner, userId }: Props) {
   const [lists, setLists] = useState(initialLists);
   const savedLists = initialSavedLists;
+
+  // `lists` ne fait que démarrer sur initialLists — sans resync, un pull-to-refresh ou un
+  // retour sur l'onglet (le parent /me refetch dans les deux cas) ne se propage jamais ici :
+  // une liste supprimée depuis cet onglet OU depuis sa propre page /lists/[id] continue de
+  // s'afficher tant que ce composant reste monté (voir aussi la note lazy-mount dans
+  // ProfileTabs, qui garde ListsTab monté une fois visité).
+  useEffect(() => {
+    setLists(initialLists);
+  }, [initialLists]);
   const [filter, setFilter] = useState<ListFilter>('all');
   const [creating, setCreating] = useState(false);
 

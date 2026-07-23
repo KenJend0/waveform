@@ -7,6 +7,7 @@ import { Top3Albums } from './Top3Albums';
 import { FollowButton } from '../social/FollowButton';
 import { ProfileActionsMenu } from '../social/ProfileActionsMenu';
 import { BottomSheet } from '../ui/BottomSheet';
+import { ExpandableText } from '../ui/ExpandableText';
 import { showToast } from '../ui/Toast';
 import { useAuth } from '../../lib/AuthContext';
 import type { FavoriteAlbum } from '../../lib/profile';
@@ -103,16 +104,16 @@ export function ProfileHeader({
       </View>
 
       {user.bio && (
-        <Text className="text-text-secondary mt-5" style={[metaStyle, { lineHeight: 21 }]}>
-          {user.bio}
-        </Text>
+        <View className="mt-5">
+          <ExpandableText text={user.bio} style={[metaStyle, { lineHeight: 21, color: '#6B6B6B' }]} clampLines={4} />
+        </View>
       )}
 
       <Top3Albums albums={favoriteAlbums} hideIfEmpty={!user.isMe} />
 
       <View className="flex-row mt-5 pt-4 border-t border-rule">
         <View className="flex-1 pr-4 border-r border-rule">
-          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
             {reviewsCount}
           </Text>
           <Text className="uppercase text-text-tertiary mt-1.5" style={labelStyle}>
@@ -120,7 +121,7 @@ export function ProfileHeader({
           </Text>
         </View>
         <Pressable onPress={onOpenFollowers} className="flex-1 px-4 border-r border-rule">
-          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
             {followersCount}
           </Text>
           <Text className="uppercase text-text-tertiary mt-1.5" style={labelStyle}>
@@ -128,11 +129,11 @@ export function ProfileHeader({
           </Text>
         </Pressable>
         <Pressable onPress={onOpenFollowing} className="flex-1 pl-4">
-          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+          <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
             {followingCount}
           </Text>
           <Text className="uppercase text-text-tertiary mt-1.5" style={labelStyle}>
-            suivis
+            suivi{followingCount !== 1 ? 's' : ''}
           </Text>
         </Pressable>
       </View>
@@ -142,15 +143,15 @@ export function ProfileHeader({
           <View className="px-6 py-2">
             <Pressable onPress={() => navigateTo('/me/settings')} className="flex-row items-center gap-3 py-3 border-b border-border-divider">
               <Settings size={16} color="#6B6B6B" />
-              <Text className="text-text-primary" style={metaStyle}>Éditer profil</Text>
+              <Text className="text-text-primary" style={metaStyle}>Éditer mon profil</Text>
             </Pressable>
             <Pressable onPress={() => navigateTo('/me/favorite-albums')} className="flex-row items-center gap-3 py-3 border-b border-border-divider">
               <Heart size={16} color="#6B6B6B" />
-              <Text className="text-text-primary" style={metaStyle}>Albums favoris</Text>
+              <Text className="text-text-primary" style={metaStyle}>Mes albums favoris</Text>
             </Pressable>
             <Pressable onPress={() => navigateTo('/me/stats')} className="flex-row items-center gap-3 py-3 border-b border-border-divider">
               <BarChart2 size={16} color="#6B6B6B" />
-              <Text className="text-text-primary" style={metaStyle}>Mes stats</Text>
+              <Text className="text-text-primary" style={metaStyle}>Mes statistiques</Text>
             </Pressable>
             <Pressable onPress={() => navigateTo('/me/legal')} className="flex-row items-center gap-3 py-3 border-b border-border-divider">
               <LifeBuoy size={16} color="#6B6B6B" />

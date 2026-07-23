@@ -11,7 +11,6 @@ import {
   Platform,
   Pressable,
   Text,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 type Props = {
@@ -96,11 +95,17 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
   // ci-dessous ne fait que rajouter du padding interne, il ne déplace pas le sheet
   // lui-même. On remonte donc explicitement le sheet de la hauteur du clavier à
   // l'ouverture, et on revient au palier de repos à la fermeture.
+  const hideRepositionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const onShow = (e: KeyboardEvent) => {
+      if (hideRepositionTimer.current) {
+        clearTimeout(hideRepositionTimer.current);
+        hideRepositionTimer.current = null;
+      }
       if (!mounted) return;
       const kbHeight = e.endCoordinates?.height ?? 0;
       keyboardHeightRef.current = kbHeight;
@@ -109,8 +114,17 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
     };
     const onHide = () => {
       keyboardHeightRef.current = 0;
-      if (!mounted) return;
-      animateRaw(restingRef.current === 'expanded' ? expandedY : compactY);
+      // Taper un bouton pendant que le clavier est ouvert lui fait perdre le focus
+      // (comportement normal iOS), ce qui déclenche keyboardWillHide EN PLEIN geste — si on
+      // repositionne le sheet tout de suite, le bouton bouge sous le doigt et RN annule le
+      // tap en cours (deuxième tap nécessaire pour que l'action passe). On laisse le temps
+      // au press en cours de se terminer avant de redescendre le sheet.
+      if (hideRepositionTimer.current) clearTimeout(hideRepositionTimer.current);
+      hideRepositionTimer.current = setTimeout(() => {
+        hideRepositionTimer.current = null;
+        if (!mounted) return;
+        animateRaw(restingRef.current === 'expanded' ? expandedY : compactY);
+      }, 120);
     };
 
     const showSub = Keyboard.addListener(showEvent, onShow);
@@ -118,6 +132,7 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
     return () => {
       showSub.remove();
       hideSub.remove();
+      if (hideRepositionTimer.current) clearTimeout(hideRepositionTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, compactY, expandedY]);
@@ -203,7 +218,7 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
             <View className="items-center pt-2.5 pb-1.5">
               <View style={{ width: 36, height: 4, borderRadius: 2 }} className="bg-border" />
             </View>
-            <View className="px-6 pb-4 border-b border-border-divider">
+            <View className="px-6 pb-4 border-b border-border-divider items-center">
               <Text className="text-[15px] text-text-primary" style={{ fontFamily: 'Inter_500Medium' }}>
                 {title}
               </Text>
@@ -213,9 +228,14 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-              <View style={{ flex: 1 }}>{children}</View>
-            </TouchableWithoutFeedback>
+            {/* Pressable plutôt que TouchableWithoutFeedback (l'ancien système tactile de RN) :
+                ce dernier peut capter le premier tap avant qu'il n'atteigne un Pressable enfant
+                (bouton, toggle…), obligeant à taper deux fois — une fois pour fermer le clavier,
+                une fois pour l'action. Pressable compose correctement avec ses enfants, même
+                pattern que les écrans auth et /add. */}
+            <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+              {children}
+            </Pressable>
           </KeyboardAvoidingView>
         </Animated.View>
       </View>

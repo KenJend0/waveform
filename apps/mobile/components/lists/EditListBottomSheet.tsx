@@ -71,7 +71,7 @@ export function EditListBottomSheet({ list, isOpen, onClose, onSaved }: Props) {
         </View>
         <Pressable onPress={() => setIsPublic((v) => !v)} className="flex-row items-center gap-3">
           <View className={`relative w-9 h-5 rounded-full ${isPublic ? 'bg-text-primary' : 'bg-border-divider'}`}>
-            <View className="absolute top-0.5 w-4 h-4 rounded-full bg-background" style={{ left: isPublic ? 18 : 2 }} />
+            <View className="absolute top-0.5 w-4 h-4 rounded-full bg-background" style={{ left: isPublic ? 16 : 2 }} />
           </View>
           <Text className="text-text-secondary" style={smStyle}>{isPublic ? 'Publique' : 'Privée'}</Text>
         </Pressable>

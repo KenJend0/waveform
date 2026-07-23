@@ -80,26 +80,31 @@ export function ListCardWithMenu({ list, onChanged, onDeleted }: Props) {
         </Pressable>
       </View>
 
-      {renaming && (
-        <View className="flex-row gap-1.5 mt-2">
+      <BottomSheet isOpen={renaming} onClose={() => setRenaming(false)} title="Renommer" snapPoint="30%">
+        <View className="px-6 py-4" style={{ gap: 16 }}>
           <TextInput
             value={newTitle}
             onChangeText={setNewTitle}
             autoFocus
             onSubmitEditing={handleRename}
-            className="flex-1 bg-background border border-border rounded-input px-2.5 py-1.5 text-text-primary"
-            style={{ fontFamily: 'Inter_400Regular', fontSize: 12 }}
+            className="bg-background-secondary border border-border rounded-input px-3 py-2.5 text-text-primary"
+            style={{ fontFamily: 'Inter_400Regular', fontSize: 14 }}
           />
-          <Pressable onPress={handleRename} disabled={saving} className="px-3 py-1.5 rounded-input bg-text-primary items-center justify-center">
-            <Text className="text-background" style={{ fontFamily: 'Inter_500Medium', fontSize: 11 }}>OK</Text>
+          <Pressable
+            onPressIn={handleRename}
+            disabled={saving || !newTitle.trim()}
+            className="bg-text-primary rounded-button py-2.5 items-center"
+            style={{ opacity: saving || !newTitle.trim() ? 0.4 : 1 }}
+          >
+            <Text className="text-background" style={metaMediumStyle}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Text>
           </Pressable>
         </View>
-      )}
+      </BottomSheet>
 
       <BottomSheet isOpen={menuOpen} onClose={() => setMenuOpen(false)} title={list.title} snapPoint="32%">
         <View className="px-6 py-2">
           <Pressable
-            onPress={() => { setMenuOpen(false); setRenaming(true); }}
+            onPress={() => { setMenuOpen(false); setNewTitle(list.title); setRenaming(true); }}
             className="flex-row items-center gap-2.5 py-3 border-b border-border-divider"
           >
             <Pencil size={15} color="#6B6B6B" />

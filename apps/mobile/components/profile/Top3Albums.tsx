@@ -24,10 +24,18 @@ export function Top3Albums({ albums, hideIfEmpty }: Props) {
           Aucun album favori
         </Text>
       ) : (
+        // 3 emplacements toujours fixes (comme la grid-cols-3 du web) — avec flex-row +
+        // flex-1 seul, moins de 3 albums fait s'étirer les tuiles pour combler la ligne
+        // (un seul album prendrait 100% de la largeur). Les emplacements vides restent de
+        // l'espace transparent, pas des tuiles.
         <View className="flex-row gap-2">
-          {albums.map((album) => (
-            <AlbumTile key={album.id} album={album} />
-          ))}
+          {[0, 1, 2].map((slot) =>
+            albums[slot] ? (
+              <AlbumTile key={albums[slot].id} album={albums[slot]} />
+            ) : (
+              <View key={`empty-${slot}`} className="flex-1" />
+            )
+          )}
         </View>
       )}
     </View>

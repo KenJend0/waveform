@@ -69,7 +69,7 @@ export function UserListScreen({ username, mode }: Props) {
       </View>
 
       {loading ? (
-        <View style={{ marginTop: 40 }}>
+        <View className="items-center" style={{ marginTop: 40 }}>
           <LoadingScreen fullScreen={false} />
         </View>
       ) : error ? (

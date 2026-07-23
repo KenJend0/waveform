@@ -70,14 +70,19 @@ export function CreateListBottomSheet({ isOpen, onClose, userId, onCreated }: Pr
           className="bg-background-secondary border border-border rounded-input px-3 py-2.5 text-text-primary"
           style={{ fontFamily: 'Inter_400Regular', fontSize: 14 }}
         />
-        <Pressable onPress={() => setIsPublic((v) => !v)} className="flex-row items-center gap-3">
+        {/* onPressIn plutôt que onPress : sur iOS, le sheet natif (@expo/ui) se redimensionne
+            tout seul quand le clavier se ferme (perte de focus du TextInput au tap sur un
+            autre élément) — si l'action n'est confirmée qu'au relâchement (onPress), ce
+            redimensionnement en plein geste fait bouger le bouton sous le doigt et annule le
+            tap. onPressIn se déclenche dès le contact, avant que ça n'ait le temps d'arriver. */}
+        <Pressable onPressIn={() => setIsPublic((v) => !v)} className="flex-row items-center gap-3">
           <View className={`relative w-9 h-5 rounded-full ${isPublic ? 'bg-text-primary' : 'bg-border-divider'}`}>
-            <View className="absolute top-0.5 w-4 h-4 rounded-full bg-background" style={{ left: isPublic ? 18 : 2 }} />
+            <View className="absolute top-0.5 w-4 h-4 rounded-full bg-background" style={{ left: isPublic ? 16 : 2 }} />
           </View>
           <Text className="text-text-secondary" style={smStyle}>{isPublic ? 'Publique' : 'Privée'}</Text>
         </Pressable>
         <Pressable
-          onPress={handleCreate}
+          onPressIn={handleCreate}
           disabled={!title.trim() || saving}
           className="bg-text-primary rounded-button py-2.5 items-center"
           style={{ opacity: !title.trim() || saving ? 0.4 : 1 }}

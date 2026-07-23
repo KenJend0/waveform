@@ -45,11 +45,15 @@ export function BottomSheet({ isOpen, onClose, title, children, snapPoint = '50%
       onDismiss={onClose}
       backgroundStyle={{ backgroundColor: '#F5F3EF' }}
     >
-      <View className="flex-row items-center justify-between px-6 pb-4 border-b border-border-divider">
-        <Text className="text-[15px] text-text-primary" style={{ fontFamily: 'Inter_500Medium' }}>
+      {/* Titre centré, quel que soit sa longueur : espaceur invisible à gauche de la même
+          largeur que le bouton fermer à droite, plutôt qu'un simple justify-between qui
+          pousse le titre à gauche. */}
+      <View className="flex-row items-center px-6 pb-4 border-b border-border-divider">
+        <View style={{ width: 30 }} />
+        <Text className="flex-1 text-center text-[15px] text-text-primary" style={{ fontFamily: 'Inter_500Medium' }}>
           {title}
         </Text>
-        <Pressable onPress={onClose} hitSlop={8} className="p-1.5 rounded-button">
+        <Pressable onPress={onClose} hitSlop={8} className="p-1.5 rounded-button" style={{ width: 30, alignItems: 'flex-end' }}>
           <X size={18} color="#6B6B6B" />
         </Pressable>
       </View>

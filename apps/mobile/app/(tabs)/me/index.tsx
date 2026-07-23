@@ -10,6 +10,7 @@ import { RatingDistribution } from '../../../components/profile/RatingDistributi
 import { RatingFilterProvider } from '../../../lib/RatingFilterContext';
 import { useAuth } from '../../../lib/AuthContext';
 import { useNavScrollHandler } from '../../../lib/useNavScrollHandler';
+import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
 import { supabase } from '../../../lib/supabase';
 import { ensureProfile, getCurrentStreak, getFavoriteAlbums, type FavoriteAlbum } from '../../../lib/profile';
 import { getOrCreateDefaultList } from '../../../lib/lists';
@@ -118,6 +119,8 @@ export default function MeScreen() {
     }, [load])
   );
 
+  const { refreshControl } = usePullToRefresh(load);
+
   if (!user) {
     return (
       <View className="flex-1 items-center justify-center bg-background px-6">
@@ -136,7 +139,12 @@ export default function MeScreen() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        refreshControl={refreshControl}
+      >
         <ProfileHeader
           user={{ id: user.id, username, pictureUrl: profile.avatar_url, bio: profile.bio, isMe: true }}
           reviewsCount={reviewsCount}

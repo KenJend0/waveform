@@ -72,7 +72,7 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
                   className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <Settings size={16} />
-                  Éditer profil
+                  Éditer mon profil
                 </Link>
                 <Link
                   href="/settings/favorite-albums"
@@ -80,7 +80,7 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
                   className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <Heart size={16} />
-                  Albums favoris
+                  Mes albums favoris
                 </Link>
                 <Link
                   href="/me/stats"
@@ -88,7 +88,7 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
                   className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
                 >
                   <BarChart2 size={16} />
-                  Mes stats
+                  Mes statistiques
                 </Link>
                 <Link
                   href="/legal"
@@ -189,7 +189,7 @@ export default function ProfileHeader({ user, stats, streak, favoriteAlbums, onF
           </Link>
           <Link href={`/u/${user.username}/following`} className="flex-1 flex flex-col hover:opacity-75 transition-opacity duration-150 pl-4">
             <span className="font-display italic text-[28px] text-text-warm leading-none">{user.following_count || 0}</span>
-            <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">suivis</span>
+            <span className="text-label uppercase tracking-[0.14em] text-text-tertiary mt-1.5">suivi{(user.following_count || 0) !== 1 ? 's' : ''}</span>
           </Link>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Check } from 'lucide-react-native';
 import { CoverImage } from '../album/CoverImage';
 import { RatingBadge } from '../ui/RatingBadge';
+import { BottomSheet } from '../ui/BottomSheet';
 import { coverSrcWithFallback } from '../../lib/cover';
 import { getUserDiary, type DiaryEntryUI, type DiarySort } from '../../lib/diary';
 import { getUserTrackDiary, type TrackDiaryEntryUI, type TrackDiarySort } from '../../lib/trackDiary';
@@ -75,6 +77,19 @@ export const DiaryList = memo(function DiaryList({ userId, initialAlbumEntries, 
   const [trackSort, setTrackSort] = useState<TrackDiarySort>('date_listened');
 
   const [sortOpen, setSortOpen] = useState(false);
+
+  // Même piège que ListsTab (voir son commentaire) : sans resync, un pull-to-refresh ou
+  // un retour sur l'onglet Journal après suppression d'une entrée depuis /diary ou
+  // /track-diary ne se répercute jamais ici.
+  useEffect(() => {
+    setAlbumEntries(initialAlbumEntries);
+    setAlbumHasMore(initialAlbumEntries.length === PAGE_SIZE);
+  }, [initialAlbumEntries]);
+
+  useEffect(() => {
+    setTrackEntries(initialTrackEntries);
+    setTrackHasMore(initialTrackEntries.length === PAGE_SIZE);
+  }, [initialTrackEntries]);
 
   // Filtre par note — piloté par l'histogramme dans le header du profil.
   const { selectedRating, selectedCount } = useRatingFilter();
@@ -190,22 +205,28 @@ export const DiaryList = memo(function DiaryList({ userId, initialAlbumEntries, 
         </View>
       </View>
 
-      {sortOpen && (
-        <View className="mb-4 bg-background border border-border rounded-input overflow-hidden self-start">
+      <BottomSheet isOpen={sortOpen} onClose={() => setSortOpen(false)} title="Trier par" snapPoint="35%">
+        <View className="px-6 py-2">
           {(media === 'albums'
             ? (Object.entries(albumSortLabelsMap) as [DiarySort, string][])
             : (Object.entries(trackSortLabelsMap) as [TrackDiarySort, string][])
-          ).map(([opt, sortLabel]) => (
-            <Pressable
-              key={opt}
-              onPress={() => (media === 'albums' ? changeAlbumSort(opt as DiarySort) : changeTrackSort(opt as TrackDiarySort))}
-              className="px-3 py-2.5"
-            >
-              <Text style={labelStyle} className="text-text-primary">{sortLabel}</Text>
-            </Pressable>
-          ))}
+          ).map(([opt, sortLabel]) => {
+            const selected = media === 'albums' ? albumSort === opt : trackSort === opt;
+            return (
+              <Pressable
+                key={opt}
+                onPress={() => (media === 'albums' ? changeAlbumSort(opt as DiarySort) : changeTrackSort(opt as TrackDiarySort))}
+                className="flex-row items-center justify-between py-3.5 border-b border-border-divider"
+              >
+                <Text style={metaMediumStyle} className={selected ? 'text-text-primary' : 'text-text-secondary'}>
+                  {sortLabel}
+                </Text>
+                {selected && <Check size={16} color="#8E6F5E" />}
+              </Pressable>
+            );
+          })}
         </View>
-      )}
+      </BottomSheet>
 
       {((media === 'albums' && albumFilterLoading) || (media === 'titres' && trackFilterLoading)) && (
         <Text className="mb-4 text-text-tertiary" style={labelStyle}>Recherche d'autres résultats…</Text>

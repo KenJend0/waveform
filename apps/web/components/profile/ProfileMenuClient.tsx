@@ -63,7 +63,7 @@ export default function ProfileMenuClient() {
             className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
           >
             <Settings size={16} />
-            Éditer profil
+            Éditer mon profil
           </Link>
           <Link
             href="/settings/favorite-albums"
@@ -71,7 +71,7 @@ export default function ProfileMenuClient() {
             className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
           >
             <Heart size={16} />
-            Albums favoris
+            Mes albums favoris
           </Link>
           <Link
             href="/me/stats"
@@ -79,7 +79,7 @@ export default function ProfileMenuClient() {
             className="flex items-center gap-3 px-4 py-3 hover:bg-background-secondary transition-colors duration-150 text-meta text-text-primary"
           >
             <BarChart2 size={16} />
-            Mes stats
+            Mes statistiques
           </Link>
           <Link
             href="/legal"

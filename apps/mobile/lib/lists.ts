@@ -55,6 +55,9 @@ export type ProfileListUI = {
   is_default: boolean;
   item_count: number;
   cover_urls: ListCoverRef[];
+  /** 3 items les plus récemment ajoutés, format "Titre – Artiste" — miroir de
+   * preview_items (web, apps/web/app/actions/lists.ts). */
+  preview_items: string[];
   creator_username?: string;
   creator_avatar?: string | null;
   /** Statut "sauvegardée par l'utilisateur courant" — absent (undefined) là où ce n'est
@@ -102,16 +105,21 @@ export type ListDetail = {
   creator_avatar: string | null;
 };
 
-async function attachListMeta(listIds: string[]): Promise<Map<string, { item_count: number; cover_urls: ListCoverRef[] }>> {
+async function attachListMeta(listIds: string[]): Promise<Map<string, { item_count: number; cover_urls: ListCoverRef[]; preview_items: string[] }>> {
   if (listIds.length === 0) return new Map();
 
-  const [countRes, coverRes] = await Promise.all([
+  const [countRes, coverRes, previewRes] = await Promise.all([
     supabase.from('list_items').select('list_id').in('list_id', listIds),
     supabase
       .from('list_items')
       .select('list_id, album_id, albums(cover_url, mbid)')
       .in('list_id', listIds)
       .not('album_id', 'is', null)
+      .order('added_at', { ascending: false }),
+    supabase
+      .from('list_items')
+      .select('list_id, albums(title, artists(name)), tracks(title, albums(artists(name)))')
+      .in('list_id', listIds)
       .order('added_at', { ascending: false }),
   ]);
 
@@ -127,9 +135,29 @@ async function attachListMeta(listIds: string[]): Promise<Map<string, { item_cou
     }
   }
 
-  const meta = new Map<string, { item_count: number; cover_urls: ListCoverRef[] }>();
+  const previewMap = new Map<string, string[]>();
+  for (const row of (previewRes.data ?? []) as any[]) {
+    const existing = previewMap.get(row.list_id) ?? [];
+    if (existing.length >= 3) continue;
+    const album = row.albums;
+    const track = row.tracks;
+    if (track?.title) {
+      existing.push(`${track.title} – ${track.albums?.artists?.name || 'Unknown'}`);
+    } else if (album?.title) {
+      existing.push(`${album.title} – ${album.artists?.name || 'Unknown'}`);
+    } else {
+      continue;
+    }
+    previewMap.set(row.list_id, existing);
+  }
+
+  const meta = new Map<string, { item_count: number; cover_urls: ListCoverRef[]; preview_items: string[] }>();
   for (const id of listIds) {
-    meta.set(id, { item_count: countMap.get(id) ?? 0, cover_urls: coverMap.get(id) ?? [] });
+    meta.set(id, {
+      item_count: countMap.get(id) ?? 0,
+      cover_urls: coverMap.get(id) ?? [],
+      preview_items: previewMap.get(id) ?? [],
+    });
   }
   return meta;
 }
@@ -150,7 +178,7 @@ export async function getFullUserLists(userId: string): Promise<ProfileListUI[]>
 
   if (!lists || lists.length === 0) return [];
   const meta = await attachListMeta(lists.map((l) => l.id));
-  return lists.map((l) => ({ ...l, ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [] }) }));
+  return lists.map((l) => ({ ...l, ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [], preview_items: [] }) }));
 }
 
 export async function getUserSavedLists(userId: string): Promise<ProfileListUI[]> {
@@ -166,7 +194,7 @@ export async function getUserSavedLists(userId: string): Promise<ProfileListUI[]
   const meta = await attachListMeta(lists.map((l) => l.id));
   return lists.map((l) => ({
     ...l,
-    ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [] }),
+    ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [], preview_items: [] }),
     creator_username: l.profiles?.username ?? undefined,
     creator_avatar: l.profiles?.avatar_url ?? null,
     is_saved: true,
@@ -197,7 +225,7 @@ export async function getPublicUserLists(userId: string): Promise<ProfileListUI[
 
   return lists.map((l) => ({
     ...l,
-    ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [] }),
+    ...(meta.get(l.id) ?? { item_count: 0, cover_urls: [], preview_items: [] }),
     is_saved: savedIds.has(l.id),
   }));
 }
@@ -247,7 +275,7 @@ export async function getPublicLists(limit = 6): Promise<ProfileListUI[]> {
       creator_username: list.profiles?.username ?? undefined,
       creator_avatar: list.profiles?.avatar_url ?? null,
       is_saved: savedIds.has(list.id),
-      ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [] }),
+      ...(meta.get(list.id) ?? { item_count: 0, cover_urls: [], preview_items: [] }),
     }));
 }
 

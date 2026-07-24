@@ -48,6 +48,7 @@ export function CreateListBottomSheet({ isOpen, onClose, userId, onCreated }: Pr
         is_default: false,
         item_count: 0,
         cover_urls: [],
+        preview_items: [],
       });
       onClose();
     } catch (err) {

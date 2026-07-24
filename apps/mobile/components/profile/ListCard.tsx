@@ -7,7 +7,6 @@ import { CoverImage } from '../album/CoverImage';
 import { coverSrcWithFallback } from '../../lib/cover';
 import type { ProfileListUI } from '../../lib/lists';
 import { useListSave } from '../../lib/useListSave';
-import { labelStyle } from '../../lib/typography';
 
 type Props = {
   list: ProfileListUI;
@@ -73,15 +72,41 @@ export const ListCard = memo(function ListCard({ list, style }: Props) {
           </Pressable>
         )}
       </View>
-      <View className="flex-row items-center gap-1 mt-2">
-        {!list.is_public && <Lock size={11} color="#9A9A9A" />}
-        <Text numberOfLines={1} className="flex-1 text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular', fontSize: 14 }}>
-          {list.title}
-        </Text>
+      <View className="flex-row items-baseline justify-between gap-2 mt-2">
+        <View className="flex-row items-center gap-1" style={{ flexShrink: 1, minWidth: 0 }}>
+          {!list.is_public && <Lock size={11} color="#9A9A9A" />}
+          <Text numberOfLines={1} className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular', fontSize: 14, flexShrink: 1 }}>
+            {list.title}
+          </Text>
+        </View>
+        <View className="flex-row items-baseline gap-1" style={{ flexShrink: 0 }}>
+          {/* paddingRight : l'italique déborde de sa propre boîte de texte (rendu penché),
+              sans marge "ITEMS" juste à côté rognait visuellement le dernier chiffre. */}
+          <Text style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 15, paddingRight: 3 }} className="text-accent">
+            {list.item_count}
+          </Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 9, letterSpacing: 1 }} className="uppercase text-text-tertiary">
+            {list.item_count === 1 ? 'item' : 'items'}
+          </Text>
+        </View>
       </View>
-      <Text className="text-text-tertiary mt-0.5" style={labelStyle}>
-        {list.item_count} item{list.item_count !== 1 ? 's' : ''}
-      </Text>
+      {list.preview_items.length > 0 && (
+        <View className="mt-2" style={{ gap: 4 }}>
+          {list.preview_items.map((item, i) => (
+            <View
+              key={i}
+              className={`flex-row gap-1.5 ${i > 0 ? 'pt-1 border-t border-border-divider' : ''}`}
+            >
+              <Text style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 11.5 }} className="text-accent">
+                {i + 1}
+              </Text>
+              <Text numberOfLines={1} className="flex-1 text-text-secondary" style={{ fontFamily: 'Inter_400Regular', fontSize: 11.5 }}>
+                {item}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 });

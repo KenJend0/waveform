@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton } from '../../components/ui/BackButton';
@@ -9,7 +9,6 @@ import { MyListenSection } from '../../components/album/MyListenSection';
 import { DiaryEntryBottomSheet } from '../../components/album/DiaryEntryBottomSheet';
 import { ReviewsSection } from '../../components/album/ReviewsSection';
 import { NetworkListenersSection } from '../../components/album/NetworkListenersSection';
-import { AppearsInLists } from '../../components/album/AppearsInLists';
 import { ArtistAlbumsSection } from '../../components/album/ArtistAlbumsSection';
 import { AddToListBottomSheet } from '../../components/album/AddToListBottomSheet';
 import { AlbumCard } from '../../components/album/AlbumCard';
@@ -18,7 +17,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { coverSrcWithFallback } from '../../lib/cover';
 import { msToMMSS, msToDuration } from '../../lib/formatDate';
 import { getMyDiaryEntries, getAlbumReviewsPreview, type MyDiaryEntry, type AlbumReview } from '../../lib/diary';
-import { getUserLists, getUserListsContaining, getPublicListsContaining, type UserListSummary, type PublicListPreview } from '../../lib/lists';
+import { getUserLists, getUserListsContaining, type UserListSummary } from '../../lib/lists';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { getArtistReleases, type ArtistRelease } from '../../lib/musicbrainz';
 import { getSimilarAlbums, type SimilarAlbum } from '../../lib/album';
@@ -90,7 +89,6 @@ export default function AlbumPage() {
   const [networkListeners, setNetworkListeners] = useState<NetworkListener[]>([]);
   const [userLists, setUserLists] = useState<UserListSummary[]>([]);
   const [listsContaining, setListsContaining] = useState<string[]>([]);
-  const [publicListsContaining, setPublicListsContaining] = useState<PublicListPreview[]>([]);
   const [artistAlbums, setArtistAlbums] = useState<AlbumData[]>([]);
   const [artistMbReleases, setArtistMbReleases] = useState<ArtistRelease[]>([]);
   const [similarAlbums, setSimilarAlbums] = useState<SimilarAlbum[]>([]);
@@ -144,7 +142,6 @@ export default function AlbumPage() {
       reviewsPreviewData,
       userListsData,
       listsContainingData,
-      publicListsContainingData,
       artistAlbumsRes,
       artistMbReleasesRes,
       similarAlbumsData,
@@ -157,7 +154,6 @@ export default function AlbumPage() {
       getAlbumReviewsPreview(id, 3),
       user ? getUserLists() : Promise.resolve([]),
       user ? getUserListsContaining(id) : Promise.resolve([]),
-      getPublicListsContaining(id, 5),
       albumRow.artist_id
         ? supabase.from('albums').select('id, title, cover_url, mbid, release_date').eq('artist_id', albumRow.artist_id).neq('id', id).limit(8)
         : Promise.resolve({ data: [] as AlbumData[] }),
@@ -193,7 +189,6 @@ export default function AlbumPage() {
     setReviewsPreview(reviewsPreviewData);
     setUserLists(userListsData);
     setListsContaining(listsContainingData);
-    setPublicListsContaining(publicListsContainingData);
     setArtistAlbums((artistAlbumsRes.data as AlbumData[]) ?? []);
     setArtistMbReleases(artistMbReleasesRes?.success ? artistMbReleasesRes.releases ?? [] : []);
     setSimilarAlbums(similarAlbumsData);
@@ -371,7 +366,7 @@ export default function AlbumPage() {
           <View className="flex-row border-t border-b border-rule py-3 mb-8">
             {stats.avg_rating !== null && (
               <View className="flex-1 pr-4 border-r border-rule">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.avg_rating.toFixed(1).replace('.', ',')}
                   <Text className="uppercase text-text-tertiary" style={{ fontFamily: 'Inter_400Regular', fontSize: 9 }}> /10</Text>
                 </Text>
@@ -380,19 +375,22 @@ export default function AlbumPage() {
             )}
             {stats.listeners_count > 0 && (
               <View className="flex-1 px-4 border-r border-rule">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.listeners_count.toLocaleString()}
                 </Text>
                 <Text className="uppercase text-text-tertiary mt-1.5" style={{ fontFamily: 'Inter_400Regular', fontSize: 10.5, letterSpacing: 1.68 }}>Auditeurs</Text>
               </View>
             )}
             {stats.reviews_count > 0 && (
-              <View className="flex-1 pl-4">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+              <Pressable
+                className="flex-1 pl-4"
+                onPress={() => scrollRef.current?.scrollTo({ y: reviewsY.current - 16, animated: true })}
+              >
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.reviews_count.toLocaleString()}
                 </Text>
                 <Text className="uppercase text-text-tertiary mt-1.5" style={{ fontFamily: 'Inter_400Regular', fontSize: 10.5, letterSpacing: 1.68 }}>Critiques</Text>
-              </View>
+              </Pressable>
             )}
           </View>
         )}
@@ -418,10 +416,14 @@ export default function AlbumPage() {
               </Text>
             )}
             {tracks.map((t, idx) => (
-              <View key={t.id} className="flex-row items-baseline gap-4 py-2">
+              <Pressable
+                key={t.id}
+                onPress={() => router.push(`/tracks/${t.id}` as any)}
+                className="flex-row items-baseline gap-4 py-2"
+              >
                 <Text
                   className="text-accent w-7 text-right"
-                  style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 16, lineHeight: 16 }}
+                  style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 16, lineHeight: 16, paddingRight: 3 }}
                 >
                   {t.track_no ?? idx + 1}
                 </Text>
@@ -432,7 +434,7 @@ export default function AlbumPage() {
                   )}
                 </Text>
                 <Text className="text-text-tertiary" style={labelStyle}>{msToMMSS(t.duration_ms)}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}
@@ -448,8 +450,6 @@ export default function AlbumPage() {
         >
           <ReviewsSection albumId={album.id} reviewsCount={stats.reviews_count} initialReviews={reviewsPreview} />
         </View>
-
-        {publicListsContaining.length > 0 && <AppearsInLists lists={publicListsContaining} />}
 
         {(artistAlbums.length > 0 || artistMbReleases.length > 0) && (
           <ArtistAlbumsSection
@@ -488,6 +488,8 @@ export default function AlbumPage() {
         albumId={album.id}
         editingEntry={editingEntry}
         hasExistingEntry={hasExistingEntry}
+        userLists={userLists}
+        listsContaining={listsContaining}
         onSaved={load}
       />
       <AddToListBottomSheet

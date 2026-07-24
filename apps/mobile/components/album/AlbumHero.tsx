@@ -119,7 +119,7 @@ export function AlbumHero({
       {/* Actions — flex gap-2 mt-4. "+ Liste" = texte simple (pas de bordure), sauf déjà
           dans une liste (accent + bordure) — miroir exact de AddToListButton (web). */}
       <View className="flex-row items-center gap-2 mt-4">
-        <Pressable onPress={onAddToDiary} className="bg-accent-deep px-4 py-2 rounded-button">
+        <Pressable onPress={onAddToDiary} className="bg-accent-deep px-4 py-2.5 rounded-button">
           <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: '#FAF8F4' }}>
             {diaryButtonLabel}
           </Text>

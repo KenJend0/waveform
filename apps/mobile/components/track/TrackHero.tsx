@@ -92,7 +92,7 @@ export function TrackHero({ track, genres, streamingLinks, onAddToDiary, onAddTo
       )}
 
       <View className="flex-row items-center gap-2 mt-4">
-        <Pressable onPress={onAddToDiary} className="bg-accent-deep px-4 py-2 rounded-button">
+        <Pressable onPress={onAddToDiary} className="bg-accent-deep px-4 py-2.5 rounded-button">
           <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: '#FAF8F4' }}>{diaryButtonLabel}</Text>
         </Pressable>
         <Pressable

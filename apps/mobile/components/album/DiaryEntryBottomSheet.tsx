@@ -5,6 +5,7 @@ import { StarRating } from '../ui/StarRating';
 import { DatePickerField } from '../ui/DatePickerField';
 import { showToast } from '../ui/Toast';
 import { upsertDiaryEntry, updateDiaryEntry, type MyDiaryEntry } from '../../lib/diary';
+import { toggleListItem, type UserListSummary } from '../../lib/lists';
 import { metaStyle, metaMediumStyle } from '../../lib/typography';
 
 type Props = {
@@ -15,6 +16,9 @@ type Props = {
   editingEntry?: MyDiaryEntry;
   /** true si l'utilisateur a déjà au moins une écoute de cet album (bascule le libellé + le mode insert). */
   hasExistingEntry?: boolean;
+  /** Listes de l'utilisateur + IDs de celles contenant cet album — pour l'option "Retirer de À écouter" (miroir de AddToDiaryButton, web). */
+  userLists?: UserListSummary[];
+  listsContaining?: string[];
   onSaved: () => void;
 };
 
@@ -25,19 +29,25 @@ const today = new Date().toISOString().split('T')[0];
  * (web) en un seul composant réutilisé pour créer ET modifier, les deux formulaires étant
  * identiques à l'exception de l'appel réseau final.
  */
-export function DiaryEntryBottomSheet({ isOpen, onClose, albumId, editingEntry, hasExistingEntry, onSaved }: Props) {
+export function DiaryEntryBottomSheet({ isOpen, onClose, albumId, editingEntry, hasExistingEntry, userLists = [], listsContaining = [], onSaved }: Props) {
   const [rating, setRating] = useState<number | null>(editingEntry?.rating ?? null);
   const [body, setBody] = useState(editingEntry?.review_body ?? '');
   const [listenedAt, setListenedAt] = useState(editingEntry?.listened_at ?? today);
   const [saving, setSaving] = useState(false);
   const isEdit = !!editingEntry;
 
+  const defaultListId = userLists.find((l) => l.is_default)?.id;
+  const isSaved = !!defaultListId && listsContaining.includes(defaultListId);
+  const [removeFromSaved, setRemoveFromSaved] = useState(isSaved);
+
   useEffect(() => {
     if (isOpen) {
       setRating(editingEntry?.rating ?? null);
       setBody(editingEntry?.review_body ?? '');
       setListenedAt(editingEntry?.listened_at ?? today);
+      setRemoveFromSaved(isSaved);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingEntry]);
 
   async function handleSubmit() {
@@ -67,6 +77,14 @@ export function DiaryEntryBottomSheet({ isOpen, onClose, albumId, editingEntry, 
         if (!result.success) {
           showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
           return;
+        }
+        if (removeFromSaved && defaultListId) {
+          try {
+            await toggleListItem(defaultListId, { albumId });
+            showToast('Retiré de "À écouter"', 'success');
+          } catch {
+            showToast('Impossible de retirer l\'album de "À écouter"', 'error');
+          }
         }
         showToast('Enregistré !', 'success');
       }
@@ -113,6 +131,24 @@ export function DiaryEntryBottomSheet({ isOpen, onClose, albumId, editingEntry, 
             style={{ height: 96, textAlignVertical: 'top', fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21 }}
           />
         </View>
+
+        {!isEdit && isSaved && (
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              onPress={() => setRemoveFromSaved((v) => !v)}
+              className="rounded-full"
+              style={{ width: 36, height: 20, backgroundColor: removeFromSaved ? '#1C1C1C' : '#DDD7CF' }}
+            >
+              <View
+                className="rounded-full bg-background"
+                style={{ width: 16, height: 16, marginTop: 2, marginLeft: removeFromSaved ? 18 : 2 }}
+              />
+            </Pressable>
+            <Text className="text-text-secondary" style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18 }}>
+              Retirer de "À écouter"
+            </Text>
+          </View>
+        )}
 
         <View className="flex-row gap-2 pb-4">
           <Pressable onPress={onClose} className="flex-1 bg-background-secondary rounded-button py-2.5 items-center">

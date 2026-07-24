@@ -29,7 +29,7 @@ function ReviewItem({ review }: { review: TrackReview }) {
             </View>
             {review.rating !== null && (
               <View className="flex-row items-baseline gap-0.5 bg-[#FAF8F4] border border-accent rounded-badge px-1.5 py-0.5">
-                <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 15, lineHeight: 15 }}>
+                <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 15, lineHeight: 15, paddingRight: 2 }}>
                   {review.rating}
                 </Text>
                 <Text className="uppercase text-accent" style={{ fontFamily: 'Inter_400Regular', fontSize: 9, opacity: 0.7 }}>/10</Text>

@@ -164,7 +164,7 @@ export function ArtistDiscographySection({ albums, mbReleases, artistName }: Pro
                     )}
                     {item.avgRating != null && (
                       <View className="absolute top-1.5 right-1.5 flex-row items-baseline gap-0.5 bg-paper-hi/90 border border-accent rounded-badge-sm px-1.5 py-0.5">
-                        <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 13, lineHeight: 13 }}>
+                        <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 13, lineHeight: 13, paddingRight: 2 }}>
                           {item.avgRating.toFixed(1).replace('.', ',')}
                         </Text>
                         <Text className="text-accent uppercase opacity-70" style={{ fontFamily: 'Inter_400Regular', fontSize: 8 }}>/10</Text>

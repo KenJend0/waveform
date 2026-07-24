@@ -230,7 +230,7 @@ export default function TrackPage() {
           <View className="flex-row border-t border-b border-rule py-3 mb-8">
             {stats.avg_rating !== null && (
               <View className="flex-1 pr-4 border-r border-rule">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.avg_rating.toFixed(1).replace('.', ',')}
                   <Text className="uppercase text-text-tertiary" style={{ fontFamily: 'Inter_400Regular', fontSize: 9 }}> /10</Text>
                 </Text>
@@ -239,19 +239,22 @@ export default function TrackPage() {
             )}
             {stats.listeners_count > 0 && (
               <View className="flex-1 px-4 border-r border-rule">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.listeners_count.toLocaleString()}
                 </Text>
                 <Text className="uppercase text-text-tertiary mt-1.5" style={{ fontFamily: 'Inter_400Regular', fontSize: 10.5, letterSpacing: 1.68 }}>Auditeurs</Text>
               </View>
             )}
             {stats.reviews_count > 0 && (
-              <View className="flex-1 pl-4">
-                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 26 }}>
+              <Pressable
+                className="flex-1 pl-4"
+                onPress={() => scrollRef.current?.scrollTo({ y: reviewsY.current - 16, animated: true })}
+              >
+                <Text className="text-text-warm" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 26, lineHeight: 32 }}>
                   {stats.reviews_count.toLocaleString()}
                 </Text>
                 <Text className="uppercase text-text-tertiary mt-1.5" style={{ fontFamily: 'Inter_400Regular', fontSize: 10.5, letterSpacing: 1.68 }}>Critiques</Text>
-              </View>
+              </Pressable>
             )}
           </View>
         )}
@@ -282,7 +285,7 @@ export default function TrackPage() {
                 onPress={() => router.push(`/tracks/${tr.id}` as any)}
                 className="flex-row items-center gap-3 py-2 px-3 rounded-button"
               >
-                <Text className="text-accent w-7 text-right" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 16, lineHeight: 16 }}>
+                <Text className="text-accent w-7 text-right" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 16, lineHeight: 16, paddingRight: 3 }}>
                   {tr.track_no ?? idx + 1}
                 </Text>
                 <Text className="flex-1 text-text-primary" style={metaStyle} numberOfLines={1}>{tr.title}</Text>

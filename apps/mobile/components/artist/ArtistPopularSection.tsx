@@ -59,7 +59,7 @@ export function ArtistPopularSection({ albums }: Props) {
               </View>
               {album.avg_rating != null && (
                 <View className="flex-row items-baseline gap-0.5 bg-[#FAF8F4] border border-accent rounded-[6px] w-[58px] py-0.5 justify-center">
-                  <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 15, lineHeight: 15 }}>
+                  <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 15, lineHeight: 15, paddingRight: 2 }}>
                     {album.avg_rating.toFixed(1).replace('.', ',')}
                   </Text>
                   <Text className="text-accent uppercase opacity-70" style={{ fontFamily: 'Inter_400Regular', fontSize: 9 }}>/10</Text>

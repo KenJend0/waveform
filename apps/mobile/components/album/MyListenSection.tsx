@@ -23,7 +23,7 @@ export function MyListenSection({ entry, entriesCount, onEdit, onAddReview, onDe
         <View className="flex-row items-center justify-between mb-3">
           {entry.rating ? (
             <View className="flex-row items-baseline gap-0.5 bg-[#FAF8F4] border border-accent rounded-badge px-2 py-1">
-              <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 18, lineHeight: 18 }}>
+              <Text className="text-accent" style={{ fontFamily: 'InstrumentSerif_400Regular_Italic', fontSize: 18, lineHeight: 18, paddingRight: 3 }}>
                 {entry.rating}
               </Text>
               <Text
